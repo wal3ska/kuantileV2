@@ -22,7 +22,7 @@ EMAIL, PW = "test@kuantile.com", "guclu-sifre-123"
 
 
 def test_register_sends_verification():
-    r = client.post("/auth/register", json={"email": EMAIL, "password": PW})
+    r = client.post("/auth/register", json={"email": EMAIL, "nickname": "testci", "password": PW})
     assert r.status_code == 201
     assert sent["to"] == EMAIL and len(sent["token"]) > 20
 
@@ -37,6 +37,7 @@ def test_verify_then_login():
     assert r.status_code == 200
     r = client.post("/auth/login", json={"email": EMAIL, "password": PW})
     assert r.status_code == 200
+    assert r.json()["nickname"] == "testci"
     global TOKEN
     TOKEN = r.json()["access_token"]
 
@@ -74,5 +75,10 @@ def test_portfolio_requires_auth():
 
 
 def test_duplicate_email_rejected():
-    r = client.post("/auth/register", json={"email": EMAIL, "password": PW})
+    r = client.post("/auth/register", json={"email": EMAIL, "nickname": "testci", "password": PW})
     assert r.status_code == 409
+
+
+def test_register_requires_nickname():
+    r = client.post("/auth/register", json={"email": "nick@kuantile.com", "password": PW})
+    assert r.status_code == 422

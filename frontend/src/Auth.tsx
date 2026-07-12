@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError, setToken } from "./api";
 
-export interface UserInfo { email: string; dailyMail: boolean }
+export interface UserInfo { email: string; nickname: string | null; dailyMail: boolean }
+
+export const displayName = (u: UserInfo) => u.nickname ?? u.email.split("@")[0];
 
 export function AuthArea({ user, onLogin, onLogout, onSave, saving, onDailyMail }: {
   user: UserInfo | null;
@@ -26,14 +28,14 @@ export function AuthArea({ user, onLogin, onLogout, onSave, saving, onDailyMail 
   if (user) {
     return (
       <div className="userchip">
-        <span>👤 {user.email}</span>
-        <label className="checkline" title="Her sabah 07:00'de portföy özeti e-postası">
+        <span title={user.email}>👤 {displayName(user)}</span>
+        <label className="checkline" title="Günlük, haftalık, aylık ve yıllık portföy raporu e-postaları">
           <input
             type="checkbox"
             checked={user.dailyMail}
             onChange={(e) => onDailyMail(e.target.checked)}
           />
-          📬 Günlük özet
+          📬 Rapor mailleri
         </label>
         <button className="primary" onClick={onSave} disabled={saving}>
           {saving ? "Kaydediliyor…" : "💾 Kaydet"}
@@ -54,6 +56,7 @@ export function AuthArea({ user, onLogin, onLogout, onSave, saving, onDailyMail 
 function AuthPop({ onLogin }: { onLogin: (u: UserInfo) => void }) {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
+  const [nick, setNick] = useState("");
   const [pw, setPw] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err" | "info"; text: string } | null>(null);
@@ -64,13 +67,13 @@ function AuthPop({ onLogin }: { onLogin: (u: UserInfo) => void }) {
     setBusy(true);
     try {
       if (mode === "register") {
-        const r = await api.register(email, pw);
+        const r = await api.register(email, nick, pw);
         setMsg({ kind: "ok", text: r.message });
       } else {
         const r = await api.login(email, pw);
         setToken(r.access_token);
         const me = await api.me();
-        onLogin({ email: me.email, dailyMail: me.daily_mail });
+        onLogin({ email: me.email, nickname: me.nickname, dailyMail: me.daily_mail });
       }
     } catch (err) {
       setMsg({ kind: "err", text: err instanceof ApiError ? err.message : "Beklenmeyen hata." });
@@ -88,6 +91,14 @@ function AuthPop({ onLogin }: { onLogin: (u: UserInfo) => void }) {
       <label className="f">E-posta
         <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
       </label>
+      {mode === "register" && (
+        <label className="f">Takma ad
+          <input
+            type="text" required minLength={2} maxLength={30} placeholder="ör: anil"
+            value={nick} onChange={(e) => setNick(e.target.value)} autoComplete="nickname"
+          />
+        </label>
+      )}
       <label className="f">Şifre {mode === "register" && <span style={{ color: "var(--muted)" }}>(en az 8 karakter)</span>}
         <input
           type="password" required minLength={mode === "register" ? 8 : undefined}

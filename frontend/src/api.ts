@@ -138,13 +138,13 @@ export interface PortfolioData {
 /* ---------- uçlar ---------- */
 
 export const api = {
-  register: (email: string, password: string) =>
-    req<{ message: string }>("POST", "/auth/register", { email, password }),
+  register: (email: string, nickname: string, password: string) =>
+    req<{ message: string }>("POST", "/auth/register", { email, nickname, password }),
 
   login: (email: string, password: string) =>
-    req<{ access_token: string; email: string }>("POST", "/auth/login", { email, password }),
+    req<{ access_token: string; email: string; nickname: string | null }>("POST", "/auth/login", { email, password }),
 
-  me: () => req<{ email: string; verified: boolean; daily_mail: boolean }>("GET", "/auth/me", undefined, true),
+  me: () => req<{ email: string; nickname: string | null; verified: boolean; daily_mail: boolean }>("GET", "/auth/me", undefined, true),
 
   setDailyMail: (enabled: boolean) =>
     req<{ daily_mail: boolean }>("POST", "/auth/daily-mail", { enabled }, true),

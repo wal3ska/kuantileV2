@@ -104,7 +104,7 @@ export default function App() {
     if (!getToken()) return;
     api.me()
       .then((me) => {
-        setUser({ email: me.email, dailyMail: me.daily_mail });
+        setUser({ email: me.email, nickname: me.nickname, dailyMail: me.daily_mail });
         return loadPortfolio();
       })
       .catch(() => setToken(null));
@@ -210,7 +210,7 @@ export default function App() {
                 TL bazlı değerleme, %99 VaR, korelasyon, tarihsel kriz senaryoları ve tahvil durasyonu — tek ekranda.
               </p>
               <p className="footer-note">
-                Hesap açarsanız portföyünüz saklanır ve her sabah 07:00'de günlük özet e-postası alırsınız. Hesapsız kullanım da serbesttir.
+                Hesap açarsanız portföyünüz saklanır; günlük, haftalık, aylık ve yıllık rapor e-postaları alırsınız. Hesapsız kullanım da serbesttir.
               </p>
             </div>
           )}

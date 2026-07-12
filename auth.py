@@ -36,6 +36,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 class RegisterRequest(BaseModel):
     email: EmailStr
+    nickname: str = Field(min_length=2, max_length=30)
     password: str = Field(min_length=8, max_length=128)
 
 
@@ -75,6 +76,7 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == req.email.lower()).first():
         raise HTTPException(409, "Bu e-posta ile bir hesap zaten var.")
     user = User(email=req.email.lower(),
+                nickname=req.nickname.strip(),
                 password_hash=hash_password(req.password),
                 verification_token=secrets.token_urlsafe(32))
     db.add(user)
@@ -112,12 +114,13 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(401, "E-posta veya şifre hatalı.")
     if not user.is_verified:
         raise HTTPException(403, "E-posta henüz doğrulanmamış. Gelen kutunuzu kontrol edin.")
-    return {"access_token": make_token(user.id), "token_type": "bearer", "email": user.email}
+    return {"access_token": make_token(user.id), "token_type": "bearer",
+            "email": user.email, "nickname": user.nickname}
 
 
 @router.get("/me")
 def me(user: User = Depends(get_current_user)):
-    return {"email": user.email, "verified": user.is_verified,
+    return {"email": user.email, "nickname": user.nickname, "verified": user.is_verified,
             "daily_mail": user.daily_mail_enabled}
 
 
