@@ -32,9 +32,18 @@ function ThemeToggle({ theme, onToggle }: { theme: string; onToggle: () => void 
 function Logo() {
   return (
     <div className="logo">
-      <svg width="26" height="26" viewBox="0 0 32 32">
-        <rect width="32" height="32" rx="7" fill="#3987e5" />
-        <path d="M8 24V8h3.2v7.1L17.4 8h4L15 15.6l6.8 8.4h-4l-5-6.4-1.6 1.8V24z" fill="#fff" />
+      <svg width="28" height="28" viewBox="0 0 512 512">
+        <defs>
+          <linearGradient id="kg-top" x1="0" y1="1" x2="1" y2="0">
+            <stop offset="0" stopColor="#2b4a86" />
+            <stop offset="0.5" stopColor="#2f7cc9" />
+            <stop offset="1" stopColor="#41abe8" />
+          </linearGradient>
+        </defs>
+        <rect width="512" height="512" rx="104" fill="url(#kg-top)" />
+        <rect x="148" y="118" width="58" height="276" fill="#fff" />
+        <path d="M 206 268 C 278 250 332 204 358 118 L 416 118 C 390 238 314 302 206 326 Z" fill="#fff" />
+        <path d="M 252 302 L 320 278 L 402 394 L 338 394 Z" fill="#fff" />
       </svg>
       Kuantile
       <span className="tag">Portföy & Risk Terminali</span>
