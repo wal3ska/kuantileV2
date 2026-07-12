@@ -4,11 +4,11 @@
 
 import { useCallback, useRef, useState, type ReactNode } from "react";
 
-const POS = "#3987e5";
-const NEG = "#e66767";
-const NEUTRAL = [0x38, 0x38, 0x35] as const;
-const POS_RGB = [0x39, 0x87, 0xe5] as const;
-const NEG_RGB = [0xe6, 0x67, 0x67] as const;
+const POS = "#2a78d6";
+const NEG = "#e34948";
+const NEUTRAL = [0xf0, 0xef, 0xec] as const;
+const POS_RGB = [0x2a, 0x78, 0xd6] as const;
+const NEG_RGB = [0xe3, 0x49, 0x48] as const;
 
 /* ---------- ortak tooltip ---------- */
 
@@ -138,7 +138,10 @@ export function CorrHeatmap({ matrix }: { matrix: Record<string, Record<string, 
                 <div
                   key={`${row}-${col}`}
                   className="heat-cell"
-                  style={{ background: divergingColor(v), color: "#ffffff" }}
+                  style={{
+                    background: divergingColor(v),
+                    color: Math.abs(v) > 0.55 ? "#ffffff" : "var(--ink)",
+                  }}
                   onMouseMove={(e) => show(e, (
                     <><div className="t">{row} × {col}</div>korelasyon: {v.toFixed(2)}</>
                   ))}
@@ -153,7 +156,7 @@ export function CorrHeatmap({ matrix }: { matrix: Record<string, Record<string, 
       </div>
       <div className="legend">
         <span className="it"><span className="sw" style={{ background: NEG }} /> −1 ters yönlü</span>
-        <span className="it"><span className="sw" style={{ background: "#383835" }} /> 0 ilişkisiz</span>
+        <span className="it"><span className="sw" style={{ background: "#f0efec" }} /> 0 ilişkisiz</span>
         <span className="it"><span className="sw" style={{ background: POS }} /> +1 aynı yönlü</span>
       </div>
       {node}

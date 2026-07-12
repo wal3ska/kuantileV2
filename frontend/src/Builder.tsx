@@ -145,7 +145,7 @@ export function Builder({ rows, setRows, bonds, setBonds }: {
   return (
     <div className="stack">
       <div className="card">
-        <h3>Portföy</h3>
+        <h3><span className="stepn">1</span>Varlıklarınızı ekleyin</h3>
         <AssetPicker taken={taken} onAdd={addAsset} />
         <details className="acc" style={{ marginTop: 10 }}>
           <summary>Listede olmayan varlık / TEFAS fonu ekle</summary>
@@ -191,7 +191,7 @@ export function Builder({ rows, setRows, bonds, setBonds }: {
       </div>
 
       <div className="card">
-        <h3>Tahvil / Bono</h3>
+        <h3><span className="stepn">2</span>Tahvil / Bono <span className="opt">— opsiyonel</span></h3>
         <div className="stack" style={{ gap: 8 }}>
           {bonds.map((b, i) => (
             <details className="acc" key={b.id} open>

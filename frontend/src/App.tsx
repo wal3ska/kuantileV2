@@ -4,6 +4,7 @@ import { api, ApiError, getToken, setToken } from "./api";
 import { AuthArea, type UserInfo } from "./Auth";
 import { Builder, newBond, nextId, num, type BondRow, type PosRow } from "./Builder";
 import { Dashboard } from "./Dashboard";
+import { UNIVERSE } from "./universe";
 
 function Logo() {
   return (
@@ -110,9 +111,9 @@ export default function App() {
       .catch(() => setToken(null));
   }, [loadPortfolio]);
 
-  async function analyze() {
-    const positions = toPositions(rows);
-    const bs = toBonds(bonds);
+  async function analyze(positionsArg?: PositionIn[], bondsArg?: BondIn[]) {
+    const positions = positionsArg ?? toPositions(rows);
+    const bs = bondsArg ?? toBonds(bonds);
     if (positions.length === 0 && bs.length === 0) {
       flash("err", "Önce en az bir varlığa adet girin veya tahvil ekleyin.");
       return;
@@ -164,6 +165,23 @@ export default function App() {
     }
   }
 
+  function runDemo() {
+    const demo: PosRow[] = [
+      { name: "THYAO", qty: "100", cost: "250,5" },
+      { name: "Altın (ONS)", qty: "1", cost: "" },
+      { name: "Bitcoin (BTC)", qty: "0.02", cost: "" },
+      { name: "Apple (AAPL)", qty: "5", cost: "185" },
+    ].flatMap(({ name, qty, cost }) => {
+      const info = UNIVERSE.find((a) => a.name === name);
+      return info ? [{
+        id: nextId(), info, quantity: qty, cost, costUnknown: cost === "",
+      }] : [];
+    });
+    setRows(demo);
+    setBonds([]);
+    analyze(toPositions(demo), []);
+  }
+
   const hasInput = toPositions(rows).length > 0 || toBonds(bonds).length > 0;
 
   return (
@@ -188,16 +206,20 @@ export default function App() {
         </div>
 
         <div className="stack">
-          <div className="card" style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            <button className="primary big" style={{ flex: "1 1 220px" }} onClick={analyze} disabled={analyzing || !hasInput}>
-              {analyzing ? (<><span className="spin" />Analiz ediliyor — fiyat geçmişi çekiliyor…</>) : "⚡ Analiz Et"}
-            </button>
-            <label className="f" style={{ flex: "0 0 150px" }}>VaR güven düzeyi
-              <select value={confidence} onChange={(e) => setConfidence(+e.target.value)}>
-                <option value={0.95}>%95</option>
-                <option value={0.99}>%99</option>
-              </select>
-            </label>
+          <div className="card">
+            <h3><span className="stepn">3</span>Analiz</h3>
+            <div style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+              <button className="primary big" style={{ flex: "1 1 220px" }} onClick={() => analyze()} disabled={analyzing || !hasInput}>
+                {analyzing ? (<><span className="spin" />Analiz ediliyor — fiyat geçmişi çekiliyor…</>) : "⚡ Analiz Et"}
+              </button>
+              <label className="f" style={{ flex: "0 0 150px" }}>VaR güven düzeyi
+                <select value={confidence} onChange={(e) => setConfidence(+e.target.value)}>
+                  <option value={0.95}>%95</option>
+                  <option value={0.99}>%99</option>
+                </select>
+              </label>
+            </div>
+            {!hasInput && <p className="section-note">Soldan varlık ekleyip adet girdiğinizde buton aktifleşir.</p>}
           </div>
 
           {result ? (
@@ -206,9 +228,29 @@ export default function App() {
             <div className="empty">
               <h2>Portföyünüz ne kadar risk taşıyor?</h2>
               <p>
-                Soldan varlıklarınızı ekleyin, adetleri girin ve <b>Analiz Et</b>'e basın.<br />
-                TL bazlı değerleme, %99 VaR, korelasyon, tarihsel kriz senaryoları ve tahvil durasyonu — tek ekranda.
+                Hisse, kripto, fon ve tahvillerinizi girin; TL bazlı değerleme, riske maruz değer (VaR),
+                korelasyon ve tarihsel kriz senaryolarını tek ekranda görün.
               </p>
+              <div className="steps">
+                <div className="step">
+                  <span className="stepn">1</span>
+                  <b>Varlıklarınızı ekleyin</b>
+                  <p>Soldaki arama kutusundan hisse, kripto, emtia veya TEFAS fonu seçin.</p>
+                </div>
+                <div className="step">
+                  <span className="stepn">2</span>
+                  <b>Adet ve maliyet girin</b>
+                  <p>Kaç adet tuttuğunuzu yazın; alış maliyetini bilmiyorsanız boş bırakın.</p>
+                </div>
+                <div className="step">
+                  <span className="stepn">3</span>
+                  <b>Analiz Et'e basın</b>
+                  <p>Değerleme, risk ve kriz senaryoları saniyeler içinde hazırlanır.</p>
+                </div>
+              </div>
+              <button className="primary" onClick={runDemo} disabled={analyzing}>
+                {analyzing ? (<><span className="spin" />Hazırlanıyor…</>) : "🎯 Örnek portföyle deneyin"}
+              </button>
               <p className="footer-note">
                 Hesap açarsanız portföyünüz saklanır; günlük, haftalık, aylık ve yıllık rapor e-postaları alırsınız. Hesapsız kullanım da serbesttir.
               </p>
