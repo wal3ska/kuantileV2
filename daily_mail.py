@@ -144,9 +144,12 @@ def build_report_html(user, period: str, fx_now: float, prices_try,
             var_txt = f"VaR (%{CONFIDENCE * 100:.0f}, 1 gün): <b>{fmt_pct(stats['var_now'])}</b>"
             if stats["var_prev"] is not None and period != "daily":
                 delta = stats["var_now"] - stats["var_prev"]
-                yon = "arttı" if delta < 0 else "azaldı"  # VaR negatif: daha negatif = daha riskli
-                var_txt += (f" — dönem başına göre risk {yon} "
-                            f"({fmt_pct(abs(delta)).lstrip('+')})")
+                if abs(delta) < 0.00005:  # gosterimde 0,00% olacak degisim
+                    var_txt += " — dönem başına göre sabit kaldı"
+                else:
+                    yon = "arttı" if delta < 0 else "azaldı"  # VaR negatif: daha negatif = daha riskli
+                    var_txt += (f" — dönem başına göre risk {yon} "
+                                f"({fmt_pct(abs(delta)).lstrip('+')})")
             stat_lines.append(var_txt)
 
     unsub = f"{API_URL}/auth/unsubscribe?token={make_unsub_token(user.id)}"
@@ -196,8 +199,10 @@ def run(period: str = "daily") -> int:
     init_db()
     db = SessionLocal()
     try:
+        flag = {"daily": User.mail_daily, "weekly": User.mail_weekly,
+                "monthly": User.mail_monthly, "yearly": User.mail_yearly}[period]
         users = [u for u in db.query(User)
-                 .filter(User.is_verified.is_(True), User.daily_mail_enabled.is_(True)).all()
+                 .filter(User.is_verified.is_(True), flag.is_(True)).all()
                  if u.portfolio is not None and (u.portfolio.positions or u.portfolio.bonds)]
         if not users:
             print("Gönderilecek kullanıcı yok.")

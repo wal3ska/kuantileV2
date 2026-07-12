@@ -26,7 +26,10 @@ class User(Base):
     nickname: Mapped[str | None] = mapped_column(String(30), nullable=True)
     password_hash: Mapped[str] = mapped_column(String(255))
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
-    daily_mail_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    mail_daily: Mapped[bool] = mapped_column(Boolean, default=True)
+    mail_weekly: Mapped[bool] = mapped_column(Boolean, default=True)
+    mail_monthly: Mapped[bool] = mapped_column(Boolean, default=True)
+    mail_yearly: Mapped[bool] = mapped_column(Boolean, default=True)
     verification_token: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 

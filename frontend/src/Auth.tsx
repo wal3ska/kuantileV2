@@ -1,44 +1,83 @@
 import { useEffect, useRef, useState } from "react";
-import { api, ApiError, setToken } from "./api";
+import { api, ApiError, setToken, type MailPrefs } from "./api";
 
-export interface UserInfo { email: string; nickname: string | null; dailyMail: boolean }
+export interface UserInfo { email: string; nickname: string | null; mail: MailPrefs }
 
 export const displayName = (u: UserInfo) => u.nickname ?? u.email.split("@")[0];
 
-export function AuthArea({ user, onLogin, onLogout, onSave, saving, onDailyMail }: {
+const PERIOD_LABELS: [keyof MailPrefs, string][] = [
+  ["daily", "Günlük"],
+  ["weekly", "Haftalık"],
+  ["monthly", "Aylık"],
+  ["yearly", "Yıllık"],
+];
+
+function useOutsideClose(open: boolean, close: () => void) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) close();
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [open, close]);
+  return ref;
+}
+
+function MailPrefsMenu({ prefs, onChange }: {
+  prefs: MailPrefs;
+  onChange: (p: MailPrefs) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useOutsideClose(open, () => setOpen(false));
+  const activeCount = PERIOD_LABELS.filter(([k]) => prefs[k]).length;
+
+  return (
+    <div className="auth-wrap" ref={ref}>
+      <button onClick={() => setOpen(!open)}>
+        Rapor mailleri {activeCount > 0 ? `(${activeCount})` : "(kapalı)"} ▾
+      </button>
+      {open && (
+        <div className="dropmenu">
+          <div className="dropmenu-title">Portföy raporu e-postaları</div>
+          {PERIOD_LABELS.map(([key, label]) => (
+            <label className="checkline" key={key}>
+              <input
+                type="checkbox"
+                checked={prefs[key]}
+                onChange={(e) => onChange({ ...prefs, [key]: e.target.checked })}
+              />
+              {label}
+            </label>
+          ))}
+          <div className="footer-note" style={{ marginTop: 4 }}>
+            Günlük her sabah 07:00, haftalık pazartesi, aylık ayın 1'i, yıllık 1 Ocak'ta gönderilir.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function AuthArea({ user, onLogin, onLogout, onSave, saving, onMailPrefs }: {
   user: UserInfo | null;
   onLogin: (u: UserInfo) => void;
   onLogout: () => void;
   onSave: () => void;
   saving: boolean;
-  onDailyMail: (enabled: boolean) => void;
+  onMailPrefs: (p: MailPrefs) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const wrapRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const h = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, [open]);
+  const ref = useOutsideClose(open, () => setOpen(false));
 
   if (user) {
     return (
       <div className="userchip">
-        <span title={user.email}>👤 {displayName(user)}</span>
-        <label className="checkline" title="Günlük, haftalık, aylık ve yıllık portföy raporu e-postaları">
-          <input
-            type="checkbox"
-            checked={user.dailyMail}
-            onChange={(e) => onDailyMail(e.target.checked)}
-          />
-          📬 Rapor mailleri
-        </label>
+        <span title={user.email}>{displayName(user)}</span>
+        <MailPrefsMenu prefs={user.mail} onChange={onMailPrefs} />
         <button className="primary" onClick={onSave} disabled={saving}>
-          {saving ? "Kaydediliyor…" : "💾 Kaydet"}
+          {saving ? "Kaydediliyor…" : "Kaydet"}
         </button>
         <button className="ghost" onClick={() => { setToken(null); onLogout(); }}>Çıkış</button>
       </div>
@@ -46,7 +85,7 @@ export function AuthArea({ user, onLogin, onLogout, onSave, saving, onDailyMail 
   }
 
   return (
-    <div className="auth-wrap" ref={wrapRef}>
+    <div className="auth-wrap" ref={ref}>
       <button className="primary" onClick={() => setOpen(!open)}>Giriş / Kayıt</button>
       {open && <AuthPop onLogin={(u) => { setOpen(false); onLogin(u); }} />}
     </div>
@@ -73,7 +112,7 @@ function AuthPop({ onLogin }: { onLogin: (u: UserInfo) => void }) {
         const r = await api.login(email, pw);
         setToken(r.access_token);
         const me = await api.me();
-        onLogin({ email: me.email, nickname: me.nickname, dailyMail: me.daily_mail });
+        onLogin({ email: me.email, nickname: me.nickname, mail: me.mail });
       }
     } catch (err) {
       setMsg({ kind: "err", text: err instanceof ApiError ? err.message : "Beklenmeyen hata." });
@@ -113,7 +152,7 @@ function AuthPop({ onLogin }: { onLogin: (u: UserInfo) => void }) {
       {mode === "register" && (
         <div className="footer-note">
           Kayıt sonrası e-postanıza doğrulama bağlantısı gönderilir. Kayıt zorunlu değildir;
-          giriş yapmadan da analiz kullanılabilir — hesap, portföyünüzü kalıcı saklar ve günlük özet maili açar.
+          giriş yapmadan da analiz kullanılabilir — hesap, portföyünüzü kalıcı saklar ve rapor maillerini açar.
         </div>
       )}
     </form>

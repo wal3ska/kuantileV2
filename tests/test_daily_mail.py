@@ -64,7 +64,7 @@ def test_unsubscribe_disables_daily_mail():
     r = client.get(f"/auth/unsubscribe?token={auth.make_unsub_token(uid)}")
     assert r.status_code == 200
     db = SessionLocal()
-    assert db.get(User, uid).daily_mail_enabled is False
+    assert db.get(User, uid).mail_daily is False
     db.close()
 
 
@@ -74,14 +74,28 @@ def test_unsubscribe_rejects_login_token():
     assert r.status_code == 400
 
 
-def test_daily_mail_toggle_endpoint():
+def test_mail_prefs_endpoint():
     uid = make_user("dm-toggle@kuantile.com")
     hdr = {"Authorization": f"Bearer {auth.make_token(uid)}"}
-    r = client.post("/auth/daily-mail", json={"enabled": False}, headers=hdr)
-    assert r.status_code == 200 and r.json()["daily_mail"] is False
+    body = {"daily": False, "weekly": True, "monthly": False, "yearly": True}
+    r = client.post("/auth/mail-prefs", json=body, headers=hdr)
+    assert r.status_code == 200 and r.json()["mail"] == body
     r = client.get("/auth/me", headers=hdr)
-    assert r.json()["daily_mail"] is False
+    assert r.json()["mail"] == body
     assert r.json()["nickname"] == "testci"
+
+
+def test_weekly_respects_prefs(monkeypatch):
+    uid = make_user("dm-noweek@kuantile.com")
+    hdr = {"Authorization": f"Bearer {auth.make_token(uid)}"}
+    client.post("/auth/mail-prefs", headers=hdr,
+                json={"daily": True, "weekly": False, "monthly": True, "yearly": True})
+    sent = patch_prices(monkeypatch, long_prices())
+    daily_mail.run("weekly")
+    assert all(m[0] != "dm-noweek@kuantile.com" for m in sent)
+    sent2 = patch_prices(monkeypatch, short_prices())
+    daily_mail.run("daily")
+    assert any(m[0] == "dm-noweek@kuantile.com" for m in sent2)
 
 
 def test_daily_run_sends_report(monkeypatch):
@@ -110,7 +124,7 @@ def test_weekly_run_includes_percentile_and_var(monkeypatch):
     assert "Haftalık değişim:" in html
     assert "diliminde" in html          # yüzdelik dilim cümlesi
     assert "VaR (%99" in html
-    assert "risk" in html               # VaR değişim yönü cümlesi
+    assert "dönem başına göre" in html  # VaR değişim cümlesi (yön veya "sabit kaldı")
 
 
 def test_period_stats_math():

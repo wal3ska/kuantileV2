@@ -118,22 +118,33 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
             "email": user.email, "nickname": user.nickname}
 
 
+def _mail_prefs(user: User) -> dict:
+    return {"daily": user.mail_daily, "weekly": user.mail_weekly,
+            "monthly": user.mail_monthly, "yearly": user.mail_yearly}
+
+
 @router.get("/me")
 def me(user: User = Depends(get_current_user)):
     return {"email": user.email, "nickname": user.nickname, "verified": user.is_verified,
-            "daily_mail": user.daily_mail_enabled}
+            "mail": _mail_prefs(user)}
 
 
-class DailyMailRequest(BaseModel):
-    enabled: bool
+class MailPrefsRequest(BaseModel):
+    daily: bool
+    weekly: bool
+    monthly: bool
+    yearly: bool
 
 
-@router.post("/daily-mail")
-def set_daily_mail(req: DailyMailRequest, user: User = Depends(get_current_user),
+@router.post("/mail-prefs")
+def set_mail_prefs(req: MailPrefsRequest, user: User = Depends(get_current_user),
                    db: Session = Depends(get_db)):
-    user.daily_mail_enabled = req.enabled
+    user.mail_daily = req.daily
+    user.mail_weekly = req.weekly
+    user.mail_monthly = req.monthly
+    user.mail_yearly = req.yearly
     db.commit()
-    return {"daily_mail": user.daily_mail_enabled}
+    return {"mail": _mail_prefs(user)}
 
 
 @router.get("/unsubscribe", response_class=HTMLResponse)
@@ -146,7 +157,7 @@ def unsubscribe(token: str, db: Session = Depends(get_db)):
         return HTMLResponse("<h3>Geçersiz veya süresi dolmuş bağlantı.</h3>", 400)
     user = db.get(User, int(payload["sub"]))
     if user is not None:
-        user.daily_mail_enabled = False
+        user.mail_daily = user.mail_weekly = user.mail_monthly = user.mail_yearly = False
         db.commit()
     return HTMLResponse(
         "<div style='font-family:Arial;text-align:center;margin-top:80px'>"

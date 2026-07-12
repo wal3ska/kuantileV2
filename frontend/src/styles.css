@@ -1,10 +1,12 @@
-/* Kuantile — açık tema. Renkler dataviz referans paletinin light adımları. */
+/* Kuantile — açık/koyu tema. Renkler dataviz referans paletinin
+   light/dark adımları; tema kökteki data-theme ile seçilir. */
 
 :root {
   --page: #f5f5f2;
   --surface: #ffffff;
   --surface-2: #f9f9f7;
   --border: #e4e3dd;
+  --border-2: #d7d6cf;
   --ink: #0b0b0b;
   --ink-2: #52514e;
   --muted: #898781;
@@ -20,7 +22,31 @@
   --status-critical: #d03b3b;
   --radius: 12px;
   --shadow: 0 1px 2px rgba(25, 25, 15, 0.05), 0 1px 6px rgba(25, 25, 15, 0.04);
+  --pop-shadow: 0 12px 32px rgba(25, 25, 15, 0.16);
   --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+:root[data-theme="dark"] {
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --surface-2: #222221;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-2: #3d3d39;
+  --ink: #ffffff;
+  --ink-2: #c3c2b7;
+  --muted: #898781;
+  --grid: #2c2c2a;
+  --baseline: #383835;
+  --accent: #3987e5;      /* series-1 blue (dark) */
+  --accent-strong: #5598e7;
+  --accent-soft: rgba(57, 135, 229, 0.16);
+  --pos: #3987e5;
+  --neg: #e66767;
+  --delta-up: #0ca30c;
+  --delta-down: #e66767;
+  --status-critical: #e66767;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --pop-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
 }
 
 * { box-sizing: border-box; }
@@ -130,7 +156,7 @@ input[type="text"], input[type="email"], input[type="password"],
 input[type="number"], select {
   width: 100%;
   background: var(--surface);
-  border: 1px solid #d7d6cf;
+  border: 1px solid var(--border-2);
   border-radius: 8px;
   color: var(--ink);
   padding: 9px 11px;
@@ -162,7 +188,7 @@ label.f {
 
 button {
   font: inherit;
-  border: 1px solid #d7d6cf;
+  border: 1px solid var(--border-2);
   border-radius: 8px;
   background: var(--surface);
   color: var(--ink);
@@ -202,7 +228,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   padding: 5px 13px;
   font-size: 12.5px;
   background: var(--surface);
-  border: 1px solid #d7d6cf;
+  border: 1px solid var(--border-2);
   color: var(--ink-2);
   cursor: pointer;
 }
@@ -233,7 +259,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   border: 1px solid var(--border);
   border-radius: 10px;
   z-index: 30;
-  box-shadow: 0 12px 32px rgba(25, 25, 15, 0.14);
+  box-shadow: var(--pop-shadow);
 }
 
 .picker-item {
@@ -372,7 +398,7 @@ table.tbl {
   font-size: 12.5px;
   color: var(--ink);
   z-index: 100;
-  box-shadow: 0 8px 24px rgba(25, 25, 15, 0.16);
+  box-shadow: var(--pop-shadow);
   max-width: 280px;
 }
 
@@ -420,13 +446,39 @@ table.tbl {
   border-radius: var(--radius);
   padding: 18px;
   z-index: 60;
-  box-shadow: 0 16px 40px rgba(25, 25, 15, 0.18);
+  box-shadow: var(--pop-shadow);
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
 .auth-wrap { position: relative; }
+
+.dropmenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 240px;
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  z-index: 60;
+  box-shadow: var(--pop-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.dropmenu-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
 
 .userchip {
   display: flex;
@@ -437,11 +489,11 @@ table.tbl {
 }
 
 .msg { font-size: 12.5px; padding: 8px 11px; border-radius: 8px; }
-.msg.ok { background: #e8f4e8; color: var(--delta-up); }
-.msg.err { background: #fbebeb; color: var(--status-critical); }
+.msg.ok { background: rgba(12, 163, 12, 0.14); color: var(--delta-up); }
+.msg.err { background: rgba(208, 59, 59, 0.14); color: var(--status-critical); }
 .msg.info { background: var(--accent-soft); color: var(--accent-strong); }
 
-.seg { display: flex; border: 1px solid #d7d6cf; border-radius: 8px; overflow: hidden; }
+.seg { display: flex; border: 1px solid var(--border-2); border-radius: 8px; overflow: hidden; }
 .seg button { flex: 1; border: none; border-radius: 0; background: transparent; padding: 7px; }
 .seg button.on { background: var(--accent); color: #fff; font-weight: 600; }
 

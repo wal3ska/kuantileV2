@@ -51,6 +51,13 @@ async function req<T>(method: string, path: string, body?: unknown, auth = false
 export type Currency = "TRY" | "USD";
 export type Source = "yahoo" | "tefas";
 
+export interface MailPrefs {
+  daily: boolean;
+  weekly: boolean;
+  monthly: boolean;
+  yearly: boolean;
+}
+
 export interface PositionIn {
   name: string;
   ticker: string;
@@ -144,10 +151,10 @@ export const api = {
   login: (email: string, password: string) =>
     req<{ access_token: string; email: string; nickname: string | null }>("POST", "/auth/login", { email, password }),
 
-  me: () => req<{ email: string; nickname: string | null; verified: boolean; daily_mail: boolean }>("GET", "/auth/me", undefined, true),
+  me: () => req<{ email: string; nickname: string | null; verified: boolean; mail: MailPrefs }>("GET", "/auth/me", undefined, true),
 
-  setDailyMail: (enabled: boolean) =>
-    req<{ daily_mail: boolean }>("POST", "/auth/daily-mail", { enabled }, true),
+  setMailPrefs: (prefs: MailPrefs) =>
+    req<{ mail: MailPrefs }>("POST", "/auth/mail-prefs", prefs, true),
 
   getPortfolio: () => req<PortfolioData>("GET", "/portfolio", undefined, true),
 

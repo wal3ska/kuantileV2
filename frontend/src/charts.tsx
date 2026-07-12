@@ -4,11 +4,19 @@
 
 import { useCallback, useRef, useState, type ReactNode } from "react";
 
-const POS = "#2a78d6";
-const NEG = "#e34948";
-const NEUTRAL = [0xf0, 0xef, 0xec] as const;
-const POS_RGB = [0x2a, 0x78, 0xd6] as const;
-const NEG_RGB = [0xe3, 0x49, 0x48] as const;
+/* Tema paleti — kökteki data-theme'e göre light/dark adımlar. */
+function themeColors() {
+  const dark = document.documentElement.dataset.theme === "dark";
+  return dark
+    ? {
+        pos: "#3987e5", neg: "#e66767", neutralHex: "#383835",
+        posRgb: [0x39, 0x87, 0xe5], negRgb: [0xe6, 0x67, 0x67], neutral: [0x38, 0x38, 0x35],
+      }
+    : {
+        pos: "#2a78d6", neg: "#e34948", neutralHex: "#f0efec",
+        posRgb: [0x2a, 0x78, 0xd6], negRgb: [0xe3, 0x49, 0x48], neutral: [0xf0, 0xef, 0xec],
+      };
+}
 
 /* ---------- ortak tooltip ---------- */
 
@@ -60,13 +68,14 @@ export function HBars({ items, format, diverging = false }: {
 }) {
   const { show, hide, node } = useTooltip();
   if (items.length === 0) return null;
+  const { pos, neg } = themeColors();
   const maxAbs = Math.max(...items.map((i) => Math.abs(i.value)), 1e-9);
 
   return (
     <div>
       {items.map((it) => {
         const frac = Math.abs(it.value) / maxAbs;
-        const color = !diverging ? POS : it.value >= 0 ? POS : NEG;
+        const color = !diverging ? pos : it.value >= 0 ? pos : neg;
         return (
           <div
             key={it.label}
@@ -109,16 +118,16 @@ function lerp(a: readonly number[], b: readonly number[], t: number): string {
   return `rgb(${c[0]},${c[1]},${c[2]})`;
 }
 
-/* v in [-1,1] -> nötr griden kutup rengine */
-function divergingColor(v: number): string {
-  const t = Math.min(Math.abs(v), 1);
-  return v >= 0 ? lerp(NEUTRAL, POS_RGB, t) : lerp(NEUTRAL, NEG_RGB, t);
-}
-
 export function CorrHeatmap({ matrix }: { matrix: Record<string, Record<string, number>> }) {
   const names = Object.keys(matrix);
   const { show, hide, node } = useTooltip();
   if (names.length < 2) return null;
+  const { pos, neg, neutral, posRgb, negRgb, neutralHex } = themeColors();
+  /* v in [-1,1] -> nötr zeminden kutup rengine */
+  const divergingColor = (v: number) => {
+    const t = Math.min(Math.abs(v), 1);
+    return v >= 0 ? lerp(neutral, posRgb, t) : lerp(neutral, negRgb, t);
+  };
   const showValues = names.length <= 8;
   const short = (s: string) => (s.length > 9 ? s.slice(0, 8) + "…" : s);
 
@@ -141,6 +150,7 @@ export function CorrHeatmap({ matrix }: { matrix: Record<string, Record<string, 
                   style={{
                     background: divergingColor(v),
                     color: Math.abs(v) > 0.55 ? "#ffffff" : "var(--ink)",
+                    border: Math.abs(v) < 0.05 ? "1px solid var(--grid)" : "none",
                   }}
                   onMouseMove={(e) => show(e, (
                     <><div className="t">{row} × {col}</div>korelasyon: {v.toFixed(2)}</>
@@ -155,9 +165,9 @@ export function CorrHeatmap({ matrix }: { matrix: Record<string, Record<string, 
         ))}
       </div>
       <div className="legend">
-        <span className="it"><span className="sw" style={{ background: NEG }} /> −1 ters yönlü</span>
-        <span className="it"><span className="sw" style={{ background: "#f0efec" }} /> 0 ilişkisiz</span>
-        <span className="it"><span className="sw" style={{ background: POS }} /> +1 aynı yönlü</span>
+        <span className="it"><span className="sw" style={{ background: neg }} /> −1 ters yönlü</span>
+        <span className="it"><span className="sw" style={{ background: neutralHex }} /> 0 ilişkisiz</span>
+        <span className="it"><span className="sw" style={{ background: pos }} /> +1 aynı yönlü</span>
       </div>
       {node}
     </div>

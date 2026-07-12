@@ -1,10 +1,33 @@
 import { useCallback, useEffect, useState } from "react";
-import type { AnalyzeResponse, BondIn, PositionIn } from "./api";
+import type { AnalyzeResponse, BondIn, MailPrefs, PositionIn } from "./api";
 import { api, ApiError, getToken, setToken } from "./api";
 import { AuthArea, type UserInfo } from "./Auth";
 import { Builder, newBond, nextId, num, type BondRow, type PosRow } from "./Builder";
 import { Dashboard } from "./Dashboard";
 import { UNIVERSE } from "./universe";
+
+function ThemeToggle({ theme, onToggle }: { theme: string; onToggle: () => void }) {
+  return (
+    <button
+      className="ghost"
+      onClick={onToggle}
+      title={theme === "dark" ? "Açık temaya geç" : "Koyu temaya geç"}
+      aria-label="Tema değiştir"
+      style={{ display: "inline-flex", alignItems: "center", padding: "8px 10px" }}
+    >
+      {theme === "dark" ? (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+        </svg>
+      ) : (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+        </svg>
+      )}
+    </button>
+  );
+}
 
 function Logo() {
   return (
@@ -84,6 +107,12 @@ export default function App() {
   const [saving, setSaving] = useState(false);
   const [confidence, setConfidence] = useState(0.99);
   const [notice, setNotice] = useState<{ kind: "ok" | "err" | "info"; text: string } | null>(null);
+  const [theme, setTheme] = useState(() => localStorage.getItem("kt_theme") ?? "light");
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("kt_theme", theme);
+  }, [theme]);
 
   const flash = (kind: "ok" | "err" | "info", text: string) => {
     setNotice({ kind, text });
@@ -105,7 +134,7 @@ export default function App() {
     if (!getToken()) return;
     api.me()
       .then((me) => {
-        setUser({ email: me.email, nickname: me.nickname, dailyMail: me.daily_mail });
+        setUser({ email: me.email, nickname: me.nickname, mail: me.mail });
         return loadPortfolio();
       })
       .catch(() => setToken(null));
@@ -153,14 +182,14 @@ export default function App() {
     }
   }
 
-  async function setDailyMail(enabled: boolean) {
+  async function setMailPrefs(prefs: MailPrefs) {
     if (!user) return;
-    const prev = user.dailyMail;
-    setUser({ ...user, dailyMail: enabled });
+    const prev = user.mail;
+    setUser({ ...user, mail: prefs });
     try {
-      await api.setDailyMail(enabled);
+      await api.setMailPrefs(prefs);
     } catch {
-      setUser((u) => (u ? { ...u, dailyMail: prev } : u));
+      setUser((u) => (u ? { ...u, mail: prev } : u));
       flash("err", "Tercih kaydedilemedi.");
     }
   }
@@ -190,13 +219,14 @@ export default function App() {
         <Logo />
         <div className="spacer" />
         {notice && <div className={`msg ${notice.kind}`}>{notice.text}</div>}
+        <ThemeToggle theme={theme} onToggle={() => setTheme(theme === "dark" ? "light" : "dark")} />
         <AuthArea
           user={user}
           onLogin={(u) => { setUser(u); loadPortfolio(); }}
           onLogout={() => setUser(null)}
           onSave={save}
           saving={saving}
-          onDailyMail={setDailyMail}
+          onMailPrefs={setMailPrefs}
         />
       </header>
 
@@ -210,7 +240,7 @@ export default function App() {
             <h3><span className="stepn">3</span>Analiz</h3>
             <div style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
               <button className="primary big" style={{ flex: "1 1 220px" }} onClick={() => analyze()} disabled={analyzing || !hasInput}>
-                {analyzing ? (<><span className="spin" />Analiz ediliyor — fiyat geçmişi çekiliyor…</>) : "⚡ Analiz Et"}
+                {analyzing ? (<><span className="spin" />Analiz ediliyor — fiyat geçmişi çekiliyor…</>) : "Analiz Et"}
               </button>
               <label className="f" style={{ flex: "0 0 150px" }}>VaR güven düzeyi
                 <select value={confidence} onChange={(e) => setConfidence(+e.target.value)}>
@@ -249,7 +279,7 @@ export default function App() {
                 </div>
               </div>
               <button className="primary" onClick={runDemo} disabled={analyzing}>
-                {analyzing ? (<><span className="spin" />Hazırlanıyor…</>) : "🎯 Örnek portföyle deneyin"}
+                {analyzing ? (<><span className="spin" />Hazırlanıyor…</>) : "Örnek portföyle deneyin"}
               </button>
               <p className="footer-note">
                 Hesap açarsanız portföyünüz saklanır; günlük, haftalık, aylık ve yıllık rapor e-postaları alırsınız. Hesapsız kullanım da serbesttir.
