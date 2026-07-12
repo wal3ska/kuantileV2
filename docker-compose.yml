@@ -27,16 +27,13 @@ services:
     mem_limit: 350m
 
   web:
-    build: .
-    command: streamlit run app.py --server.port 8501 --server.address 0.0.0.0 --server.headless true
+    build:
+      context: .
+      dockerfile: Dockerfile.web
     restart: unless-stopped
     expose:
-      - "8501"
-    environment:
-      API_URL: http://api:8000
-    depends_on:
-      - api
-    mem_limit: 600m
+      - "80"
+    mem_limit: 100m
 
   nginx:
     image: nginx:alpine

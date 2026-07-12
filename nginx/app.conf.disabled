@@ -12,7 +12,7 @@ server {
     }
 }
 
-# WEB: Streamlit
+# WEB: React SPA + /api vekaleti (ayni origin -> CORS yok)
 server {
     listen 443 ssl;
     http2 on;
@@ -21,20 +21,24 @@ server {
     ssl_certificate     /etc/letsencrypt/live/kuantile.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/kuantile.com/privkey.pem;
 
+    location /api/ {
+        limit_req zone=apilimit burst=10 nodelay;
+        proxy_pass http://api:8000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120;
+    }
+
     location / {
-        proxy_pass http://web:8501;
-        proxy_http_version 1.1;
-        # Streamlit websocket kullanir; bu 3 satir sart
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_read_timeout 86400;
+        proxy_pass http://web:80;
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
 
-# API: FastAPI
+# API: dogrudan erisim (dokumantasyon, mail dogrulama linkleri)
 server {
     listen 443 ssl;
     http2 on;

@@ -1,10 +1,7 @@
-streamlit
 yfinance>=1.5
 tefas-crawler
 pandas
 numpy
-matplotlib
-plotly
 fastapi
 uvicorn[standard]
 sqlalchemy
@@ -13,4 +10,3 @@ bcrypt
 pyjwt
 email-validator
 httpx
-requests
