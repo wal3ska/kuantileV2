@@ -1,0 +1,16 @@
+streamlit
+yfinance>=1.5
+tefas-crawler
+pandas
+numpy
+matplotlib
+plotly
+fastapi
+uvicorn[standard]
+sqlalchemy
+psycopg2-binary
+bcrypt
+pyjwt
+email-validator
+httpx
+requests
