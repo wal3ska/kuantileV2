@@ -5,14 +5,16 @@ import { AuthArea, type UserInfo } from "./Auth";
 import { Builder, newBond, nextId, num, type BondRow, type PosRow } from "./Builder";
 import { Dashboard } from "./Dashboard";
 import { UNIVERSE } from "./universe";
+import { useT, type Lang } from "./i18n";
 
 function ThemeToggle({ theme, onToggle }: { theme: string; onToggle: () => void }) {
+  const { t } = useT();
   return (
     <button
       className="ghost"
       onClick={onToggle}
-      title={theme === "dark" ? "Açık temaya geç" : "Koyu temaya geç"}
-      aria-label="Tema değiştir"
+      title={theme === "dark" ? t("themeToLight") : t("themeToDark")}
+      aria-label={t("themeToggle")}
       style={{ display: "inline-flex", alignItems: "center", padding: "8px 10px" }}
     >
       {theme === "dark" ? (
@@ -29,12 +31,25 @@ function ThemeToggle({ theme, onToggle }: { theme: string; onToggle: () => void 
   );
 }
 
+function LangSwitch({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void }) {
+  return (
+    <div className="seg" style={{ width: 96 }}>
+      {(["tr", "en"] as Lang[]).map((l) => (
+        <button key={l} type="button" className={lang === l ? "on" : ""} onClick={() => setLang(l)}>
+          {l.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function Logo() {
+  const { t } = useT();
   return (
     <div className="logo">
       <img src="/logo.png" width="28" height="28" alt="Kuantile logosu" />
       Kuantile
-      <span className="tag">Portföy & Risk Terminali</span>
+      <span className="tag">{t("tagline")}</span>
     </div>
   );
 }
@@ -96,6 +111,7 @@ function fromBonds(bs: BondIn[]): BondRow[] {
 }
 
 export default function App() {
+  const { t, lang, setLang } = useT();
   const [rows, setRows] = useState<PosRow[]>([]);
   const [bonds, setBonds] = useState<BondRow[]>([]);
   const [user, setUser] = useState<UserInfo | null>(null);
@@ -122,9 +138,10 @@ export default function App() {
       if (pf.positions.length > 0 || pf.bonds.length > 0) {
         setRows(fromPositions(pf.positions));
         setBonds(fromBonds(pf.bonds));
-        flash("info", "Kayıtlı portföyünüz yüklendi.");
+        flash("info", t("portfolioLoaded"));
       }
     } catch { /* portföy yüklenemedi — anonim akış devam eder */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -141,12 +158,12 @@ export default function App() {
     const positions = positionsArg ?? toPositions(rows);
     const bs = bondsArg ?? toBonds(bonds);
     if (positions.length === 0 && bs.length === 0) {
-      flash("err", "Önce en az bir varlığa adet girin veya tahvil ekleyin.");
+      flash("err", t("errNoInput"));
       return;
     }
     for (const b of bs) {
       if (b.price <= 0 || b.years <= 0 || b.ytm <= 0) {
-        flash("err", `"${b.name}" için fiyat, vade ve YTM sıfırdan büyük olmalı.`);
+        flash("err", t("errBond", { name: b.name }));
         return;
       }
     }
@@ -155,7 +172,7 @@ export default function App() {
     try {
       setResult(await api.analyze(positions, bs, confidence));
     } catch (err) {
-      flash("err", err instanceof ApiError ? err.message : "Analiz başarısız oldu.");
+      flash("err", err instanceof ApiError ? err.message : t("analyzeFailed"));
     } finally {
       setAnalyzing(false);
     }
@@ -165,14 +182,14 @@ export default function App() {
     setSaving(true);
     try {
       await api.savePortfolio(toPositions(rows), toBonds(bonds));
-      flash("ok", "Portföy kaydedildi ✓");
+      flash("ok", t("saved"));
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         setToken(null);
         setUser(null);
-        flash("err", "Oturum süresi doldu, tekrar giriş yapın.");
+        flash("err", t("sessionExpired"));
       } else {
-        flash("err", err instanceof ApiError ? err.message : "Kaydedilemedi.");
+        flash("err", err instanceof ApiError ? err.message : t("saveFailed"));
       }
     } finally {
       setSaving(false);
@@ -187,14 +204,14 @@ export default function App() {
       await api.setMailPrefs(prefs);
     } catch {
       setUser((u) => (u ? { ...u, mail: prev } : u));
-      flash("err", "Tercih kaydedilemedi.");
+      flash("err", t("prefFailed"));
     }
   }
 
   function runDemo() {
     const demo: PosRow[] = [
       { name: "THYAO", qty: "100", cost: "250,5" },
-      { name: "Altın (ONS)", qty: "1", cost: "" },
+      { name: "Altın (Gram TL)", qty: "20", cost: "" },
       { name: "Bitcoin (BTC)", qty: "0.02", cost: "" },
       { name: "Apple (AAPL)", qty: "5", cost: "185" },
     ].flatMap(({ name, qty, cost }) => {
@@ -216,6 +233,7 @@ export default function App() {
         <Logo />
         <div className="spacer" />
         {notice && <div className={`msg ${notice.kind}`}>{notice.text}</div>}
+        <LangSwitch lang={lang} setLang={setLang} />
         <ThemeToggle theme={theme} onToggle={() => setTheme(theme === "dark" ? "light" : "dark")} />
         <AuthArea
           user={user}
@@ -234,53 +252,48 @@ export default function App() {
 
         <div className="stack">
           <div className="card">
-            <h3><span className="stepn">3</span>Analiz</h3>
+            <h3><span className="stepn">3</span>{t("step3")}</h3>
             <div style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
               <button className="primary big" style={{ flex: "1 1 220px" }} onClick={() => analyze()} disabled={analyzing || !hasInput}>
-                {analyzing ? (<><span className="spin" />Analiz ediliyor — fiyat geçmişi çekiliyor…</>) : "Analiz Et"}
+                {analyzing ? (<><span className="spin" />{t("analyzing")}</>) : t("analyzeBtn")}
               </button>
-              <label className="f" style={{ flex: "0 0 150px" }}>VaR güven düzeyi
+              <label className="f" style={{ flex: "0 0 150px" }}>{t("varConf")}
                 <select value={confidence} onChange={(e) => setConfidence(+e.target.value)}>
-                  <option value={0.95}>%95</option>
-                  <option value={0.99}>%99</option>
+                  <option value={0.95}>{lang === "en" ? "95%" : "%95"}</option>
+                  <option value={0.99}>{lang === "en" ? "99%" : "%99"}</option>
                 </select>
               </label>
             </div>
-            {!hasInput && <p className="section-note">Soldan varlık ekleyip adet girdiğinizde buton aktifleşir.</p>}
+            {!hasInput && <p className="section-note">{t("analyzeHint")}</p>}
           </div>
 
           {result ? (
             <Dashboard data={result} />
           ) : (
             <div className="empty">
-              <h2>Portföyünüz ne kadar risk taşıyor?</h2>
-              <p>
-                Hisse, kripto, fon ve tahvillerinizi girin; TL bazlı değerleme, riske maruz değer (VaR),
-                korelasyon ve tarihsel kriz senaryolarını tek ekranda görün.
-              </p>
+              <h2>{t("emptyTitle")}</h2>
+              <p>{t("emptyText")}</p>
               <div className="steps">
                 <div className="step">
                   <span className="stepn">1</span>
-                  <b>Varlıklarınızı ekleyin</b>
-                  <p>Soldaki arama kutusundan hisse, kripto, emtia veya TEFAS fonu seçin.</p>
+                  <b>{t("s1t")}</b>
+                  <p>{t("s1d")}</p>
                 </div>
                 <div className="step">
                   <span className="stepn">2</span>
-                  <b>Adet ve maliyet girin</b>
-                  <p>Kaç adet tuttuğunuzu yazın; alış maliyetini bilmiyorsanız boş bırakın.</p>
+                  <b>{t("s2t")}</b>
+                  <p>{t("s2d")}</p>
                 </div>
                 <div className="step">
                   <span className="stepn">3</span>
-                  <b>Analiz Et'e basın</b>
-                  <p>Değerleme, risk ve kriz senaryoları saniyeler içinde hazırlanır.</p>
+                  <b>{t("s3t")}</b>
+                  <p>{t("s3d")}</p>
                 </div>
               </div>
               <button className="primary" onClick={runDemo} disabled={analyzing}>
-                {analyzing ? (<><span className="spin" />Hazırlanıyor…</>) : "Örnek portföyle deneyin"}
+                {analyzing ? (<><span className="spin" />{t("demoLoading")}</>) : t("demoBtn")}
               </button>
-              <p className="footer-note">
-                Hesap açarsanız portföyünüz saklanır; günlük, haftalık, aylık ve yıllık rapor e-postaları alırsınız. Hesapsız kullanım da serbesttir.
-              </p>
+              <p className="footer-note">{t("emptyFooter")}</p>
             </div>
           )}
         </div>

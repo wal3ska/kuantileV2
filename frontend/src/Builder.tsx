@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import type { AssetInfo } from "./universe";
 import { CATEGORIES, UNIVERSE, customBist, customGlobal, customTefas } from "./universe";
+import { catLabel, useT } from "./i18n";
 
 /* Sayısal inputlar string tutulur (virgül/nokta serbest), gönderimde parse edilir. */
 export function num(s: string): number {
@@ -43,6 +44,7 @@ export function newBond(): BondRow {
 /* ---------- varlık seçici ---------- */
 
 function AssetPicker({ taken, onAdd }: { taken: Set<string>; onAdd: (a: AssetInfo) => void }) {
+  const { t } = useT();
   const [q, setQ] = useState("");
   const [cats, setCats] = useState<string[]>([...CATEGORIES]);
   const [focus, setFocus] = useState(false);
@@ -66,14 +68,14 @@ function AssetPicker({ taken, onAdd }: { taken: Set<string>; onAdd: (a: AssetInf
             className={`chip ${cats.includes(c) ? "on" : ""}`}
             onClick={() => setCats(cats.includes(c) ? cats.filter((x) => x !== c) : [...cats, c])}
           >
-            {c}
+            {catLabel(t, c)}
           </button>
         ))}
       </div>
       <div className="picker">
         <input
           type="text"
-          placeholder="Varlık ara ve ekle… (ör: THYAO, Bitcoin, Nvidia)"
+          placeholder={t("searchPh")}
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onFocus={() => { clearTimeout(blurT.current); setFocus(true); }}
@@ -88,7 +90,7 @@ function AssetPicker({ taken, onAdd }: { taken: Set<string>; onAdd: (a: AssetInf
                 onMouseDown={(e) => { e.preventDefault(); onAdd(a); setQ(""); }}
               >
                 <span>{a.name}</span>
-                <span className="cat">{a.category} · {a.currency}</span>
+                <span className="cat">{catLabel(t, a.category)} · {a.currency}</span>
               </div>
             ))}
           </div>
@@ -129,6 +131,7 @@ export function Builder({ rows, setRows, bonds, setBonds }: {
   bonds: BondRow[];
   setBonds: (b: BondRow[]) => void;
 }) {
+  const { t } = useT();
   const taken = useMemo(() => new Set(rows.map((r) => r.info.ticker + r.info.source)), [rows]);
 
   const addAsset = (a: AssetInfo) => {
@@ -145,14 +148,14 @@ export function Builder({ rows, setRows, bonds, setBonds }: {
   return (
     <div className="stack">
       <div className="card">
-        <h3><span className="stepn">1</span>Varlıklarınızı ekleyin</h3>
+        <h3><span className="stepn">1</span>{t("step1")}</h3>
         <AssetPicker taken={taken} onAdd={addAsset} />
         <details className="acc" style={{ marginTop: 10 }}>
-          <summary>Listede olmayan varlık / TEFAS fonu ekle</summary>
+          <summary>{t("customSummary")}</summary>
           <div className="inner">
-            <CustomAdder label="BIST" placeholder="BIST kodu — ör: MPARK, EBEBK" make={customBist} onAdd={addAsset} />
-            <CustomAdder label="Global" placeholder="Yahoo sembolü — ör: LLY, SHIB-USD" make={customGlobal} onAdd={addAsset} />
-            <CustomAdder label="Fon" placeholder="TEFAS fon kodu — ör: AFT, TCD" make={customTefas} onAdd={addAsset} />
+            <CustomAdder label={t("addBist")} placeholder={t("bistPh")} make={customBist} onAdd={addAsset} />
+            <CustomAdder label={t("addGlobal")} placeholder={t("globalPh")} make={customGlobal} onAdd={addAsset} />
+            <CustomAdder label={t("addFund")} placeholder={t("fundPh")} make={customTefas} onAdd={addAsset} />
           </div>
         </details>
 
@@ -162,16 +165,16 @@ export function Builder({ rows, setRows, bonds, setBonds }: {
             <div className="pos-row" key={r.id}>
               <div className="head">
                 <span className="name">{r.info.name}</span>
-                <span className="cur">{r.info.category} · {r.info.currency}</span>
-                <button type="button" className="x" title="Kaldır"
+                <span className="cur">{catLabel(t, r.info.category)} · {r.info.currency}</span>
+                <button type="button" className="x" title={t("remove")}
                   onClick={() => setRows(rows.filter((x) => x.id !== r.id))}>✕</button>
               </div>
               <div className="row">
-                <label className="f">Adet
+                <label className="f">{t("qty")}
                   <input type="text" inputMode="decimal" placeholder="0"
                     value={r.quantity} onChange={(e) => patch(r.id, { quantity: e.target.value })} />
                 </label>
-                <label className="f">Birim maliyet ({r.info.currency})
+                <label className="f">{t("unitCost")} ({r.info.currency})
                   <input type="text" inputMode="decimal" placeholder="—"
                     value={r.cost} disabled={r.costUnknown}
                     onChange={(e) => patch(r.id, { cost: e.target.value })} />
@@ -180,69 +183,69 @@ export function Builder({ rows, setRows, bonds, setBonds }: {
               <label className="checkline">
                 <input type="checkbox" checked={r.costUnknown}
                   onChange={(e) => patch(r.id, { costUnknown: e.target.checked })} />
-                Maliyeti bilmiyorum
+                {t("costUnknown")}
               </label>
             </div>
           ))}
         </div>
         {rows.length === 0 && (
-          <p className="section-note">Aramadan varlık seçin; adet ve maliyet girin. Maliyet, kâr/zarar hesabı içindir — bilinmiyorsa boş kalabilir.</p>
+          <p className="section-note">{t("posNote")}</p>
         )}
       </div>
 
       <div className="card">
-        <h3><span className="stepn">2</span>Tahvil / Bono <span className="opt">— opsiyonel</span></h3>
+        <h3><span className="stepn">2</span>{t("step2")} <span className="opt">{t("optional")}</span></h3>
         <div className="stack" style={{ gap: 8 }}>
           {bonds.map((b, i) => (
             <details className="acc" key={b.id} open>
-              <summary>{b.name || `Tahvil ${i + 1}`} — {b.currency}</summary>
+              <summary>{b.name || `${t("bondDefault")} ${i + 1}`} — {b.currency}</summary>
               <div className="inner">
                 <div className="row">
-                  <label className="f">İsim
+                  <label className="f">{t("bondName")}
                     <input type="text" value={b.name} onChange={(e) => patchBond(b.id, { name: e.target.value })} />
                   </label>
-                  <label className="f">Para birimi
+                  <label className="f">{t("currency")}
                     <select value={b.currency} onChange={(e) => patchBond(b.id, { currency: e.target.value as "TRY" | "USD" })}>
                       <option>TRY</option><option>USD</option>
                     </select>
                   </label>
                 </div>
                 <div className="row">
-                  <label className="f" title="Tahvilin üzerinde yazan anapara — vade sonunda geri alacağınız tutar">
-                    Nominal ({b.currency})
-                    <input type="text" inputMode="decimal" placeholder="ör: 100000"
+                  <label className="f" title={t("nominalTip")}>
+                    {t("nominal")} ({b.currency})
+                    <input type="text" inputMode="decimal" placeholder={t("nominalPh")}
                       value={b.nominal} onChange={(e) => patchBond(b.id, { nominal: e.target.value })} />
                   </label>
-                  <label className="f" title="Kote fiyat, 100 nominal başına">Piyasa fiyatı
+                  <label className="f" title={t("marketPriceTip")}>{t("marketPrice")}
                     <input type="text" inputMode="decimal"
                       value={b.price} onChange={(e) => patchBond(b.id, { price: e.target.value })} />
                   </label>
                 </div>
                 <div className="row">
-                  <label className="f">Yıllık kupon %
+                  <label className="f">{t("couponPct")}
                     <input type="text" inputMode="decimal"
                       value={b.couponPct} onChange={(e) => patchBond(b.id, { couponPct: e.target.value })} />
                   </label>
-                  <label className="f">Kupon sıklığı
+                  <label className="f">{t("freq")}
                     <select value={b.frequency} onChange={(e) => patchBond(b.id, { frequency: +e.target.value })}>
-                      <option value={2}>6 ayda bir</option>
-                      <option value={1}>yılda bir</option>
-                      <option value={4}>3 ayda bir</option>
+                      <option value={2}>{t("freq2")}</option>
+                      <option value={1}>{t("freq1")}</option>
+                      <option value={4}>{t("freq4")}</option>
                     </select>
                   </label>
                 </div>
                 <div className="row">
-                  <label className="f">Vadeye kalan (yıl)
+                  <label className="f">{t("years")}
                     <input type="text" inputMode="decimal"
                       value={b.years} onChange={(e) => patchBond(b.id, { years: e.target.value })} />
                   </label>
-                  <label className="f" title="Bileşik faiz — aracı kurum ekranında görünür">YTM %
+                  <label className="f" title={t("ytmTip")}>YTM %
                     <input type="text" inputMode="decimal"
                       value={b.ytmPct} onChange={(e) => patchBond(b.id, { ytmPct: e.target.value })} />
                   </label>
                 </div>
                 <div className="row">
-                  <label className="f">Alış fiyatınız (100 nominal başına)
+                  <label className="f">{t("purchasePrice")}
                     <input type="text" inputMode="decimal" placeholder="—"
                       value={b.cost} disabled={b.costUnknown}
                       onChange={(e) => patchBond(b.id, { cost: e.target.value })} />
@@ -250,11 +253,11 @@ export function Builder({ rows, setRows, bonds, setBonds }: {
                   <label className="checkline" style={{ alignSelf: "end", paddingBottom: 8 }}>
                     <input type="checkbox" checked={b.costUnknown}
                       onChange={(e) => patchBond(b.id, { costUnknown: e.target.checked })} />
-                    Bilmiyorum
+                    {t("dontKnow")}
                   </label>
                 </div>
                 <button type="button" className="danger" onClick={() => setBonds(bonds.filter((x) => x.id !== b.id))}>
-                  Tahvili kaldır
+                  {t("removeBond")}
                 </button>
               </div>
             </details>
@@ -263,12 +266,12 @@ export function Builder({ rows, setRows, bonds, setBonds }: {
         <button
           type="button"
           style={{ marginTop: bonds.length ? 10 : 0 }}
-          onClick={() => setBonds([...bonds, { ...newBond(), name: `Tahvil ${bonds.length + 1}` }])}
+          onClick={() => setBonds([...bonds, { ...newBond(), name: `${t("bondDefault")} ${bonds.length + 1}` }])}
           disabled={bonds.length >= 5}
         >
-          + Tahvil Ekle
+          {t("addBond")}
         </button>
-        <p className="section-note">Fiyatlar 100 birim nominal başına girilir. Kuponsuz bono için kupon %0.</p>
+        <p className="section-note">{t("bondNote")}</p>
       </div>
     </div>
   );

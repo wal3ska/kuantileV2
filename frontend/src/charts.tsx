@@ -3,6 +3,7 @@
    nötr orta #383835. Metin her zaman metin renginde, seri renginde değil. */
 
 import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useT } from "./i18n";
 
 /* Tema paleti — kökteki data-theme'e göre light/dark adımlar. */
 function themeColors() {
@@ -119,6 +120,7 @@ function lerp(a: readonly number[], b: readonly number[], t: number): string {
 }
 
 export function CorrHeatmap({ matrix }: { matrix: Record<string, Record<string, number>> }) {
+  const { t } = useT();
   const names = Object.keys(matrix);
   const { show, hide, node } = useTooltip();
   if (names.length < 2) return null;
@@ -153,7 +155,7 @@ export function CorrHeatmap({ matrix }: { matrix: Record<string, Record<string, 
                     border: Math.abs(v) < 0.05 ? "1px solid var(--grid)" : "none",
                   }}
                   onMouseMove={(e) => show(e, (
-                    <><div className="t">{row} × {col}</div>korelasyon: {v.toFixed(2)}</>
+                    <><div className="t">{row} × {col}</div>{t("corrWord")}: {v.toFixed(2)}</>
                   ))}
                   onMouseLeave={hide}
                 >
@@ -165,9 +167,9 @@ export function CorrHeatmap({ matrix }: { matrix: Record<string, Record<string, 
         ))}
       </div>
       <div className="legend">
-        <span className="it"><span className="sw" style={{ background: neg }} /> −1 ters yönlü</span>
-        <span className="it"><span className="sw" style={{ background: neutralHex }} /> 0 ilişkisiz</span>
-        <span className="it"><span className="sw" style={{ background: pos }} /> +1 aynı yönlü</span>
+        <span className="it"><span className="sw" style={{ background: neg }} /> {t("legNeg")}</span>
+        <span className="it"><span className="sw" style={{ background: neutralHex }} /> {t("legZero")}</span>
+        <span className="it"><span className="sw" style={{ background: pos }} /> {t("legPos")}</span>
       </div>
       {node}
     </div>

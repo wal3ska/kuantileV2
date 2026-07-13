@@ -1,6 +1,8 @@
 /* API istemcisi. Prod'da nginx kuantile.com/api/* -> api:8000/* olarak vekalet eder;
    dev'de vite proxy ayni isi yapar. */
 
+import { getLang } from "./i18n";
+
 const BASE = "/api";
 const TOKEN_KEY = "kt_token";
 
@@ -32,7 +34,7 @@ async function req<T>(method: string, path: string, body?: unknown, auth = false
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   } catch {
-    throw new ApiError(0, "Sunucuya ulaşılamadı.");
+    throw new ApiError(0, getLang() === "en" ? "Could not reach the server." : "Sunucuya ulaşılamadı.");
   }
   if (!res.ok) {
     let detail = `Hata (${res.status})`;
@@ -167,10 +169,11 @@ export const api = {
 
 /* ---------- biçimleme yardımcıları ---------- */
 
-const nfTL = new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 });
-const nf2 = new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 2 });
+const locale = () => (getLang() === "en" ? "en-US" : "tr-TR");
 
-export const fmtTL = (v: number) => `${nfTL.format(v)} ₺`;
-export const fmtNum = (v: number) => nf2.format(v);
+export const fmtTL = (v: number) =>
+  `${v.toLocaleString(locale(), { maximumFractionDigits: 0 })} ₺`;
+export const fmtNum = (v: number) =>
+  v.toLocaleString(locale(), { maximumFractionDigits: 2 });
 export const fmtPct = (v: number, digits = 2) =>
-  `${v > 0 ? "+" : ""}${(v * 100).toLocaleString("tr-TR", { maximumFractionDigits: digits, minimumFractionDigits: digits })}%`;
+  `${v > 0 ? "+" : ""}${(v * 100).toLocaleString(locale(), { maximumFractionDigits: digits, minimumFractionDigits: digits })}%`;

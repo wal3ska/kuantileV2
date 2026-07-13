@@ -8,6 +8,12 @@ import yfinance as yf
 YAHOO_START = "2000-01-01"
 TEFAS_MAX_YEARS = 5
 
+# Sentetik gram altin (TL): Yahoo'da dogrudan senedi yok.
+# GC=F (ons/USD) * USDTRY / 31.1035 olarak turetilir.
+GRAM_GOLD_TICKER = "GRAMALTIN"
+GOLD_OUNCE_TICKER = "GC=F"
+OUNCE_TO_GRAM = 31.1034768
+
 
 def fetch_yahoo_prices(tickers: tuple, start: str = YAHOO_START, retries: int = 3) -> pd.DataFrame:
     """Kapanis fiyatlari (auto-adjusted). Bos sonucta RuntimeError firlatir ki
@@ -58,10 +64,15 @@ def fetch_tefas_funds(fund_codes: tuple, years: int = TEFAS_MAX_YEARS) -> dict:
 def build_try_prices(positions: list, fx_ticker: str = "TRY=X") -> tuple:
     """positions: [{'name','ticker','currency','source'}] ->
     (TL bazli fiyat cercevesi, guncel kur, son yerel fiyatlar, veri bulunamayanlar)."""
-    yahoo = [p for p in positions if p.get("source", "yahoo") == "yahoo"]
+    yahoo = [p for p in positions if p.get("source", "yahoo") == "yahoo"
+             and p["ticker"] != GRAM_GOLD_TICKER]
+    gram = [p for p in positions if p["ticker"] == GRAM_GOLD_TICKER]
     tefas = [p for p in positions if p.get("source") == "tefas"]
 
-    tickers = tuple(sorted({p["ticker"] for p in yahoo} | {fx_ticker}))
+    needed = {p["ticker"] for p in yahoo} | {fx_ticker}
+    if gram:
+        needed.add(GOLD_OUNCE_TICKER)
+    tickers = tuple(sorted(needed))
     raw = fetch_yahoo_prices(tickers)
 
     if fx_ticker not in raw.columns or raw[fx_ticker].dropna().empty:
@@ -79,6 +90,14 @@ def build_try_prices(positions: list, fx_ticker: str = "TRY=X") -> tuple:
             continue
         last_native[p["name"]] = float(raw[t].dropna().iloc[-1])
         prices_try[p["name"]] = raw[t] * usdtry if p["currency"] == "USD" else raw[t]
+
+    for p in gram:
+        if GOLD_OUNCE_TICKER not in raw.columns or raw[GOLD_OUNCE_TICKER].dropna().empty:
+            failed.append(p["name"])
+            continue
+        series = raw[GOLD_OUNCE_TICKER] * usdtry / OUNCE_TO_GRAM
+        last_native[p["name"]] = float(series.dropna().iloc[-1])
+        prices_try[p["name"]] = series
 
     if tefas:
         fund_data = fetch_tefas_funds(tuple(sorted(p["ticker"] for p in tefas)))

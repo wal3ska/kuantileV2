@@ -46,6 +46,12 @@ const COMMODITIES: Record<string, string> = {
   "WTI Petrol": "CL=F", "Doğalgaz": "NG=F", "Bakır": "HG=F",
 };
 
+/* Sentetik gram altın: backend GC=F * USDTRY / 31.1035 olarak türetir, TL cinsindendir. */
+const GRAM_GOLD: AssetInfo = {
+  name: "Altın (Gram TL)", ticker: "GRAMALTIN", currency: "TRY",
+  category: "Emtia", source: "yahoo",
+};
+
 const INDICES: Record<string, string> = {
   "S&P 500": "^GSPC", "Nasdaq Composite": "^IXIC", "Nasdaq 100": "^NDX",
   "Dow Jones (DJIA)": "^DJI", "BIST 100": "XU100.IS", "BIST 30": "XU030.IS",
@@ -66,6 +72,7 @@ export const UNIVERSE: AssetInfo[] = [
   ...Object.entries(COMMODITIES).map(([name, t]) => ({
     name, ticker: t, currency: "USD" as Currency, category: "Emtia", source: "yahoo" as Source,
   })),
+  GRAM_GOLD,
   ...Object.entries(INDICES).map(([name, t]) => ({
     name, ticker: t,
     currency: (t.endsWith(".IS") ? "TRY" : "USD") as Currency,

@@ -1,16 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError, setToken, type MailPrefs } from "./api";
+import { useT } from "./i18n";
 
 export interface UserInfo { email: string; nickname: string | null; mail: MailPrefs }
 
 export const displayName = (u: UserInfo) => u.nickname ?? u.email.split("@")[0];
-
-const PERIOD_LABELS: [keyof MailPrefs, string][] = [
-  ["daily", "Günlük"],
-  ["weekly", "Haftalık"],
-  ["monthly", "Aylık"],
-  ["yearly", "Yıllık"],
-];
 
 function useOutsideClose(open: boolean, close: () => void) {
   const ref = useRef<HTMLDivElement>(null);
@@ -29,19 +23,24 @@ function MailPrefsMenu({ prefs, onChange }: {
   prefs: MailPrefs;
   onChange: (p: MailPrefs) => void;
 }) {
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const ref = useOutsideClose(open, () => setOpen(false));
-  const activeCount = PERIOD_LABELS.filter(([k]) => prefs[k]).length;
+  const periods = [
+    ["daily", t("daily")], ["weekly", t("weekly")],
+    ["monthly", t("monthly")], ["yearly", t("yearly")],
+  ] as const;
+  const activeCount = periods.filter(([k]) => prefs[k]).length;
 
   return (
     <div className="auth-wrap" ref={ref}>
       <button onClick={() => setOpen(!open)}>
-        Rapor mailleri {activeCount > 0 ? `(${activeCount})` : "(kapalı)"} ▾
+        {t("reportMails")} {activeCount > 0 ? `(${activeCount})` : `(${t("off")})`} ▾
       </button>
       {open && (
         <div className="dropmenu">
-          <div className="dropmenu-title">Portföy raporu e-postaları</div>
-          {PERIOD_LABELS.map(([key, label]) => (
+          <div className="dropmenu-title">{t("mailMenuTitle")}</div>
+          {periods.map(([key, label]) => (
             <label className="checkline" key={key}>
               <input
                 type="checkbox"
@@ -51,9 +50,7 @@ function MailPrefsMenu({ prefs, onChange }: {
               {label}
             </label>
           ))}
-          <div className="footer-note" style={{ marginTop: 4 }}>
-            Günlük her sabah 07:00, haftalık pazartesi, aylık ayın 1'i, yıllık 1 Ocak'ta gönderilir.
-          </div>
+          <div className="footer-note" style={{ marginTop: 4 }}>{t("mailSchedule")}</div>
         </div>
       )}
     </div>
@@ -68,6 +65,7 @@ export function AuthArea({ user, onLogin, onLogout, onSave, saving, onMailPrefs 
   saving: boolean;
   onMailPrefs: (p: MailPrefs) => void;
 }) {
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const ref = useOutsideClose(open, () => setOpen(false));
 
@@ -77,22 +75,23 @@ export function AuthArea({ user, onLogin, onLogout, onSave, saving, onMailPrefs 
         <span title={user.email}>{displayName(user)}</span>
         <MailPrefsMenu prefs={user.mail} onChange={onMailPrefs} />
         <button className="primary" onClick={onSave} disabled={saving}>
-          {saving ? "Kaydediliyor…" : "Kaydet"}
+          {saving ? t("saving") : t("save")}
         </button>
-        <button className="ghost" onClick={() => { setToken(null); onLogout(); }}>Çıkış</button>
+        <button className="ghost" onClick={() => { setToken(null); onLogout(); }}>{t("logout")}</button>
       </div>
     );
   }
 
   return (
     <div className="auth-wrap" ref={ref}>
-      <button className="primary" onClick={() => setOpen(!open)}>Giriş / Kayıt</button>
+      <button className="primary" onClick={() => setOpen(!open)}>{t("loginRegister")}</button>
       {open && <AuthPop onLogin={(u) => { setOpen(false); onLogin(u); }} />}
     </div>
   );
 }
 
 function AuthPop({ onLogin }: { onLogin: (u: UserInfo) => void }) {
+  const { t } = useT();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [nick, setNick] = useState("");
@@ -106,8 +105,8 @@ function AuthPop({ onLogin }: { onLogin: (u: UserInfo) => void }) {
     setBusy(true);
     try {
       if (mode === "register") {
-        const r = await api.register(email, nick, pw);
-        setMsg({ kind: "ok", text: r.message });
+        await api.register(email, nick, pw);
+        setMsg({ kind: "ok", text: t("registerOk") });
       } else {
         const r = await api.login(email, pw);
         setToken(r.access_token);
@@ -115,7 +114,7 @@ function AuthPop({ onLogin }: { onLogin: (u: UserInfo) => void }) {
         onLogin({ email: me.email, nickname: me.nickname, mail: me.mail });
       }
     } catch (err) {
-      setMsg({ kind: "err", text: err instanceof ApiError ? err.message : "Beklenmeyen hata." });
+      setMsg({ kind: "err", text: err instanceof ApiError ? err.message : t("unexpectedErr") });
     } finally {
       setBusy(false);
     }
@@ -124,21 +123,21 @@ function AuthPop({ onLogin }: { onLogin: (u: UserInfo) => void }) {
   return (
     <form className="auth-pop" onSubmit={submit}>
       <div className="seg">
-        <button type="button" className={mode === "login" ? "on" : ""} onClick={() => setMode("login")}>Giriş</button>
-        <button type="button" className={mode === "register" ? "on" : ""} onClick={() => setMode("register")}>Kayıt</button>
+        <button type="button" className={mode === "login" ? "on" : ""} onClick={() => setMode("login")}>{t("login")}</button>
+        <button type="button" className={mode === "register" ? "on" : ""} onClick={() => setMode("register")}>{t("register")}</button>
       </div>
-      <label className="f">E-posta
+      <label className="f">{t("email")}
         <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
       </label>
       {mode === "register" && (
-        <label className="f">Takma ad
+        <label className="f">{t("nickname")}
           <input
-            type="text" required minLength={2} maxLength={30} placeholder="ör: anil"
+            type="text" required minLength={2} maxLength={30} placeholder={t("nickPh")}
             value={nick} onChange={(e) => setNick(e.target.value)} autoComplete="nickname"
           />
         </label>
       )}
-      <label className="f">Şifre {mode === "register" && <span style={{ color: "var(--muted)" }}>(en az 8 karakter)</span>}
+      <label className="f">{t("password")} {mode === "register" && <span style={{ color: "var(--muted)" }}>{t("pwHint")}</span>}
         <input
           type="password" required minLength={mode === "register" ? 8 : undefined}
           value={pw} onChange={(e) => setPw(e.target.value)}
@@ -147,14 +146,9 @@ function AuthPop({ onLogin }: { onLogin: (u: UserInfo) => void }) {
       </label>
       {msg && <div className={`msg ${msg.kind}`}>{msg.text}</div>}
       <button className="primary" disabled={busy}>
-        {busy ? "Bekleyin…" : mode === "register" ? "Kayıt Ol" : "Giriş Yap"}
+        {busy ? t("wait") : mode === "register" ? t("registerBtn") : t("loginBtn")}
       </button>
-      {mode === "register" && (
-        <div className="footer-note">
-          Kayıt sonrası e-postanıza doğrulama bağlantısı gönderilir. Kayıt zorunlu değildir;
-          giriş yapmadan da analiz kullanılabilir — hesap, portföyünüzü kalıcı saklar ve rapor maillerini açar.
-        </div>
-      )}
+      {mode === "register" && <div className="footer-note">{t("registerNote")}</div>}
     </form>
   );
 }
