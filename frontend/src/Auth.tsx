@@ -91,7 +91,7 @@ export function AuthArea({ user, onLogin, onLogout, onSave, saving, onMailPrefs 
 }
 
 function AuthPop({ onLogin }: { onLogin: (u: UserInfo) => void }) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [nick, setNick] = useState("");
@@ -105,7 +105,7 @@ function AuthPop({ onLogin }: { onLogin: (u: UserInfo) => void }) {
     setBusy(true);
     try {
       if (mode === "register") {
-        await api.register(email, nick, pw);
+        await api.register(email, nick, pw, lang);
         setMsg({ kind: "ok", text: t("registerOk") });
       } else {
         const r = await api.login(email, pw);

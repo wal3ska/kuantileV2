@@ -38,6 +38,7 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     nickname: str = Field(min_length=2, max_length=30)
     password: str = Field(min_length=8, max_length=128)
+    lang: str = Field(default="tr", pattern="^(tr|en)$")
 
 
 class LoginRequest(BaseModel):
@@ -77,12 +78,13 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
         raise HTTPException(409, "Bu e-posta ile bir hesap zaten var.")
     user = User(email=req.email.lower(),
                 nickname=req.nickname.strip(),
+                lang=req.lang,
                 password_hash=hash_password(req.password),
                 verification_token=secrets.token_urlsafe(32))
     db.add(user)
     db.commit()
     try:
-        email_service.send_verification(user.email, user.verification_token)
+        email_service.send_verification(user.email, user.verification_token, user.lang)
     except Exception as exc:
         db.delete(user)
         db.commit()
@@ -126,7 +128,19 @@ def _mail_prefs(user: User) -> dict:
 @router.get("/me")
 def me(user: User = Depends(get_current_user)):
     return {"email": user.email, "nickname": user.nickname, "verified": user.is_verified,
-            "mail": _mail_prefs(user)}
+            "lang": user.lang, "mail": _mail_prefs(user)}
+
+
+class LangRequest(BaseModel):
+    lang: str = Field(pattern="^(tr|en)$")
+
+
+@router.post("/lang")
+def set_lang(req: LangRequest, user: User = Depends(get_current_user),
+             db: Session = Depends(get_db)):
+    user.lang = req.lang
+    db.commit()
+    return {"lang": user.lang}
 
 
 class MailPrefsRequest(BaseModel):
@@ -156,12 +170,19 @@ def unsubscribe(token: str, db: Session = Depends(get_db)):
     except jwt.PyJWTError:
         return HTMLResponse("<h3>Geçersiz veya süresi dolmuş bağlantı.</h3>", 400)
     user = db.get(User, int(payload["sub"]))
+    lang = "tr"
     if user is not None:
         user.mail_daily = user.mail_weekly = user.mail_monthly = user.mail_yearly = False
+        lang = user.lang or "tr"
         db.commit()
+    if lang == "en":
+        body = ("<h2>Report emails turned off</h2>"
+                "<p>You can re-enable them anytime from your account on "
+                "<a href='https://kuantile.com'>kuantile.com</a>.</p>")
+    else:
+        body = ("<h2>Rapor mailleri kapatıldı</h2>"
+                "<p>Dilediğiniz zaman <a href='https://kuantile.com'>kuantile.com</a> "
+                "hesap bölümünden yeniden açabilirsiniz.</p>")
     return HTMLResponse(
-        "<div style='font-family:Arial;text-align:center;margin-top:80px'>"
-        "<h2>Günlük özet maili kapatıldı</h2>"
-        "<p>Dilediğiniz zaman <a href='https://kuantile.com'>kuantile.com</a> "
-        "hesap bölümünden yeniden açabilirsiniz.</p></div>"
+        f"<div style='font-family:Arial;text-align:center;margin-top:80px'>{body}</div>"
     )

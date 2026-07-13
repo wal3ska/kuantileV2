@@ -22,15 +22,34 @@ def send_email(to: str, subject: str, html: str) -> None:
         raise RuntimeError(f"E-posta gönderilemedi: {resp.status_code} {resp.text[:200]}")
 
 
-def send_verification(to: str, token: str) -> None:
+VERIFY_TEXTS = {
+    "tr": {
+        "subject": "Kuantile — E-posta Doğrulama",
+        "title": "Kuantile'e hoş geldiniz",
+        "body": "Hesabınızı doğrulamak için aşağıdaki bağlantıya tıklayın:",
+        "button": "E-postamı Doğrula",
+        "ignore": "Bu kaydı siz yapmadıysanız bu e-postayı yok sayabilirsiniz.",
+    },
+    "en": {
+        "subject": "Kuantile — Email Verification",
+        "title": "Welcome to Kuantile",
+        "body": "Click the link below to verify your account:",
+        "button": "Verify My Email",
+        "ignore": "If you didn't sign up, you can safely ignore this email.",
+    },
+}
+
+
+def send_verification(to: str, token: str, lang: str = "tr") -> None:
+    x = VERIFY_TEXTS.get(lang, VERIFY_TEXTS["tr"])
     link = f"{APP_BASE_URL}/auth/verify?token={token}"
     html = f"""
     <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto">
-      <h2>Kuantile'e hoş geldiniz</h2>
-      <p>Hesabınızı doğrulamak için aşağıdaki bağlantıya tıklayın:</p>
+      <h2>{x['title']}</h2>
+      <p>{x['body']}</p>
       <p><a href="{link}" style="background:#1f77b4;color:#fff;padding:10px 18px;
-         text-decoration:none;border-radius:6px">E-postamı Doğrula</a></p>
-      <p style="color:#888;font-size:12px">Bu kaydı siz yapmadıysanız bu e-postayı yok sayabilirsiniz.</p>
+         text-decoration:none;border-radius:6px">{x['button']}</a></p>
+      <p style="color:#888;font-size:12px">{x['ignore']}</p>
     </div>
     """
-    send_email(to, "Kuantile — E-posta Doğrulama", html)
+    send_email(to, x["subject"], html)

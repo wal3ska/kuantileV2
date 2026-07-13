@@ -147,8 +147,11 @@ export interface PortfolioData {
 /* ---------- uçlar ---------- */
 
 export const api = {
-  register: (email: string, nickname: string, password: string) =>
-    req<{ message: string }>("POST", "/auth/register", { email, nickname, password }),
+  register: (email: string, nickname: string, password: string, lang: string) =>
+    req<{ message: string }>("POST", "/auth/register", { email, nickname, password, lang }),
+
+  setLang: (lang: string) =>
+    req<{ lang: string }>("POST", "/auth/lang", { lang }, true),
 
   login: (email: string, password: string) =>
     req<{ access_token: string; email: string; nickname: string | null }>("POST", "/auth/login", { email, password }),

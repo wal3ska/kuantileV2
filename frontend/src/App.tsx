@@ -233,7 +233,10 @@ export default function App() {
         <Logo />
         <div className="spacer" />
         {notice && <div className={`msg ${notice.kind}`}>{notice.text}</div>}
-        <LangSwitch lang={lang} setLang={setLang} />
+        <LangSwitch lang={lang} setLang={(l) => {
+          setLang(l);
+          if (user) api.setLang(l).catch(() => { /* dil tercihi arka planda; hata kritik değil */ });
+        }} />
         <ThemeToggle theme={theme} onToggle={() => setTheme(theme === "dark" ? "light" : "dark")} />
         <AuthArea
           user={user}

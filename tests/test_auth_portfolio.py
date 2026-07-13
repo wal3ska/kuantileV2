@@ -5,9 +5,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import email_service
 
 sent = {}
-def fake_send(to, token):
+def fake_send(to, token, lang="tr"):
     sent["to"] = to
     sent["token"] = token
+    sent["lang"] = lang
 email_service.send_verification = fake_send
 
 from fastapi.testclient import TestClient
@@ -22,8 +23,10 @@ EMAIL, PW = "test@kuantile.com", "guclu-sifre-123"
 
 
 def test_register_sends_verification():
-    r = client.post("/auth/register", json={"email": EMAIL, "nickname": "testci", "password": PW})
+    r = client.post("/auth/register", json={"email": EMAIL, "nickname": "testci",
+                                            "password": PW, "lang": "en"})
     assert r.status_code == 201
+    assert sent["lang"] == "en"
     assert sent["to"] == EMAIL and len(sent["token"]) > 20
 
 

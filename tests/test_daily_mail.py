@@ -17,9 +17,9 @@ client = TestClient(app)
 KEY = "yahoo:THYAO.IS:TRY"
 
 
-def make_user(email, quantity=10, cost=100.0, with_bond=False, nickname="testci"):
+def make_user(email, quantity=10, cost=100.0, with_bond=False, nickname="testci", lang="tr"):
     db = SessionLocal()
-    u = User(email=email, nickname=nickname,
+    u = User(email=email, nickname=nickname, lang=lang,
              password_hash=auth.hash_password("guclu-sifre"), is_verified=True)
     db.add(u)
     db.commit()
@@ -146,3 +146,21 @@ def test_run_skips_disabled_users(monkeypatch):
 
 def test_unknown_period_rejected():
     assert daily_mail.run("hourly") == 2
+
+
+def test_english_user_gets_english_report(monkeypatch):
+    make_user("dm-en@kuantile.com", quantity=10, cost=100.0, with_bond=True,
+              nickname="john", lang="en")
+    sent = patch_prices(monkeypatch, long_prices())
+    assert daily_mail.run("weekly") == 0
+    ours = [m for m in sent if m[0] == "dm-en@kuantile.com"]
+    assert len(ours) == 1
+    subject, html = ours[0][1], ours[0][2]
+    assert "Weekly Portfolio Report" in subject
+    assert "Hello john" in html
+    assert "Weekly change:" in html
+    assert "percentile" in html
+    assert "VaR (99%" in html
+    assert "(bond)" in html
+    assert "TRY" in html and " TL" not in html   # EN para birimi etiketi
+    assert "turn them off here" in html

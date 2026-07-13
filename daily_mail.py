@@ -1,6 +1,7 @@
 """Donemsel portfoy raporu maili (gunluk / haftalik / aylik / yillik).
-Dogrulanmis ve maili acik her kullaniciya portfoyunun guncel degerini,
-donem getirisini, tarihsel yuzdelik dilimini ve VaR degisimini gonderir.
+Dogrulanmis ve ilgili donemi acik her kullaniciya, kullanicinin dilinde
+(users.lang) portfoy degerini, donem getirisini, tarihsel yuzdelik dilimini
+ve VaR degisimini gonderir.
 Calistirma (cron): docker compose exec -T api python daily_mail.py [daily|weekly|monthly|yearly]"""
 
 import sys
@@ -20,25 +21,67 @@ API_URL = "https://api.kuantile.com"
 
 # n: donemin yaklasik islem gunu sayisi (pct_change penceresi)
 PERIODS = {
-    "daily":   {"label": "Günlük",   "n": 1,   "adj": "günlük"},
-    "weekly":  {"label": "Haftalık", "n": 5,   "adj": "haftalık"},
-    "monthly": {"label": "Aylık",    "n": 21,  "adj": "aylık"},
-    "yearly":  {"label": "Yıllık",   "n": 252, "adj": "yıllık"},
+    "daily": {"n": 1}, "weekly": {"n": 5}, "monthly": {"n": 21}, "yearly": {"n": 252},
 }
 
 CONFIDENCE = 0.99
+
+L = {
+    "tr": {
+        "daily": "Günlük", "weekly": "Haftalık", "monthly": "Aylık", "yearly": "Yıllık",
+        "subject": "{label} Portföy Raporu — {date}",
+        "header": "Kuantile — {label} Portföy Raporu",
+        "hello": "Merhaba",
+        "change": "{label} değişim:",
+        "exBonds": "— tahviller hariç",
+        "pctl": "Bu dönemki getiri, portföyünüzün tarihsel {adj} getirilerinin <b>%{p}</b>'lik diliminde ({side}).",
+        "adj_daily": "günlük", "adj_weekly": "haftalık", "adj_monthly": "aylık", "adj_yearly": "yıllık",
+        "above": "tarihsel ortalamanın üstünde", "below": "tarihsel ortalamanın altında",
+        "var": "VaR (%{c}, 1 gün): <b>{v}</b>",
+        "varUp": " — dönem başına göre risk arttı ({d})",
+        "varDown": " — dönem başına göre risk azaldı ({d})",
+        "varFlat": " — dönem başına göre sabit kaldı",
+        "colAsset": "Varlık", "colQty": "Adet", "colValue": "Değer", "colPnl": "Toplam K/Z",
+        "bond": "tahvil", "noData": "veri yok",
+        "cta": "Detaylı analiz için Kuantile'i açın →",
+        "disclaimer": "Bu e-posta yatırım danışmanlığı değildir. Fiyatlar son işlem gününe aittir.",
+        "unsub": "Rapor maillerini almak istemiyorsanız <a href=\"{url}\" style=\"color:#888\">buradan kapatabilirsiniz</a>.",
+        "currency": "TL", "dec": ",", "thou": ".",
+    },
+    "en": {
+        "daily": "Daily", "weekly": "Weekly", "monthly": "Monthly", "yearly": "Yearly",
+        "subject": "{label} Portfolio Report — {date}",
+        "header": "Kuantile — {label} Portfolio Report",
+        "hello": "Hello",
+        "change": "{label} change:",
+        "exBonds": "— excluding bonds",
+        "pctl": "This period's return sits in the <b>{p}th</b> percentile of your portfolio's historical {adj} returns ({side}).",
+        "adj_daily": "daily", "adj_weekly": "weekly", "adj_monthly": "monthly", "adj_yearly": "yearly",
+        "above": "above the historical average", "below": "below the historical average",
+        "var": "VaR ({c}%, 1 day): <b>{v}</b>",
+        "varUp": " — risk increased vs. the start of the period ({d})",
+        "varDown": " — risk decreased vs. the start of the period ({d})",
+        "varFlat": " — unchanged vs. the start of the period",
+        "colAsset": "Asset", "colQty": "Qty", "colValue": "Value", "colPnl": "Total P/L",
+        "bond": "bond", "noData": "no data",
+        "cta": "Open Kuantile for detailed analysis →",
+        "disclaimer": "This email is not investment advice. Prices are as of the last trading day.",
+        "unsub": "If you no longer want report emails you can <a href=\"{url}\" style=\"color:#888\">turn them off here</a>.",
+        "currency": "TRY", "dec": ".", "thou": ",",
+    },
+}
 
 
 def _key(p) -> str:
     return f"{p.source}:{p.ticker}:{p.currency}"
 
 
-def fmt_money(v: float) -> str:
-    return f"{v:,.0f}".replace(",", ".") + " TL"
+def fmt_money(v: float, x: dict) -> str:
+    return f"{v:,.0f}".replace(",", x["thou"]) + f" {x['currency']}"
 
 
-def fmt_pct(v: float) -> str:
-    return f"{v * 100:+.2f}%".replace(".", ",")
+def fmt_pct(v: float, x: dict) -> str:
+    return f"{v * 100:+.2f}%".replace(".", x["dec"])
 
 
 def _colored(text: str, sign_of: float | None) -> str:
@@ -87,9 +130,10 @@ def period_stats(series: pd.Series, n: int) -> dict | None:
 
 def build_report_html(user, period: str, fx_now: float, prices_try,
                       last_native: dict, changes: dict) -> str | None:
-    """Kullanicinin donemsel rapor HTML'i. Hicbir varligin verisi yoksa None."""
-    cfg = PERIODS[period]
-    n = cfg["n"]
+    """Kullanicinin dilinde donemsel rapor HTML'i. Hic veri yoksa None."""
+    x = L.get(user.lang or "tr", L["tr"])
+    label = x[period]
+    n = PERIODS[period]["n"]
     pf = user.portfolio
     rows_html = []
     total = 0.0
@@ -99,18 +143,18 @@ def build_report_html(user, period: str, fx_now: float, prices_try,
         k = _key(p)
         if k not in last_native:
             rows_html.append(
-                f"<tr><td>{p.name}</td><td colspan='4' style='color:#888'>veri yok</td></tr>")
+                f"<tr><td>{p.name}</td><td colspan='4' style='color:#888'>{x['noData']}</td></tr>")
             continue
         priced += 1
         fx = fx_now if p.currency == "USD" else 1.0
         res = engine.position_pnl(p.quantity, last_native[k], p.cost, fx)
         total += res["value_try"]
         d = changes.get(k)
-        day_cell = _colored(fmt_pct(d), d) if d is not None else "—"
-        pnl_cell = _colored(fmt_pct(res["pnl_pct"] / 100), res["pnl"]) if res["pnl_pct"] is not None else "—"
+        day_cell = _colored(fmt_pct(d, x), d) if d is not None else "—"
+        pnl_cell = _colored(fmt_pct(res["pnl_pct"] / 100, x), res["pnl"]) if res["pnl_pct"] is not None else "—"
         rows_html.append(
             f"<tr><td>{p.name}</td><td align='right'>{p.quantity:g}</td>"
-            f"<td align='right'>{fmt_money(res['value_try'])}</td>"
+            f"<td align='right'>{fmt_money(res['value_try'], x)}</td>"
             f"<td align='right'>{day_cell}</td><td align='right'>{pnl_cell}</td></tr>")
 
     bond_total = 0.0
@@ -119,9 +163,9 @@ def build_report_html(user, period: str, fx_now: float, prices_try,
         v = b.nominal / 100 * b.price * fx
         bond_total += v
         rows_html.append(
-            f"<tr><td>{b.name} <span style='color:#888'>(tahvil)</span></td>"
+            f"<tr><td>{b.name} <span style='color:#888'>({x['bond']})</span></td>"
             f"<td align='right'>{b.nominal:g}</td>"
-            f"<td align='right'>{fmt_money(v)}</td><td align='right'>—</td><td align='right'>—</td></tr>")
+            f"<td align='right'>{fmt_money(v, x)}</td><td align='right'>—</td><td align='right'>—</td></tr>")
     total += bond_total
 
     if priced == 0 and bond_total == 0:
@@ -130,26 +174,23 @@ def build_report_html(user, period: str, fx_now: float, prices_try,
     stats = period_stats(portfolio_series(pf, prices_try), n)
     stat_lines = []
     if stats is not None:
-        line = f"{cfg['label']} değişim: {_colored(fmt_pct(stats['ret']), stats['ret'])}"
+        line = f"{x['change'].format(label=label)} {_colored(fmt_pct(stats['ret'], x), stats['ret'])}"
         if bond_total > 0:
-            line += " <span style='color:#888;font-size:12px'>— tahviller hariç</span>"
+            line += f" <span style='color:#888;font-size:12px'>{x['exBonds']}</span>"
         stat_lines.append(line)
         if stats["percentile"] is not None:
             pctl = stats["percentile"]
-            yorum = "tarihsel ortalamanın üstünde" if pctl >= 50 else "tarihsel ortalamanın altında"
-            stat_lines.append(
-                f"Bu {cfg['adj']} getiri, portföyünüzün tarihsel {cfg['adj']} getirilerinin "
-                f"<b>%{pctl:.0f}</b>'lik diliminde ({yorum}).")
+            side = x["above"] if pctl >= 50 else x["below"]
+            stat_lines.append(x["pctl"].format(p=f"{pctl:.0f}", adj=x[f"adj_{period}"], side=side))
         if stats["var_now"] is not None:
-            var_txt = f"VaR (%{CONFIDENCE * 100:.0f}, 1 gün): <b>{fmt_pct(stats['var_now'])}</b>"
+            var_txt = x["var"].format(c=f"{CONFIDENCE * 100:.0f}", v=fmt_pct(stats["var_now"], x))
             if stats["var_prev"] is not None and period != "daily":
                 delta = stats["var_now"] - stats["var_prev"]
                 if abs(delta) < 0.00005:  # gosterimde 0,00% olacak degisim
-                    var_txt += " — dönem başına göre sabit kaldı"
+                    var_txt += x["varFlat"]
                 else:
-                    yon = "arttı" if delta < 0 else "azaldı"  # VaR negatif: daha negatif = daha riskli
-                    var_txt += (f" — dönem başına göre risk {yon} "
-                                f"({fmt_pct(abs(delta)).lstrip('+')})")
+                    key = "varUp" if delta < 0 else "varDown"  # VaR negatif: daha negatif = daha riskli
+                    var_txt += x[key].format(d=fmt_pct(abs(delta), x).lstrip("+"))
             stat_lines.append(var_txt)
 
     unsub = f"{API_URL}/auth/unsubscribe?token={make_unsub_token(user.id)}"
@@ -159,21 +200,21 @@ def build_report_html(user, period: str, fx_now: float, prices_try,
 
     return f"""
     <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto">
-      <h2 style="color:#1f77b4">Kuantile — {cfg['label']} Portföy Raporu</h2>
-      <p style="color:#888;margin-top:-8px">Merhaba {hitap} &middot; {date_str} &middot; USD/TRY: {fx_now:.2f}</p>
-      <p style="font-size:22px;margin:16px 0 6px"><b>{fmt_money(total)}</b></p>
+      <h2 style="color:#1f77b4">{x['header'].format(label=label)}</h2>
+      <p style="color:#888;margin-top:-8px">{x['hello']} {hitap} &middot; {date_str} &middot; USD/TRY: {fx_now:.2f}</p>
+      <p style="font-size:22px;margin:16px 0 6px"><b>{fmt_money(total, x)}</b></p>
       <div style="margin:0 0 16px;font-size:14px">{stats_html}</div>
       <table width="100%" cellpadding="6" style="border-collapse:collapse;font-size:14px">
         <tr style="border-bottom:2px solid #1f77b4;text-align:left">
-          <th>Varlık</th><th align="right">Adet</th><th align="right">Değer</th>
-          <th align="right">{cfg['label']}</th><th align="right">Toplam K/Z</th>
+          <th>{x['colAsset']}</th><th align="right">{x['colQty']}</th><th align="right">{x['colValue']}</th>
+          <th align="right">{label}</th><th align="right">{x['colPnl']}</th>
         </tr>
         {''.join(rows_html)}
       </table>
-      <p style="margin-top:20px"><a href="{APP_URL}" style="color:#1f77b4">Detaylı analiz için Kuantile'i açın →</a></p>
+      <p style="margin-top:20px"><a href="{APP_URL}" style="color:#1f77b4">{x['cta']}</a></p>
       <p style="color:#888;font-size:11px;margin-top:24px">
-        Bu e-posta yatırım danışmanlığı değildir. Fiyatlar son işlem gününe aittir.<br>
-        Özet maillerini almak istemiyorsanız <a href="{unsub}" style="color:#888">buradan kapatabilirsiniz</a>.
+        {x['disclaimer']}<br>
+        {x['unsub'].format(url=unsub)}
       </p>
     </div>
     """
@@ -195,7 +236,7 @@ def run(period: str = "daily") -> int:
     if period not in PERIODS:
         print(f"Bilinmeyen dönem: {period} (daily|weekly|monthly|yearly)")
         return 2
-    cfg = PERIODS[period]
+    n = PERIODS[period]["n"]
     init_db()
     db = SessionLocal()
     try:
@@ -219,7 +260,7 @@ def run(period: str = "daily") -> int:
             raw = dp.fetch_yahoo_prices(("TRY=X",))
             prices_try, last_native, failed = None, {}, []
             fx_now = float(raw["TRY=X"].dropna().iloc[-1])
-        changes = position_changes(prices_try, cfg["n"])
+        changes = position_changes(prices_try, n)
 
         date_str = datetime.now(timezone.utc).strftime("%d.%m.%Y")
         sent = errors = 0
@@ -229,7 +270,9 @@ def run(period: str = "daily") -> int:
                 if html is None:
                     print(f"ATLANDI {u.email}: fiyat verisi yok")
                     continue
-                email_service.send_email(u.email, f"{cfg['label']} Portföy Raporu — {date_str}", html)
+                x = L.get(u.lang or "tr", L["tr"])
+                subject = x["subject"].format(label=x[period], date=date_str)
+                email_service.send_email(u.email, subject, html)
                 sent += 1
             except Exception as exc:
                 errors += 1

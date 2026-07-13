@@ -26,6 +26,7 @@ class User(Base):
     nickname: Mapped[str | None] = mapped_column(String(30), nullable=True)
     password_hash: Mapped[str] = mapped_column(String(255))
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    lang: Mapped[str] = mapped_column(String(2), default="tr")
     mail_daily: Mapped[bool] = mapped_column(Boolean, default=True)
     mail_weekly: Mapped[bool] = mapped_column(Boolean, default=True)
     mail_monthly: Mapped[bool] = mapped_column(Boolean, default=True)
