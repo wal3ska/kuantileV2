@@ -155,6 +155,12 @@ const TR = {
   simSummary: "Bu aralıkta portföyünüz {p} değişirdi: {v1} → {v2}",
   simMissing: "Kapsam dışı (bu aralıkta verisi yok): {list}",
   simBadRange: "Geçerli bir tarih aralığı seçin.",
+  navGuide: "Rehber",
+  footAbout: "Hakkımızda",
+  footPrivacy: "Gizlilik Politikası",
+  footTerms: "Kullanım Şartları",
+  footContact: "İletişim",
+  footNote: "Bu sitedeki hiçbir içerik yatırım danışmanlığı değildir.",
 };
 
 const EN: Record<keyof typeof TR, string> = {
@@ -300,6 +306,12 @@ const EN: Record<keyof typeof TR, string> = {
   simSummary: "In this range your portfolio would have changed {p}: {v1} → {v2}",
   simMissing: "Not covered (no data in range): {list}",
   simBadRange: "Pick a valid date range.",
+  navGuide: "Guides",
+  footAbout: "About",
+  footPrivacy: "Privacy Policy",
+  footTerms: "Terms of Use",
+  footContact: "Contact",
+  footNote: "Nothing on this site constitutes investment advice.",
 };
 
 const DICTS: Record<Lang, Record<keyof typeof TR, string>> = { tr: TR, en: EN };

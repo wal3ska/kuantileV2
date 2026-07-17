@@ -569,3 +569,32 @@ details.acc summary {
 }
 details.acc[open] summary { border-bottom: 1px solid var(--grid); }
 details.acc .inner { padding: 13px; display: flex; flex-direction: column; gap: 10px; }
+
+/* ---------- site footer + nav ---------- */
+
+.navlink {
+  color: var(--ink-2);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: 7px;
+}
+
+.navlink:hover { color: var(--accent-strong); background: var(--accent-soft); }
+
+.site-footer {
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 8px 28px 36px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.site-footer nav { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 8px; }
+
+.site-footer a { color: var(--ink-2); text-decoration: none; }
+
+.site-footer a:hover { color: var(--accent-strong); }
+
+.site-footer p { margin: 0; }

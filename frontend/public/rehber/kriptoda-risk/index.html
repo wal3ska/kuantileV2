@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kripto Varlıklarda Risk Yönetimi: Oynaklıkla Yaşamayı Öğrenmek | Kuantile</title>
+<meta name="description" content="Bitcoin ve kripto portföy riskine nasıl dahil edilir? Pozisyon boyutu, korelasyon ve VaR ile kripto oynaklığını yönetme rehberi.">
+<link rel="canonical" href="https://kuantile.com/rehber/kriptoda-risk/">
+<link rel="icon" type="image/png" href="/logo.png">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8772857624852631" crossorigin="anonymous"></script>
+<style>
+:root{--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;--accent:#2a78d6;--accent2:#256abf;--border:#e4e3dd;--page:#f5f5f2;--surface:#fff}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--page);color:var(--ink);font-size:16px;line-height:1.7}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;color:var(--ink);text-decoration:none}
+header nav{margin-left:auto;display:flex;gap:18px;flex-wrap:wrap}
+header nav a{color:var(--ink2);text-decoration:none;font-size:14.5px}
+header nav a:hover{color:var(--accent2)}
+main{max-width:760px;margin:0 auto;padding:36px 20px 60px}
+article{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px;box-shadow:0 1px 6px rgba(25,25,15,.05)}
+h1{font-size:28px;line-height:1.3;margin:0 0 6px;letter-spacing:-.3px}
+h2{font-size:20px;margin:28px 0 8px}
+.meta{color:var(--muted);font-size:13.5px;margin-bottom:20px}
+p{margin:0 0 14px;color:#2c2b28}
+ul,ol{color:#2c2b28}
+li{margin-bottom:6px}
+a{color:var(--accent2)}
+.cta{display:inline-block;background:var(--accent);color:#fff;padding:11px 20px;border-radius:9px;text-decoration:none;font-weight:600;margin-top:10px}
+.cta:hover{background:var(--accent2)}
+footer{max-width:760px;margin:0 auto;padding:0 20px 40px;color:var(--muted);font-size:13px}
+footer a{color:var(--muted)}
+.cards a.card{display:block;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:14px;text-decoration:none;box-shadow:0 1px 6px rgba(25,25,15,.05)}
+.cards a.card b{color:var(--ink);font-size:17px}
+.cards a.card p{color:var(--ink2);margin:6px 0 0;font-size:14.5px}
+label{display:block;font-size:13.5px;color:var(--ink2);font-weight:600;margin:14px 0 4px}
+input,textarea{width:100%;border:1px solid #d7d6cf;border-radius:8px;padding:10px 12px;font:inherit;background:#fff}
+input:focus,textarea:focus{outline:none;border-color:var(--accent)}
+button{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:12px 22px;font:inherit;font-weight:600;cursor:pointer;margin-top:16px}
+button:hover{background:var(--accent2)}
+.ok{background:#e8f4e8;color:#006300;padding:10px 14px;border-radius:8px;margin-top:14px;display:none}
+.err{background:#fbebeb;color:#d03b3b;padding:10px 14px;border-radius:8px;margin-top:14px;display:none}
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="/"><img src="/logo.png" width="26" height="26" alt="Kuantile logosu">Kuantile</a>
+  <nav><a href="/">Uygulama</a><a href="/rehber/">Rehber</a><a href="/hakkimizda/">Hakkımızda</a><a href="/iletisim/">İletişim</a></nav>
+</header>
+<main>
+<article>
+<h1>Kripto Varlıklarda Risk Yönetimi: Oynaklıkla Yaşamayı Öğrenmek</h1>
+<p class="meta">Kuantile Rehber · 17.07.2026</p>
+
+<p>Kripto, sıradan bir portföye eklenen en oynak varlık sınıfıdır: Bitcoin'in günlük %10 hareketi olağan, %30'luk haftalar tarihinde bol miktarda vardır. Bu, kripto tutmamak için değil, <b>kripto pozisyonunu bilinçli boyutlandırmak</b> için bir sebeptir. Risk yönetimi burada "korkmak" değil, oynaklığı sayıya dökmek demektir.</p>
+<h2>Pozisyon boyutu: yüzdeyle değil, risk katkısıyla düşünün</h2>
+<p>"Portföyün %5'i kripto" masum görünür; ama oynaklığı BIST'in 3-4 katı olan bir varlığın %5'lik ağırlığı, portföy riskinin %20-30'unu tek başına üretebilir. Doğru soru "yüzde kaçı kriptoda?" değil, <b>"portföy VaR'ımın ne kadarı kriptodan geliyor?"</b> sorusudur. Kuantile'de bunu görmek kolaydır: kriptolu ve kriptosuz analiz yapıp VaR farkına bakın — o fark, kriptonun risk faturasıdır.</p>
+<h2>"Dijital altın" mı, kaldıraçlı Nasdaq mı?</h2>
+<p>Kriptonun hisse senetleriyle korelasyonu dönemseldir: 2020-2022'de Bitcoin, Nasdaq ile 0,5-0,7 korelasyonla adeta kaldıraçlı teknoloji endeksi gibi davrandı; başka dönemlerde bağımsızlaştı. Yani "portföyümü hedge ediyor" varsayımı sürekli doğru değildir — <b>ölçülmesi gereken bir iddiadır.</b> Korelasyon matrisinizde BTC'nin ABD hisseleriyle hücresine bakın; koyu maviyse, kriptonuz çeşitlendirme değil aynı bahsin dozunu artırıyor demektir. TL bazında ise ayrı bir dinamik devreye girer: kripto dolar cinsinden fiyatlandığı için kur şoku günlerinde TL bazlı değeri kurla birlikte yükselir — Türk yatırımcısı için kripto, istemeden de olsa kısmi bir döviz pozisyonudur.</p>
+<h2>Stres testinin kriptoya söyledikleri</h2>
+<p>2022 "Kripto Kışı" (LUNA/FTX) senaryosu, Kuantile'in hazır stres testleri arasındadır: o pencerede BTC ~%65 düşerken portföyünüzün bütününün ne yaşayacağını TL olarak görürsünüz. Genç coinlerde dikkat: birkaç yıllık fiyat geçmişi, eski senaryolarda "kapsam dışı" kalmalarına yol açar ve kuyruk riskleri tabloda görünmez. Geçmişi kısa varlığa büyük ağırlık vermek, haritasız denize açılmaktır.</p>
+<h2>Üç pratik kural</h2>
+<ol>
+<li><b>Boyut:</b> kriptonun VaR katkısı, toplam VaR'ın kabul ettiğiniz bir oranını (ör. üçte birini) aşmasın.</li>
+<li><b>Disiplin:</b> büyük yükseliş sonrası kripto ağırlığı kendiliğinden şişer; <a href="/rehber/portfoy-dengeleme/">dengeleme</a> ile hedefe geri çekin.</li>
+<li><b>Dürüstlük:</b> "uzun vadeliyim" diyorsanız %60 düşüş senaryosuna bakıp elinizi vicdanınıza koyun — o düşüşte satmayacaksanız uzun vadelisiniz.</li>
+</ol>
+<a class="cta" href="/">Kriptonuzun risk katkısını ölçün →</a>
+
+<h2>İlgili yazılar</h2>
+<ul><li><a href="/rehber/var-nedir/">Riske Maruz Değer (VaR) Nedir? Yatırımcı İçin Sade Bir Anlatım</a></li><li><a href="/rehber/cesitlendirme-ve-korelasyon/">Çeşitlendirme ve Korelasyon: Yumurtalar Gerçekten Farklı Sepetlerde mi?</a></li><li><a href="/rehber/stres-testi/">Portföy Stres Testi: 2008'i Bugünkü Portföyünüzle Yaşasaydınız?</a></li></ul>
+</article>
+</main>
+<footer>© 2026 Kuantile — Bu sitedeki hiçbir içerik yatırım danışmanlığı değildir.<br><a href="/gizlilik/">Gizlilik Politikası</a> · <a href="/kullanim-sartlari/">Kullanım Şartları</a> · <a href="/hakkimizda/">Hakkımızda</a> · <a href="/iletisim/">İletişim</a> · <a href="/rehber/">Rehber</a></footer>
+</body>
+</html>

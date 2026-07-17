@@ -1,6 +1,7 @@
 """FastAPI backend. Calistirma: uvicorn api:app --host 0.0.0.0 --port 8000
 Dokumantasyon otomatik: http://localhost:8000/docs"""
 
+import os
 from datetime import date
 from typing import Literal, Optional
 
@@ -74,6 +75,29 @@ def bond_duration(req: BondDurationRequest):
     fair, mac, mod = engine.bond_metrics(req.coupon_rate, req.ytm, req.years, req.frequency)
     return {"fair_price": fair, "macaulay_duration": mac, "modified_duration": mod,
             "dv01_per_100_nominal": mod * fair * 1e-4}
+
+
+class ContactRequest(BaseModel):
+    name: str = Field(min_length=2, max_length=100)
+    email: str = Field(min_length=5, max_length=200)
+    message: str = Field(min_length=10, max_length=4000)
+
+
+@app.post("/contact")
+def contact(req: ContactRequest):
+    """Iletisim formu: mesaji site sahibine e-postayla iletir."""
+    import html as html_mod
+
+    import email_service
+    to = os.getenv("CONTACT_TO", "anilserdar.unal20@gmail.com")
+    body = (f"<p><b>Gönderen:</b> {html_mod.escape(req.name)} "
+            f"&lt;{html_mod.escape(req.email)}&gt;</p>"
+            f"<p style='white-space:pre-wrap'>{html_mod.escape(req.message)}</p>")
+    try:
+        email_service.send_email(to, f"Kuantile iletişim formu: {req.name[:60]}", body)
+    except Exception:
+        raise HTTPException(502, "Mesaj iletilemedi, lütfen daha sonra tekrar deneyin.")
+    return {"message": "ok"}
 
 
 class SimulateRequest(BaseModel):

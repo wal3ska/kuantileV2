@@ -79,3 +79,19 @@ def test_simulate_rejects_bad_range():
                            "source": "yahoo", "quantity": 1}],
             "start": "2026-02-01", "end": "2026-01-01"}
     assert client.post("/portfolio/simulate", json=body).status_code == 400
+
+
+def test_contact_form(monkeypatch):
+    import email_service
+    sent = []
+    monkeypatch.setattr(email_service, "send_email",
+                        lambda to, subject, html: sent.append((to, subject, html)))
+    r = client.post("/contact", json={"name": "Ali", "email": "ali@ornek.com",
+                                      "message": "Merhaba, bir sorum olacak."})
+    assert r.status_code == 200
+    assert len(sent) == 1 and "Ali" in sent[0][1] and "ali@ornek.com" in sent[0][2]
+
+
+def test_contact_rejects_short_message():
+    r = client.post("/contact", json={"name": "Ali", "email": "a@b.c", "message": "kısa"})
+    assert r.status_code == 422

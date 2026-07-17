@@ -233,6 +233,7 @@ export default function App() {
     <>
       <header className="topbar">
         <Logo />
+        <a href="/rehber/" className="navlink">{t("navGuide")}</a>
         <div className="spacer" />
         {notice && <div className={`msg ${notice.kind}`}>{notice.text}</div>}
         <LangSwitch lang={lang} setLang={(l) => {
@@ -303,6 +304,17 @@ export default function App() {
           )}
         </div>
       </main>
+
+      <footer className="site-footer">
+        <nav>
+          <a href="/hakkimizda/">{t("footAbout")}</a>
+          <a href="/rehber/">{t("navGuide")}</a>
+          <a href="/gizlilik/">{t("footPrivacy")}</a>
+          <a href="/kullanim-sartlari/">{t("footTerms")}</a>
+          <a href="/iletisim/">{t("footContact")}</a>
+        </nav>
+        <p>© {new Date().getFullYear()} Kuantile — {t("footNote")}</p>
+      </footer>
     </>
   );
 }

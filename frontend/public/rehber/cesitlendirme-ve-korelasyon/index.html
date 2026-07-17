@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Çeşitlendirme ve Korelasyon: Yumurtalar Gerçekten Farklı Sepetlerde mi? | Kuantile</title>
+<meta name="description" content="Portföy çeşitlendirmesi neden korelasyona bakılarak yapılır? Korelasyon matrisi nasıl okunur, çeşitlendirme faydası nasıl ölçülür?">
+<link rel="canonical" href="https://kuantile.com/rehber/cesitlendirme-ve-korelasyon/">
+<link rel="icon" type="image/png" href="/logo.png">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8772857624852631" crossorigin="anonymous"></script>
+<style>
+:root{--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;--accent:#2a78d6;--accent2:#256abf;--border:#e4e3dd;--page:#f5f5f2;--surface:#fff}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--page);color:var(--ink);font-size:16px;line-height:1.7}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;color:var(--ink);text-decoration:none}
+header nav{margin-left:auto;display:flex;gap:18px;flex-wrap:wrap}
+header nav a{color:var(--ink2);text-decoration:none;font-size:14.5px}
+header nav a:hover{color:var(--accent2)}
+main{max-width:760px;margin:0 auto;padding:36px 20px 60px}
+article{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px;box-shadow:0 1px 6px rgba(25,25,15,.05)}
+h1{font-size:28px;line-height:1.3;margin:0 0 6px;letter-spacing:-.3px}
+h2{font-size:20px;margin:28px 0 8px}
+.meta{color:var(--muted);font-size:13.5px;margin-bottom:20px}
+p{margin:0 0 14px;color:#2c2b28}
+ul,ol{color:#2c2b28}
+li{margin-bottom:6px}
+a{color:var(--accent2)}
+.cta{display:inline-block;background:var(--accent);color:#fff;padding:11px 20px;border-radius:9px;text-decoration:none;font-weight:600;margin-top:10px}
+.cta:hover{background:var(--accent2)}
+footer{max-width:760px;margin:0 auto;padding:0 20px 40px;color:var(--muted);font-size:13px}
+footer a{color:var(--muted)}
+.cards a.card{display:block;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:14px;text-decoration:none;box-shadow:0 1px 6px rgba(25,25,15,.05)}
+.cards a.card b{color:var(--ink);font-size:17px}
+.cards a.card p{color:var(--ink2);margin:6px 0 0;font-size:14.5px}
+label{display:block;font-size:13.5px;color:var(--ink2);font-weight:600;margin:14px 0 4px}
+input,textarea{width:100%;border:1px solid #d7d6cf;border-radius:8px;padding:10px 12px;font:inherit;background:#fff}
+input:focus,textarea:focus{outline:none;border-color:var(--accent)}
+button{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:12px 22px;font:inherit;font-weight:600;cursor:pointer;margin-top:16px}
+button:hover{background:var(--accent2)}
+.ok{background:#e8f4e8;color:#006300;padding:10px 14px;border-radius:8px;margin-top:14px;display:none}
+.err{background:#fbebeb;color:#d03b3b;padding:10px 14px;border-radius:8px;margin-top:14px;display:none}
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="/"><img src="/logo.png" width="26" height="26" alt="Kuantile logosu">Kuantile</a>
+  <nav><a href="/">Uygulama</a><a href="/rehber/">Rehber</a><a href="/hakkimizda/">Hakkımızda</a><a href="/iletisim/">İletişim</a></nav>
+</header>
+<main>
+<article>
+<h1>Çeşitlendirme ve Korelasyon: Yumurtalar Gerçekten Farklı Sepetlerde mi?</h1>
+<p class="meta">Kuantile Rehber · 14.07.2026</p>
+
+<p>"Yumurtaları aynı sepete koyma" muhtemelen finansın en eski öğüdüdür. Ama çoğu yatırımcının gözden kaçırdığı bir incelik var: <b>beş farklı sepetiniz olabilir ve beşi de aynı kamyonda gidiyor olabilir.</b> Üç banka hissesi, bir holding ve bir banka ağırlıklı fon tutan biri kağıt üzerinde beş varlığa "çeşitlenmiştir" — pratikte tek bir bahse oynamaktadır: Türk bankacılık sektörü.</p>
+<h2>Korelasyon: sepetlerin aynı kamyonda olup olmadığının ölçüsü</h2>
+<p>İki varlığın korelasyonu −1 ile +1 arasında bir sayıdır. +1'e yakınsa ikisi hep birlikte hareket eder; 0 civarındaysa birbirinden bağımsızdır; negatifse biri düşerken diğeri yükselme eğilimindedir. Çeşitlendirmenin matematiksel karşılığı, portföye <b>düşük veya negatif korelasyonlu</b> varlıklar eklemektir.</p>
+<p>Kuantile her analizde portföyünüzün korelasyon matrisini çizer. Matriste koyu mavi kümeler görüyorsanız (0,7 üzeri değerler), o varlıklar fiilen tek varlık gibi davranıyor demektir. Örneğin BIST hisseleri kendi aralarında genelde 0,4–0,8 bandında korelasyon gösterirken, altının BIST ile korelasyonu tarihsel olarak 0 civarındadır — bu yüzden az miktarda altın bile portföy oynaklığını hissedilir biçimde düşürebilir.</p>
+<h2>Çeşitlendirme faydasını TL olarak görmek</h2>
+<p>Kuantile'in panosundaki "Çeşitlendirme Faydası" kutusu şu soruyu yanıtlar: <i>her varlığın riskini ayrı ayrı toplasaydık portföy riski ne olurdu; birlikte tuttuğumuz için ne oldu?</i> Aradaki fark, korelasyonların size kazandırdığı TL cinsinden risk indirimi olarak gösterilir. Bu rakam sıfıra yakınsa portföyünüz adı kadar çeşitlenmemiş demektir.</p>
+<h2>Kur etkisini unutmayın</h2>
+<p>TL bazlı bakan bir yatırımcı için dolar cinsi varlıkların (ABD hissesi, kripto, ons altın) BIST ile korelasyonu, kur oynaklığı yüzünden dolar bazlı bakan birinin gördüğünden farklıdır. Kur şoku günlerinde dolar varlıkları TL bazında birlikte sıçrar — yani "farklı" sandığınız varlıklar o gün aynı yöne koşar. Kuantile tüm korelasyonları TL bazında hesaplar; matris, sizin gerçekte yaşayacağınız birlikte-hareketi gösterir.</p>
+<h2>Ne kadar çeşitlendirme yeterli?</h2>
+<p>Akademik bulgular, rastgele seçilmiş 15-20 hisseden sonra ek çeşitlendirme faydasının hızla azaldığını söyler; ama bu, varlıklar arası korelasyonun düşük olduğu varsayımıyla geçerlidir. Pratik öneri şudur: varlık sayısını değil, <b>matristeki açık renkli hücre sayısını</b> artırmaya çalışın. Farklı ülke, farklı varlık sınıfı, farklı para birimi — kamyon sayısını artıran budur.</p>
+<a class="cta" href="/">Korelasyon matrisinizi görün →</a>
+
+<h2>İlgili yazılar</h2>
+<ul><li><a href="/rehber/var-nedir/">Riske Maruz Değer (VaR) Nedir? Yatırımcı İçin Sade Bir Anlatım</a></li><li><a href="/rehber/stres-testi/">Portföy Stres Testi: 2008'i Bugünkü Portföyünüzle Yaşasaydınız?</a></li><li><a href="/rehber/tahvil-durasyonu-dv01/">Tahvil Durasyonu ve DV01: Faiz Riskinizi Tek Sayıyla Ölçün</a></li></ul>
+</article>
+</main>
+<footer>© 2026 Kuantile — Bu sitedeki hiçbir içerik yatırım danışmanlığı değildir.<br><a href="/gizlilik/">Gizlilik Politikası</a> · <a href="/kullanim-sartlari/">Kullanım Şartları</a> · <a href="/hakkimizda/">Hakkımızda</a> · <a href="/iletisim/">İletişim</a> · <a href="/rehber/">Rehber</a></footer>
+</body>
+</html>
