@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>if(localStorage.getItem("kt_theme")==="dark")document.documentElement.dataset.theme="dark";</script>
 <title>What Is Value at Risk (VaR)? A Plain-Language Guide | Kuantile</title>
 <meta name="description" content="What is VaR, how is it computed, and what does 99% confidence mean? Historical simulation explained with examples.">
 <link rel="canonical" href="https://kuantile.com/en/guides/what-is-var/">
@@ -12,7 +13,8 @@
 <link rel="icon" type="image/png" href="/logo.png">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8772857624852631" crossorigin="anonymous"></script>
 <style>
-:root{--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;--accent:#2a78d6;--accent2:#256abf;--border:#e4e3dd;--page:#f5f5f2;--surface:#fff}
+:root{--ink:#0b0b0b;--ink2:#52514e;--body:#2c2b28;--muted:#898781;--accent:#2a78d6;--accent2:#256abf;--border:#e4e3dd;--border2:#d7d6cf;--page:#f5f5f2;--surface:#fff;--soft:#eaf2fc;--okbg:#e8f4e8;--okink:#006300;--errbg:#fbebeb;--errink:#d03b3b;--shadow:0 1px 6px rgba(25,25,15,.05)}
+:root[data-theme="dark"]{--ink:#fff;--ink2:#c3c2b7;--body:#d6d5cc;--muted:#898781;--accent:#3987e5;--accent2:#5598e7;--border:rgba(255,255,255,.1);--border2:#3d3d39;--page:#0d0d0d;--surface:#1a1a19;--soft:rgba(57,135,229,.16);--okbg:rgba(12,163,12,.14);--okink:#0ca30c;--errbg:rgba(208,59,59,.14);--errink:#e66767;--shadow:0 1px 6px rgba(0,0,0,.4)}
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--page);color:var(--ink);font-size:16px;line-height:1.7}
 header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
@@ -20,35 +22,37 @@ header .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:
 header nav{margin-left:auto;display:flex;gap:18px;flex-wrap:wrap}
 header nav a{color:var(--ink2);text-decoration:none;font-size:14.5px}
 header nav a:hover{color:var(--accent2)}
+#th{background:none;border:1px solid var(--border2);border-radius:7px;color:var(--ink2);cursor:pointer;padding:5px 9px;line-height:1;margin:0}
+#th:hover{color:var(--accent2);border-color:var(--accent)}
 main{max-width:760px;margin:0 auto;padding:36px 20px 60px}
-article{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px;box-shadow:0 1px 6px rgba(25,25,15,.05)}
+article{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px;box-shadow:var(--shadow)}
 h1{font-size:28px;line-height:1.3;margin:0 0 6px;letter-spacing:-.3px}
 h2{font-size:20px;margin:28px 0 8px}
 .meta{color:var(--muted);font-size:13.5px;margin-bottom:20px}
-p{margin:0 0 14px;color:#2c2b28}
-ul,ol{color:#2c2b28}
+p{margin:0 0 14px;color:var(--body)}
+ul,ol{color:var(--body)}
 li{margin-bottom:6px}
 a{color:var(--accent2)}
 .cta{display:inline-block;background:var(--accent);color:#fff;padding:11px 20px;border-radius:9px;text-decoration:none;font-weight:600;margin-top:10px}
 .cta:hover{background:var(--accent2)}
 footer{max-width:760px;margin:0 auto;padding:0 20px 40px;color:var(--muted);font-size:13px}
 footer a{color:var(--muted)}
-.cards a.card{display:block;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:14px;text-decoration:none;box-shadow:0 1px 6px rgba(25,25,15,.05)}
+.cards a.card{display:block;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:14px;text-decoration:none;box-shadow:var(--shadow)}
 .cards a.card b{color:var(--ink);font-size:17px}
 .cards a.card p{color:var(--ink2);margin:6px 0 0;font-size:14.5px}
 label{display:block;font-size:13.5px;color:var(--ink2);font-weight:600;margin:14px 0 4px}
-input,textarea{width:100%;border:1px solid #d7d6cf;border-radius:8px;padding:10px 12px;font:inherit;background:#fff}
+input,textarea{width:100%;border:1px solid var(--border2);border-radius:8px;padding:10px 12px;font:inherit;background:var(--surface);color:var(--ink)}
 input:focus,textarea:focus{outline:none;border-color:var(--accent)}
 button{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:12px 22px;font:inherit;font-weight:600;cursor:pointer;margin-top:16px}
 button:hover{background:var(--accent2)}
-.ok{background:#e8f4e8;color:#006300;padding:10px 14px;border-radius:8px;margin-top:14px;display:none}
-.err{background:#fbebeb;color:#d03b3b;padding:10px 14px;border-radius:8px;margin-top:14px;display:none}
+.ok{background:var(--okbg);color:var(--okink);padding:10px 14px;border-radius:8px;margin-top:14px;display:none}
+.err{background:var(--errbg);color:var(--errink);padding:10px 14px;border-radius:8px;margin-top:14px;display:none}
 </style>
 </head>
 <body>
 <header>
   <a class="logo" href="/"><img src="/logo.png" width="26" height="26" alt="Kuantile logosu">Kuantile</a>
-  <nav><a href="/">App</a><a href="/en/guides/">Guides</a><a href="/en/about/">About</a><a href="/en/contact/">Contact</a><a href="/rehber/var-nedir/" style="font-weight:700;color:var(--accent2)">TR</a></nav>
+  <nav><a href="/">App</a><a href="/en/guides/">Guides</a><a href="/en/about/">About</a><a href="/en/contact/">Contact</a><a href="/rehber/var-nedir/" style="font-weight:700;color:var(--accent2)">TR</a><button id="th" aria-label="Tema">◐</button></nav>
 </header>
 <main>
 <article>
@@ -79,5 +83,12 @@ button:hover{background:var(--accent2)}
 </article>
 </main>
 <footer>© 2026 Kuantile — Nothing on this site constitutes investment advice.<br><a href="/en/privacy/">Privacy Policy</a> · <a href="/en/terms/">Terms of Use</a> · <a href="/en/about/">About</a> · <a href="/en/contact/">Contact</a> · <a href="/en/guides/">Guides</a></footer>
+<script>
+document.getElementById("th").addEventListener("click", function () {
+  var d = document.documentElement.dataset.theme === "dark";
+  if (d) { delete document.documentElement.dataset.theme; localStorage.setItem("kt_theme", "light"); }
+  else { document.documentElement.dataset.theme = "dark"; localStorage.setItem("kt_theme", "dark"); }
+});
+</script>
 </body>
 </html>

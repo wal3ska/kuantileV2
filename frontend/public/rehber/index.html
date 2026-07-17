@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>if(localStorage.getItem("kt_theme")==="dark")document.documentElement.dataset.theme="dark";</script>
 <title>Rehber — Portföy ve Risk Yönetimi Yazıları | Kuantile</title>
 <meta name="description" content="VaR, çeşitlendirme, stres testi, tahvil durasyonu, gram altın ve fon analizi üzerine Türkçe rehber yazıları.">
 <link rel="canonical" href="https://kuantile.com/rehber/">
@@ -12,7 +13,8 @@
 <link rel="icon" type="image/png" href="/logo.png">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8772857624852631" crossorigin="anonymous"></script>
 <style>
-:root{--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;--accent:#2a78d6;--accent2:#256abf;--border:#e4e3dd;--page:#f5f5f2;--surface:#fff}
+:root{--ink:#0b0b0b;--ink2:#52514e;--body:#2c2b28;--muted:#898781;--accent:#2a78d6;--accent2:#256abf;--border:#e4e3dd;--border2:#d7d6cf;--page:#f5f5f2;--surface:#fff;--soft:#eaf2fc;--okbg:#e8f4e8;--okink:#006300;--errbg:#fbebeb;--errink:#d03b3b;--shadow:0 1px 6px rgba(25,25,15,.05)}
+:root[data-theme="dark"]{--ink:#fff;--ink2:#c3c2b7;--body:#d6d5cc;--muted:#898781;--accent:#3987e5;--accent2:#5598e7;--border:rgba(255,255,255,.1);--border2:#3d3d39;--page:#0d0d0d;--surface:#1a1a19;--soft:rgba(57,135,229,.16);--okbg:rgba(12,163,12,.14);--okink:#0ca30c;--errbg:rgba(208,59,59,.14);--errink:#e66767;--shadow:0 1px 6px rgba(0,0,0,.4)}
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--page);color:var(--ink);font-size:16px;line-height:1.7}
 header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
@@ -20,35 +22,37 @@ header .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:
 header nav{margin-left:auto;display:flex;gap:18px;flex-wrap:wrap}
 header nav a{color:var(--ink2);text-decoration:none;font-size:14.5px}
 header nav a:hover{color:var(--accent2)}
+#th{background:none;border:1px solid var(--border2);border-radius:7px;color:var(--ink2);cursor:pointer;padding:5px 9px;line-height:1;margin:0}
+#th:hover{color:var(--accent2);border-color:var(--accent)}
 main{max-width:760px;margin:0 auto;padding:36px 20px 60px}
-article{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px;box-shadow:0 1px 6px rgba(25,25,15,.05)}
+article{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px;box-shadow:var(--shadow)}
 h1{font-size:28px;line-height:1.3;margin:0 0 6px;letter-spacing:-.3px}
 h2{font-size:20px;margin:28px 0 8px}
 .meta{color:var(--muted);font-size:13.5px;margin-bottom:20px}
-p{margin:0 0 14px;color:#2c2b28}
-ul,ol{color:#2c2b28}
+p{margin:0 0 14px;color:var(--body)}
+ul,ol{color:var(--body)}
 li{margin-bottom:6px}
 a{color:var(--accent2)}
 .cta{display:inline-block;background:var(--accent);color:#fff;padding:11px 20px;border-radius:9px;text-decoration:none;font-weight:600;margin-top:10px}
 .cta:hover{background:var(--accent2)}
 footer{max-width:760px;margin:0 auto;padding:0 20px 40px;color:var(--muted);font-size:13px}
 footer a{color:var(--muted)}
-.cards a.card{display:block;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:14px;text-decoration:none;box-shadow:0 1px 6px rgba(25,25,15,.05)}
+.cards a.card{display:block;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:14px;text-decoration:none;box-shadow:var(--shadow)}
 .cards a.card b{color:var(--ink);font-size:17px}
 .cards a.card p{color:var(--ink2);margin:6px 0 0;font-size:14.5px}
 label{display:block;font-size:13.5px;color:var(--ink2);font-weight:600;margin:14px 0 4px}
-input,textarea{width:100%;border:1px solid #d7d6cf;border-radius:8px;padding:10px 12px;font:inherit;background:#fff}
+input,textarea{width:100%;border:1px solid var(--border2);border-radius:8px;padding:10px 12px;font:inherit;background:var(--surface);color:var(--ink)}
 input:focus,textarea:focus{outline:none;border-color:var(--accent)}
 button{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:12px 22px;font:inherit;font-weight:600;cursor:pointer;margin-top:16px}
 button:hover{background:var(--accent2)}
-.ok{background:#e8f4e8;color:#006300;padding:10px 14px;border-radius:8px;margin-top:14px;display:none}
-.err{background:#fbebeb;color:#d03b3b;padding:10px 14px;border-radius:8px;margin-top:14px;display:none}
+.ok{background:var(--okbg);color:var(--okink);padding:10px 14px;border-radius:8px;margin-top:14px;display:none}
+.err{background:var(--errbg);color:var(--errink);padding:10px 14px;border-radius:8px;margin-top:14px;display:none}
 </style>
 </head>
 <body>
 <header>
   <a class="logo" href="/"><img src="/logo.png" width="26" height="26" alt="Kuantile logosu">Kuantile</a>
-  <nav><a href="/">Uygulama</a><a href="/rehber/">Rehber</a><a href="/hakkimizda/">Hakkımızda</a><a href="/iletisim/">İletişim</a><a href="/en/guides/" style="font-weight:700;color:var(--accent2)">EN</a></nav>
+  <nav><a href="/">Uygulama</a><a href="/rehber/">Rehber</a><a href="/hakkimizda/">Hakkımızda</a><a href="/iletisim/">İletişim</a><a href="/en/guides/" style="font-weight:700;color:var(--accent2)">EN</a><button id="th" aria-label="Tema">◐</button></nav>
 </header>
 <main>
 <h1 style="margin-bottom:6px">Rehber</h1>
@@ -56,5 +60,12 @@ button:hover{background:var(--accent2)}
 <div class="cards"><a class="card" href="/rehber/var-nedir/"><b>Riske Maruz Değer (VaR) Nedir? Yatırımcı İçin Sade Bir Anlatım</b><p>VaR (Value at Risk) nedir, nasıl hesaplanır, %99 güven düzeyi ne demek? Tarihsel simülasyon yöntemini örneklerle anlatıyoruz.</p></a><a class="card" href="/rehber/cesitlendirme-ve-korelasyon/"><b>Çeşitlendirme ve Korelasyon: Yumurtalar Gerçekten Farklı Sepetlerde mi?</b><p>Portföy çeşitlendirmesi neden korelasyona bakılarak yapılır? Korelasyon matrisi nasıl okunur, çeşitlendirme faydası nasıl ölçülür?</p></a><a class="card" href="/rehber/stres-testi/"><b>Portföy Stres Testi: 2008'i Bugünkü Portföyünüzle Yaşasaydınız?</b><p>Stres testi nedir, tarihsel senaryo analizi nasıl çalışır? 2008 krizi, Covid çöküşü ve kur şoklarında portföyünüzün simülasyonu.</p></a><a class="card" href="/rehber/tahvil-durasyonu-dv01/"><b>Tahvil Durasyonu ve DV01: Faiz Riskinizi Tek Sayıyla Ölçün</b><p>Macaulay ve modified duration nedir, DV01 nasıl hesaplanır? Faiz artışının tahvil portföyüne etkisini pratik örneklerle anlatıyoruz.</p></a><a class="card" href="/rehber/gram-altin-mi-ons-mu/"><b>Gram Altın mı, Ons Altın mı? TL Yatırımcısı İçin Gerçek Fark</b><p>Gram altın ile ons altın arasındaki fark nedir? Kur etkisi, korelasyon ve TL bazlı altın yatırımının incelikleri.</p></a><a class="card" href="/rehber/tefas-fon-analizi/"><b>TEFAS Fonları Portföyde Nasıl Takip Edilir?</b><p>TEFAS fonu nedir, fiyatı ne zaman açıklanır, portföy riskine katkısı nasıl ölçülür? Fon yatırımcısı için pratik rehber.</p></a><a class="card" href="/rehber/tl-bazli-takip/"><b>Portföyü TL Bazında Takip Etmek Neden Hayati?</b><p>Dolar bazlı mı TL bazlı mı takip? Kur etkisi getiriyi nasıl maskeler? Tek para biriminde konsolide portföy takibinin önemi.</p></a><a class="card" href="/rehber/kriptoda-risk/"><b>Kripto Varlıklarda Risk Yönetimi: Oynaklıkla Yaşamayı Öğrenmek</b><p>Bitcoin ve kripto portföy riskine nasıl dahil edilir? Pozisyon boyutu, korelasyon ve VaR ile kripto oynaklığını yönetme rehberi.</p></a><a class="card" href="/rehber/yuzdelik-dilim/"><b>Getiriniz İyi mi Kötü mü? Tarihsel Yüzdelik Dilimle Değerlendirin</b><p>Haftalık veya aylık getirinizin tarihsel yüzdelik dilimi ne anlatır? Percentile kavramı ve portföy raporlarında kullanımı.</p></a><a class="card" href="/rehber/portfoy-dengeleme/"><b>Portföy Dengeleme (Rebalancing): Ne Zaman, Nasıl, Neden?</b><p>Portföy dengelemesi nedir, hangi sıklıkla yapılmalı? Eşik bazlı ve takvim bazlı rebalancing stratejileri ve pratik ipuçları.</p></a></div>
 </main>
 <footer>© 2026 Kuantile — Bu sitedeki hiçbir içerik yatırım danışmanlığı değildir.<br><a href="/gizlilik/">Gizlilik Politikası</a> · <a href="/kullanim-sartlari/">Kullanım Şartları</a> · <a href="/hakkimizda/">Hakkımızda</a> · <a href="/iletisim/">İletişim</a> · <a href="/rehber/">Rehber</a></footer>
+<script>
+document.getElementById("th").addEventListener("click", function () {
+  var d = document.documentElement.dataset.theme === "dark";
+  if (d) { delete document.documentElement.dataset.theme; localStorage.setItem("kt_theme", "light"); }
+  else { document.documentElement.dataset.theme = "dark"; localStorage.setItem("kt_theme", "dark"); }
+});
+</script>
 </body>
 </html>
