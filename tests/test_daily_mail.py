@@ -130,10 +130,39 @@ def test_weekly_run_includes_percentile_and_var(monkeypatch):
 def test_period_stats_math():
     s = pd.Series(np.linspace(100, 200, 300),
                   index=pd.bdate_range("2025-05-01", periods=300))
-    st = daily_mail.period_stats(s, 5)
+    st = daily_mail.period_stats(s, "weekly")
     assert st is not None and st["ret"] > 0
     assert st["percentile"] is not None and 0 <= st["percentile"] <= 100
     assert st["var_now"] is not None
+
+
+def test_weekly_old_price_is_seven_calendar_days_back():
+    """Kripto gibi 7 gün işlem gören varlıkta haftalık pencere tam 7 takvim günü olmalı
+    (eski satır-bazlı kod 5 gün geriye gidiyordu)."""
+    idx = pd.date_range("2026-06-01", periods=60, freq="D")
+    vals = np.linspace(100, 400, 60)
+    df = pd.DataFrame({KEY: vals}, index=idx)
+    ch = daily_mail.position_changes(df, "weekly")
+    expected = vals[-1] / vals[-1 - 7] - 1
+    assert abs(ch[KEY] - expected) < 1e-12
+    wrong_5day = vals[-1] / vals[-1 - 5] - 1
+    assert abs(ch[KEY] - wrong_5day) > 1e-9
+
+
+def test_weekly_old_price_pure_bist_matches_friday_to_friday():
+    """İş günü takvimli seride 7 takvim günü önce = önceki cuma kapanışı."""
+    idx = pd.bdate_range("2026-06-01", periods=30)   # cuma biter
+    vals = np.linspace(100, 200, 30)
+    df = pd.DataFrame({KEY: vals}, index=idx)
+    ch = daily_mail.position_changes(df, "weekly")
+    expected = vals[-1] / vals[-1 - 5] - 1            # 5 iş günü = önceki cuma
+    assert abs(ch[KEY] - expected) < 1e-12
+
+
+def test_daily_change_is_last_two_closes():
+    df = short_prices()                               # 100 -> 110
+    ch = daily_mail.position_changes(df, "daily")
+    assert abs(ch[KEY] - 0.10) < 1e-12
 
 
 def test_run_skips_disabled_users(monkeypatch):

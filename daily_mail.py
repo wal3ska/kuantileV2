@@ -19,10 +19,26 @@ from db import SessionLocal, User, init_db
 APP_URL = "https://kuantile.com"
 API_URL = "https://api.kuantile.com"
 
-# n: donemin yaklasik islem gunu sayisi (pct_change penceresi)
+# n: VaR kirpma icin yaklasik islem gunu; days: takvim gunu penceresi.
+# Gunluk degisim islem-satiri bazli (son kapanis / onceki kapanis); hafta/ay/yil
+# takvim gunu bazli hesaplanir ki 7 gun islem goren varliklar (kripto, gram altin)
+# ile 5 gun islem gorenler (BIST, ABD) ayni pencereyi kullansin.
 PERIODS = {
-    "daily": {"n": 1}, "weekly": {"n": 5}, "monthly": {"n": 21}, "yearly": {"n": 252},
+    "daily": {"n": 1, "days": None},
+    "weekly": {"n": 5, "days": 7},
+    "monthly": {"n": 21, "days": 30},
+    "yearly": {"n": 252, "days": 365},
 }
+
+
+def _period_returns(series: pd.Series, period: str) -> pd.Series:
+    """Donem getiri serisi. Gunluk: satir bazli; digerleri: takvim gunu bazli
+    (gunluk frekansa ffill ile orneklenip tam D gun oncesiyle kiyaslanir)."""
+    days = PERIODS[period]["days"]
+    if days is None:
+        return series.pct_change(1).dropna()
+    sd = series.resample("D").ffill()
+    return sd.pct_change(days).dropna()
 
 CONFIDENCE = 0.99
 
@@ -107,11 +123,12 @@ def portfolio_series(pf, prices_try) -> pd.Series | None:
     return df.sum(axis=1)
 
 
-def period_stats(series: pd.Series, n: int) -> dict | None:
+def period_stats(series: pd.Series, period: str) -> dict | None:
     """Donem getirisi, tarihsel yuzdelik dilim ve VaR degisimi."""
+    n = PERIODS[period]["n"]
     if series is None or len(series) <= n + 2:
         return None
-    rets = series.pct_change(n).dropna()
+    rets = _period_returns(series, period)
     if rets.empty:
         return None
     current = float(rets.iloc[-1])
@@ -133,7 +150,6 @@ def build_report_html(user, period: str, fx_now: float, prices_try,
     """Kullanicinin dilinde donemsel rapor HTML'i. Hic veri yoksa None."""
     x = L.get(user.lang or "tr", L["tr"])
     label = x[period]
-    n = PERIODS[period]["n"]
     pf = user.portfolio
     rows_html = []
     total = 0.0
@@ -171,7 +187,7 @@ def build_report_html(user, period: str, fx_now: float, prices_try,
     if priced == 0 and bond_total == 0:
         return None
 
-    stats = period_stats(portfolio_series(pf, prices_try), n)
+    stats = period_stats(portfolio_series(pf, prices_try), period)
     stat_lines = []
     if stats is not None:
         line = f"{x['change'].format(label=label)} {_colored(fmt_pct(stats['ret'], x), stats['ret'])}"
@@ -220,15 +236,26 @@ def build_report_html(user, period: str, fx_now: float, prices_try,
     """
 
 
-def position_changes(prices_try, n: int) -> dict:
-    """Anahtar -> donemlik yuzde degisim."""
+def position_changes(prices_try, period: str) -> dict:
+    """Anahtar -> donemlik yuzde degisim (eski fiyat: gunlukte onceki kapanis,
+    digerlerinde tam D takvim gunu oncesinin kapanisi)."""
     out = {}
     if prices_try is None:
         return out
+    days = PERIODS[period]["days"]
     for col in prices_try.columns:
         s = prices_try[col].dropna()
-        if len(s) > n and float(s.iloc[-1 - n]) > 0:
-            out[col] = float(s.iloc[-1] / s.iloc[-1 - n] - 1)
+        if len(s) < 2:
+            continue
+        if days is None:
+            old = float(s.iloc[-2])
+        else:
+            sd = s.resample("D").ffill()
+            if len(sd) <= days:
+                continue
+            old = float(sd.iloc[-1 - days])
+        if old > 0:
+            out[col] = float(s.iloc[-1] / old - 1)
     return out
 
 
@@ -236,7 +263,6 @@ def run(period: str = "daily") -> int:
     if period not in PERIODS:
         print(f"Bilinmeyen dönem: {period} (daily|weekly|monthly|yearly)")
         return 2
-    n = PERIODS[period]["n"]
     init_db()
     db = SessionLocal()
     try:
@@ -260,7 +286,7 @@ def run(period: str = "daily") -> int:
             raw = dp.fetch_yahoo_prices(("TRY=X",))
             prices_try, last_native, failed = None, {}, []
             fx_now = float(raw["TRY=X"].dropna().iloc[-1])
-        changes = position_changes(prices_try, n)
+        changes = position_changes(prices_try, period)
 
         date_str = datetime.now(timezone.utc).strftime("%d.%m.%Y")
         sent = errors = 0
