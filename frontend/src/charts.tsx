@@ -175,3 +175,68 @@ export function CorrHeatmap({ matrix }: { matrix: Record<string, Record<string, 
     </div>
   );
 }
+
+
+/* ---------- deger serisi cizgi grafigi ---------- */
+
+export interface LinePoint { date: string; value: number }
+
+export function LineChart({ points, format }: {
+  points: LinePoint[];
+  format: (v: number) => string;
+}) {
+  const { pos } = themeColors();
+  const { show, hide, node } = useTooltip();
+  const [hoverI, setHoverI] = useState<number | null>(null);
+  if (points.length < 2) return null;
+
+  const W = 600, H = 200;
+  const vals = points.map((p) => p.value);
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const span = max - min || Math.abs(max) || 1;
+  const lo = min - span * 0.06, hi = max + span * 0.06;
+  const x = (i: number) => (i / (points.length - 1)) * W;
+  const y = (v: number) => H - ((v - lo) / (hi - lo)) * H;
+
+  const path = points.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(2)},${y(p.value).toFixed(2)}`).join(" ");
+  const area = `${path} L${W},${H} L0,${H} Z`;
+
+  const onMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const frac = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
+    const i = Math.round(frac * (points.length - 1));
+    setHoverI(i);
+    show(e, (<><div className="t">{points[i].date}</div>{format(points[i].value)}</>));
+  };
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--muted)" }}>
+        <span>{format(max)}</span>
+      </div>
+      <div
+        style={{ position: "relative", width: "100%", height: H, cursor: "crosshair" }}
+        onMouseMove={onMove}
+        onMouseLeave={() => { setHoverI(null); hide(); }}
+      >
+        <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
+          style={{ display: "block" }}>
+          <line x1="0" y1={H - 1} x2={W} y2={H - 1} stroke="var(--baseline)" strokeWidth="1"
+            vectorEffect="non-scaling-stroke" />
+          <path d={area} fill={pos} opacity="0.08" />
+          <path d={path} fill="none" stroke={pos} strokeWidth="2" vectorEffect="non-scaling-stroke" />
+          {hoverI !== null && (
+            <line x1={x(hoverI)} y1="0" x2={x(hoverI)} y2={H} stroke="var(--muted)"
+              strokeWidth="1" vectorEffect="non-scaling-stroke" strokeDasharray="4 3" />
+          )}
+        </svg>
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--muted)" }}>
+        <span>{points[0].date}</span>
+        <span>{format(min)}</span>
+        <span>{points[points.length - 1].date}</span>
+      </div>
+      {node}
+    </div>
+  );
+}

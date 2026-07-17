@@ -146,6 +146,15 @@ const TR = {
   bp: "baz puan",
   shockNote: "DV01: faizde 1 baz puanlık artışın sepette yarattığı yaklaşık TL kaybı. Şoklar basitleştirilmiş durasyon yaklaşımıdır.",
   disclaimer: "Bu analiz yatırım danışmanlığı değildir. Fiyat kaynağı: Yahoo Finance, TEFAS.",
+  customSim: "Özel Simülasyon",
+  simDesc: "Bir tarih aralığı seçin; bugünkü portföy ağırlıklarınız o dönemde yaşasaydı nasıl seyrederdi görün.",
+  startDate: "Başlangıç",
+  endDate: "Bitiş",
+  simulateBtn: "Simüle Et",
+  simulating: "Hesaplanıyor…",
+  simSummary: "Bu aralıkta portföyünüz {p} değişirdi: {v1} → {v2}",
+  simMissing: "Kapsam dışı (bu aralıkta verisi yok): {list}",
+  simBadRange: "Geçerli bir tarih aralığı seçin.",
 };
 
 const EN: Record<keyof typeof TR, string> = {
@@ -282,6 +291,15 @@ const EN: Record<keyof typeof TR, string> = {
   bp: "bp",
   shockNote: "DV01: approximate TRY loss in the basket from a 1 bp rate increase. Shocks use a simplified duration approximation.",
   disclaimer: "This analysis is not investment advice. Price sources: Yahoo Finance, TEFAS.",
+  customSim: "Custom Simulation",
+  simDesc: "Pick a date range to see how your current portfolio weights would have fared over that period.",
+  startDate: "Start",
+  endDate: "End",
+  simulateBtn: "Simulate",
+  simulating: "Computing…",
+  simSummary: "In this range your portfolio would have changed {p}: {v1} → {v2}",
+  simMissing: "Not covered (no data in range): {list}",
+  simBadRange: "Pick a valid date range.",
 };
 
 const DICTS: Record<Lang, Record<keyof typeof TR, string>> = { tr: TR, en: EN };

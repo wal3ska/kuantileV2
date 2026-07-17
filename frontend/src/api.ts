@@ -137,6 +137,17 @@ export interface AnalyzeResponse {
   disclaimer: string;
 }
 
+export interface SimulateResponse {
+  start: string;
+  end: string;
+  cumulative_return: number;
+  impact_try: number;
+  base_value_try: number;
+  final_value_try: number;
+  missing_assets: string[];
+  series: { date: string; value: number }[];
+}
+
 export interface PortfolioData {
   name: string;
   updated_at: string | null;
@@ -168,6 +179,9 @@ export const api = {
 
   analyze: (positions: PositionIn[], bonds: BondIn[], confidence: number) =>
     req<AnalyzeResponse>("POST", "/portfolio/analyze", { positions, bonds, confidence }),
+
+  simulate: (positions: PositionIn[], start: string, end: string) =>
+    req<SimulateResponse>("POST", "/portfolio/simulate", { positions, start, end }),
 };
 
 /* ---------- biçimleme yardımcıları ---------- */

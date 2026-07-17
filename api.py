@@ -1,6 +1,7 @@
 """FastAPI backend. Calistirma: uvicorn api:app --host 0.0.0.0 --port 8000
 Dokumantasyon otomatik: http://localhost:8000/docs"""
 
+from datetime import date
 from typing import Literal, Optional
 
 import numpy as np
@@ -73,6 +74,71 @@ def bond_duration(req: BondDurationRequest):
     fair, mac, mod = engine.bond_metrics(req.coupon_rate, req.ytm, req.years, req.frequency)
     return {"fair_price": fair, "macaulay_duration": mac, "modified_duration": mod,
             "dv01_per_100_nominal": mod * fair * 1e-4}
+
+
+class SimulateRequest(BaseModel):
+    positions: list[Position]
+    start: date
+    end: date
+
+
+@app.post("/portfolio/simulate")
+def simulate(req: SimulateRequest):
+    """Ozel tarih araliginda, mevcut agirliklarla portfoyun gidisati.
+    Stres testleriyle ayni mantik: pencere getirileri bugunku degere uygulanir."""
+    if not req.positions:
+        raise HTTPException(400, "En az bir pozisyon gerekli.")
+    if req.start >= req.end:
+        raise HTTPException(400, "Başlangıç tarihi bitişten önce olmalı.")
+    if req.end > date.today():
+        raise HTTPException(400, "Bitiş tarihi gelecekte olamaz.")
+
+    try:
+        prices_try, fx_now, last_native, failed = dp.build_try_prices(
+            [p.model_dump() for p in req.positions]
+        )
+    except RuntimeError as exc:
+        raise HTTPException(503, f"Veri kaynağı hatası: {exc}")
+
+    investments = {}
+    for p in req.positions:
+        if p.name not in last_native:
+            continue
+        fx = fx_now if p.currency == "USD" else 1.0
+        investments[p.name] = p.quantity * last_native[p.name] * fx
+    valid = [n for n in investments if n in prices_try.columns]
+    if not valid:
+        raise HTTPException(400, "Hiçbir varlık için fiyat verisi bulunamadı.")
+
+    res = engine.stress_test(prices_try[valid], investments,
+                             str(req.start), str(req.end))
+    if res is None:
+        raise HTTPException(400, "Seçilen aralıkta yeterli fiyat verisi yok.")
+
+    # Deger serisi: pencere getirileri, kapsanan varliklarin bugunku degerine uygulanir
+    mask = (prices_try.index >= np.datetime64(req.start)) & (prices_try.index <= np.datetime64(req.end))
+    window = engine.clean_prices(prices_try.loc[mask, res["active_assets"]]).dropna()
+    rets = np.log(window / window.shift(1)).replace([np.inf, -np.inf], np.nan).dropna()
+    w = engine.portfolio_weights(investments, res["active_assets"])
+    base_value = sum(investments[n] for n in res["active_assets"])
+    cum = np.exp(rets.dot(w).cumsum())
+    series = [{"date": str(window.index[0].date()), "value": base_value}] + [
+        {"date": str(ts.date()), "value": float(base_value * v)} for ts, v in cum.items()
+    ]
+    if len(series) > 300:  # grafik icin seyrelt (son nokta korunur)
+        step = len(series) // 300 + 1
+        series = series[::step] + [series[-1]]
+
+    return {
+        "start": str(req.start),
+        "end": str(req.end),
+        "cumulative_return": res["cumulative_return"],
+        "impact_try": base_value * res["cumulative_return"],
+        "base_value_try": base_value,
+        "final_value_try": series[-1]["value"],
+        "missing_assets": res["missing_assets"] + failed,
+        "series": series,
+    }
 
 
 @app.post("/portfolio/analyze")

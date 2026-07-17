@@ -1,6 +1,7 @@
-import type { AnalyzeResponse, ValuationRow } from "./api";
-import { fmtNum, fmtPct, fmtTL } from "./api";
-import { CorrHeatmap, HBars } from "./charts";
+import { useState } from "react";
+import type { AnalyzeResponse, PositionIn, SimulateResponse, ValuationRow } from "./api";
+import { api, ApiError, fmtNum, fmtPct, fmtTL } from "./api";
+import { CorrHeatmap, HBars, LineChart } from "./charts";
 import { useT } from "./i18n";
 
 function Delta({ v, children }: { v: number | null; children?: React.ReactNode }) {
@@ -45,7 +46,72 @@ function ValuationTable({ rows }: { rows: ValuationRow[] }) {
   );
 }
 
-export function Dashboard({ data }: { data: AnalyzeResponse }) {
+function CustomSim({ positions }: { positions: PositionIn[] }) {
+  const { t } = useT();
+  const today = new Date().toISOString().slice(0, 10);
+  const [start, setStart] = useState("2022-01-01");
+  const [end, setEnd] = useState(today);
+  const [busy, setBusy] = useState(false);
+  const [sim, setSim] = useState<SimulateResponse | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  if (positions.length === 0) return null;
+
+  async function run() {
+    if (!start || !end || start >= end) {
+      setErr(t("simBadRange"));
+      return;
+    }
+    setBusy(true);
+    setErr(null);
+    try {
+      setSim(await api.simulate(positions, start, end));
+    } catch (e) {
+      setSim(null);
+      setErr(e instanceof ApiError ? e.message : t("analyzeFailed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="card">
+      <h3>{t("customSim")}</h3>
+      <p className="section-note" style={{ margin: "0 0 10px" }}>{t("simDesc")}</p>
+      <div style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+        <label className="f" style={{ flex: "0 0 160px" }}>{t("startDate")}
+          <input type="date" value={start} max={end} onChange={(e) => setStart(e.target.value)} />
+        </label>
+        <label className="f" style={{ flex: "0 0 160px" }}>{t("endDate")}
+          <input type="date" value={end} min={start} max={today} onChange={(e) => setEnd(e.target.value)} />
+        </label>
+        <button className="primary" onClick={run} disabled={busy}>
+          {busy ? (<><span className="spin" />{t("simulating")}</>) : t("simulateBtn")}
+        </button>
+      </div>
+      {err && <div className="msg err" style={{ marginTop: 10 }}>{err}</div>}
+      {sim && (
+        <div style={{ marginTop: 14 }}>
+          <p style={{ margin: "0 0 10px" }}>
+            <Delta v={sim.cumulative_return}>
+              {t("simSummary", {
+                p: fmtPct(sim.cumulative_return),
+                v1: fmtTL(sim.base_value_try),
+                v2: fmtTL(sim.final_value_try),
+              })}
+            </Delta>
+          </p>
+          <LineChart points={sim.series} format={fmtTL} />
+          {sim.missing_assets.length > 0 && (
+            <p className="section-note">{t("simMissing", { list: sim.missing_assets.join(", ") })}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function Dashboard({ data, positions }: { data: AnalyzeResponse; positions: PositionIn[] }) {
   const { t } = useT();
   const risk = data.market_risk;
   const bond = data.bond_risk;
@@ -174,6 +240,8 @@ export function Dashboard({ data }: { data: AnalyzeResponse }) {
           <p className="section-note">{t("stressNote")}</p>
         </div>
       )}
+
+      <CustomSim positions={positions} />
 
       {bond && (
         <div className="card">

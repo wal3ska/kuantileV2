@@ -116,6 +116,7 @@ export default function App() {
   const [bonds, setBonds] = useState<BondRow[]>([]);
   const [user, setUser] = useState<UserInfo | null>(null);
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
+  const [analyzedPositions, setAnalyzedPositions] = useState<PositionIn[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confidence, setConfidence] = useState(0.99);
@@ -171,6 +172,7 @@ export default function App() {
     setNotice(null);
     try {
       setResult(await api.analyze(positions, bs, confidence));
+      setAnalyzedPositions(positions);
     } catch (err) {
       flash("err", err instanceof ApiError ? err.message : t("analyzeFailed"));
     } finally {
@@ -271,7 +273,7 @@ export default function App() {
           </div>
 
           {result ? (
-            <Dashboard data={result} />
+            <Dashboard data={result} positions={analyzedPositions} />
           ) : (
             <div className="empty">
               <h2>{t("emptyTitle")}</h2>
