@@ -233,7 +233,7 @@ export default function App() {
     <>
       <header className="topbar">
         <Logo />
-        <a href="/rehber/" className="navlink">{t("navGuide")}</a>
+        <a href={lang === "en" ? "/en/guides/" : "/rehber/"} className="navlink">{t("navGuide")}</a>
         <div className="spacer" />
         {notice && <div className={`msg ${notice.kind}`}>{notice.text}</div>}
         <LangSwitch lang={lang} setLang={(l) => {
@@ -307,11 +307,12 @@ export default function App() {
 
       <footer className="site-footer">
         <nav>
-          <a href="/hakkimizda/">{t("footAbout")}</a>
-          <a href="/rehber/">{t("navGuide")}</a>
-          <a href="/gizlilik/">{t("footPrivacy")}</a>
-          <a href="/kullanim-sartlari/">{t("footTerms")}</a>
-          <a href="/iletisim/">{t("footContact")}</a>
+          {(lang === "en"
+            ? [["/en/about/", t("footAbout")], ["/en/guides/", t("navGuide")], ["/en/privacy/", t("footPrivacy")],
+               ["/en/terms/", t("footTerms")], ["/en/contact/", t("footContact")]]
+            : [["/hakkimizda/", t("footAbout")], ["/rehber/", t("navGuide")], ["/gizlilik/", t("footPrivacy")],
+               ["/kullanim-sartlari/", t("footTerms")], ["/iletisim/", t("footContact")]]
+          ).map(([href, label]) => <a key={href} href={href}>{label}</a>)}
         </nav>
         <p>© {new Date().getFullYear()} Kuantile — {t("footNote")}</p>
       </footer>

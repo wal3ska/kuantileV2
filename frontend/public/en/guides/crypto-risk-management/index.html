@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crypto Risk Management: Learning to Live with Volatility | Kuantile</title>
+<meta name="description" content="How to include Bitcoin and crypto in portfolio risk: position sizing, correlation and VaR for volatile assets.">
+<link rel="canonical" href="https://kuantile.com/en/guides/crypto-risk-management/">
+<link rel="icon" type="image/png" href="/logo.png">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8772857624852631" crossorigin="anonymous"></script>
+<style>
+:root{--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;--accent:#2a78d6;--accent2:#256abf;--border:#e4e3dd;--page:#f5f5f2;--surface:#fff}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--page);color:var(--ink);font-size:16px;line-height:1.7}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;color:var(--ink);text-decoration:none}
+header nav{margin-left:auto;display:flex;gap:18px;flex-wrap:wrap}
+header nav a{color:var(--ink2);text-decoration:none;font-size:14.5px}
+header nav a:hover{color:var(--accent2)}
+main{max-width:760px;margin:0 auto;padding:36px 20px 60px}
+article{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px;box-shadow:0 1px 6px rgba(25,25,15,.05)}
+h1{font-size:28px;line-height:1.3;margin:0 0 6px;letter-spacing:-.3px}
+h2{font-size:20px;margin:28px 0 8px}
+.meta{color:var(--muted);font-size:13.5px;margin-bottom:20px}
+p{margin:0 0 14px;color:#2c2b28}
+ul,ol{color:#2c2b28}
+li{margin-bottom:6px}
+a{color:var(--accent2)}
+.cta{display:inline-block;background:var(--accent);color:#fff;padding:11px 20px;border-radius:9px;text-decoration:none;font-weight:600;margin-top:10px}
+.cta:hover{background:var(--accent2)}
+footer{max-width:760px;margin:0 auto;padding:0 20px 40px;color:var(--muted);font-size:13px}
+footer a{color:var(--muted)}
+.cards a.card{display:block;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:14px;text-decoration:none;box-shadow:0 1px 6px rgba(25,25,15,.05)}
+.cards a.card b{color:var(--ink);font-size:17px}
+.cards a.card p{color:var(--ink2);margin:6px 0 0;font-size:14.5px}
+label{display:block;font-size:13.5px;color:var(--ink2);font-weight:600;margin:14px 0 4px}
+input,textarea{width:100%;border:1px solid #d7d6cf;border-radius:8px;padding:10px 12px;font:inherit;background:#fff}
+input:focus,textarea:focus{outline:none;border-color:var(--accent)}
+button{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:12px 22px;font:inherit;font-weight:600;cursor:pointer;margin-top:16px}
+button:hover{background:var(--accent2)}
+.ok{background:#e8f4e8;color:#006300;padding:10px 14px;border-radius:8px;margin-top:14px;display:none}
+.err{background:#fbebeb;color:#d03b3b;padding:10px 14px;border-radius:8px;margin-top:14px;display:none}
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="/"><img src="/logo.png" width="26" height="26" alt="Kuantile logosu">Kuantile</a>
+  <nav><a href="/">App</a><a href="/en/guides/">Guides</a><a href="/en/about/">About</a><a href="/en/contact/">Contact</a><a href="/rehber/kriptoda-risk/" style="font-weight:700;color:var(--accent2)">TR</a></nav>
+</header>
+<main>
+<article>
+<h1>Crypto Risk Management: Learning to Live with Volatility</h1>
+<p class="meta">Kuantile Guides · 17.07.2026</p>
+
+<p>Crypto is the most volatile asset class an ordinary portfolio ever admits: a 10% daily move in Bitcoin is unremarkable, and 30% weeks litter its history. That is a reason not to avoid crypto, but to <b>size it deliberately</b>. Risk management here means putting numbers on volatility, not fearing it.</p>
+<h2>Size by risk contribution, not percentage</h2>
+<p>"5% of the portfolio in crypto" sounds innocent; but an asset 3-4× as volatile as the index can generate 20-30% of total portfolio risk from that 5% weight. The right question is not "what percent is crypto?" but <b>"what share of my portfolio VaR comes from crypto?"</b> In Kuantile this is easy to see: run the analysis with and without your crypto and compare the VaR — the difference is crypto's risk bill.</p>
+<h2>"Digital gold" or leveraged Nasdaq?</h2>
+<p>Crypto's correlation with equities is regime-dependent: through 2020-2022 Bitcoin tracked the Nasdaq at 0.5-0.7, behaving like a leveraged tech index; in other periods it decoupled. "It hedges my portfolio" is not a fact but <b>a claim to be measured</b>. Check BTC's cell against US stocks in your correlation matrix; if it's dark blue, your crypto adds dose, not diversification. In TRY terms a second dynamic appears: crypto is dollar-priced, so on lira-shock days its TRY value jumps with the currency — for a Turkish investor, crypto is also an accidental currency position.</p>
+<h2>What the stress tests say</h2>
+<p>The 2022 "Crypto Winter" (LUNA/FTX) window is one of Kuantile's preset scenarios: BTC fell ~65% in that stretch, and the test shows what your whole portfolio would have endured, in TRY. A warning about young coins: a few years of price history leaves them "not covered" in older scenarios, hiding their tail risk. Giving a large weight to an asset with a short history is sailing without a map.</p>
+<h2>Three practical rules</h2>
+<ol>
+<li><b>Size:</b> keep crypto's VaR contribution below a share of total VaR you consciously accept (say, one third).</li>
+<li><b>Discipline:</b> after big rallies the crypto weight inflates itself; <a href="/en/guides/portfolio-rebalancing/">rebalance</a> back to target.</li>
+<li><b>Honesty:</b> if you claim to be long-term, look at the −60% scenario and ask yourself whether you would really hold. If you would sell there, you are not long-term.</li>
+</ol>
+<a class="cta" href="/">Measure your crypto's risk contribution →</a>
+
+<h2>Related articles</h2>
+<ul><li><a href="/en/guides/what-is-var/">What Is Value at Risk (VaR)? A Plain-Language Guide</a></li><li><a href="/en/guides/diversification-and-correlation/">Diversification and Correlation: Are Your Eggs Really in Different Baskets?</a></li><li><a href="/en/guides/portfolio-stress-testing/">Portfolio Stress Testing: What If You Held This Portfolio Through 2008?</a></li></ul>
+</article>
+</main>
+<footer>© 2026 Kuantile — Nothing on this site constitutes investment advice.<br><a href="/en/privacy/">Privacy Policy</a> · <a href="/en/terms/">Terms of Use</a> · <a href="/en/about/">About</a> · <a href="/en/contact/">Contact</a> · <a href="/en/guides/">Guides</a></footer>
+</body>
+</html>

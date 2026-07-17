@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bond Duration and DV01: Measure Your Rate Risk with One Number | Kuantile</title>
+<meta name="description" content="What are Macaulay and modified duration, how is DV01 computed? The impact of rate hikes on bond portfolios, with practical examples.">
+<link rel="canonical" href="https://kuantile.com/en/guides/bond-duration-and-dv01/">
+<link rel="icon" type="image/png" href="/logo.png">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8772857624852631" crossorigin="anonymous"></script>
+<style>
+:root{--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;--accent:#2a78d6;--accent2:#256abf;--border:#e4e3dd;--page:#f5f5f2;--surface:#fff}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--page);color:var(--ink);font-size:16px;line-height:1.7}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;color:var(--ink);text-decoration:none}
+header nav{margin-left:auto;display:flex;gap:18px;flex-wrap:wrap}
+header nav a{color:var(--ink2);text-decoration:none;font-size:14.5px}
+header nav a:hover{color:var(--accent2)}
+main{max-width:760px;margin:0 auto;padding:36px 20px 60px}
+article{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px;box-shadow:0 1px 6px rgba(25,25,15,.05)}
+h1{font-size:28px;line-height:1.3;margin:0 0 6px;letter-spacing:-.3px}
+h2{font-size:20px;margin:28px 0 8px}
+.meta{color:var(--muted);font-size:13.5px;margin-bottom:20px}
+p{margin:0 0 14px;color:#2c2b28}
+ul,ol{color:#2c2b28}
+li{margin-bottom:6px}
+a{color:var(--accent2)}
+.cta{display:inline-block;background:var(--accent);color:#fff;padding:11px 20px;border-radius:9px;text-decoration:none;font-weight:600;margin-top:10px}
+.cta:hover{background:var(--accent2)}
+footer{max-width:760px;margin:0 auto;padding:0 20px 40px;color:var(--muted);font-size:13px}
+footer a{color:var(--muted)}
+.cards a.card{display:block;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:14px;text-decoration:none;box-shadow:0 1px 6px rgba(25,25,15,.05)}
+.cards a.card b{color:var(--ink);font-size:17px}
+.cards a.card p{color:var(--ink2);margin:6px 0 0;font-size:14.5px}
+label{display:block;font-size:13.5px;color:var(--ink2);font-weight:600;margin:14px 0 4px}
+input,textarea{width:100%;border:1px solid #d7d6cf;border-radius:8px;padding:10px 12px;font:inherit;background:#fff}
+input:focus,textarea:focus{outline:none;border-color:var(--accent)}
+button{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:12px 22px;font:inherit;font-weight:600;cursor:pointer;margin-top:16px}
+button:hover{background:var(--accent2)}
+.ok{background:#e8f4e8;color:#006300;padding:10px 14px;border-radius:8px;margin-top:14px;display:none}
+.err{background:#fbebeb;color:#d03b3b;padding:10px 14px;border-radius:8px;margin-top:14px;display:none}
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="/"><img src="/logo.png" width="26" height="26" alt="Kuantile logosu">Kuantile</a>
+  <nav><a href="/">App</a><a href="/en/guides/">Guides</a><a href="/en/about/">About</a><a href="/en/contact/">Contact</a><a href="/rehber/tahvil-durasyonu-dv01/" style="font-weight:700;color:var(--accent2)">TR</a></nav>
+</header>
+<main>
+<article>
+<h1>Bond Duration and DV01: Measure Your Rate Risk with One Number</h1>
+<p class="meta">Kuantile Guides · 15.07.2026</p>
+
+<p>The most common surprise for bond investors: "I bought a government bond, I thought it was guaranteed — why did its price fall?" The one-word answer is <b>duration</b>. Hold to maturity and (issuer risk aside) your principal is intact; but if you must sell earlier, price moves inversely with market rates — and duration measures how hard.</p>
+<h2>Duration, intuitively</h2>
+<p><b>Macaulay duration</b> is the weighted average waiting time of a bond's cash flows (coupons plus principal), expressed in years. <b>Modified duration</b> is its practical form: roughly how many percent the price falls when yields rise one point (100 basis points). A bond with modified duration 3 loses about 3% when yields go from 40% to 41%.</p>
+<h2>DV01: the risk in currency terms</h2>
+<p>Institutional desks speak in DV01: <b>the TRY loss caused by a 1-basis-point rise in yields.</b> Kuantile computes your bond basket's total DV01 and also tabulates the TRY impact of −100, +100, +300 and +500 bp shocks. "What do my bonds lose if the central bank hikes 500 bp?" is answered in seconds.</p>
+<h2>How coupon and maturity shape duration</h2>
+<ul>
+<li><b>Longer maturity → higher duration:</b> a 10-year bond is many times more rate-sensitive than a 1-year bill.</li>
+<li><b>Higher coupon → shorter duration:</b> big coupons return your money early. A 2-year Turkish bond with a 35% coupon has a duration near 1.6 years; a zero-coupon bill's duration equals its maturity.</li>
+</ul>
+<h2>The Turkish context: high yields' hidden comfort</h2>
+<p>When yields sit around 40%, a given maturity has noticeably shorter duration than in a 4% world (the discounting effect). High-rate environments thus soften price sensitivity somewhat — but remember that 500 bp shocks are also far more likely in such environments. Enter your bond's price, coupon and YTM in Kuantile to see its fair price, duration and shock table together. If the computed fair price deviates sharply from the market price, either your YTM input is off — or the market is telling you something.</p>
+<a class="cta" href="/">Compute your bond's duration →</a>
+
+<h2>Related articles</h2>
+<ul><li><a href="/en/guides/what-is-var/">What Is Value at Risk (VaR)? A Plain-Language Guide</a></li><li><a href="/en/guides/diversification-and-correlation/">Diversification and Correlation: Are Your Eggs Really in Different Baskets?</a></li><li><a href="/en/guides/portfolio-stress-testing/">Portfolio Stress Testing: What If You Held This Portfolio Through 2008?</a></li></ul>
+</article>
+</main>
+<footer>© 2026 Kuantile — Nothing on this site constitutes investment advice.<br><a href="/en/privacy/">Privacy Policy</a> · <a href="/en/terms/">Terms of Use</a> · <a href="/en/about/">About</a> · <a href="/en/contact/">Contact</a> · <a href="/en/guides/">Guides</a></footer>
+</body>
+</html>

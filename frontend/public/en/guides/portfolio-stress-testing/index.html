@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Stress Testing: What If You Held This Portfolio Through 2008? | Kuantile</title>
+<meta name="description" content="What is stress testing and how does historical scenario analysis work? Simulating your portfolio through 2008, Covid and lira shocks.">
+<link rel="canonical" href="https://kuantile.com/en/guides/portfolio-stress-testing/">
+<link rel="icon" type="image/png" href="/logo.png">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8772857624852631" crossorigin="anonymous"></script>
+<style>
+:root{--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;--accent:#2a78d6;--accent2:#256abf;--border:#e4e3dd;--page:#f5f5f2;--surface:#fff}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--page);color:var(--ink);font-size:16px;line-height:1.7}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;color:var(--ink);text-decoration:none}
+header nav{margin-left:auto;display:flex;gap:18px;flex-wrap:wrap}
+header nav a{color:var(--ink2);text-decoration:none;font-size:14.5px}
+header nav a:hover{color:var(--accent2)}
+main{max-width:760px;margin:0 auto;padding:36px 20px 60px}
+article{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px;box-shadow:0 1px 6px rgba(25,25,15,.05)}
+h1{font-size:28px;line-height:1.3;margin:0 0 6px;letter-spacing:-.3px}
+h2{font-size:20px;margin:28px 0 8px}
+.meta{color:var(--muted);font-size:13.5px;margin-bottom:20px}
+p{margin:0 0 14px;color:#2c2b28}
+ul,ol{color:#2c2b28}
+li{margin-bottom:6px}
+a{color:var(--accent2)}
+.cta{display:inline-block;background:var(--accent);color:#fff;padding:11px 20px;border-radius:9px;text-decoration:none;font-weight:600;margin-top:10px}
+.cta:hover{background:var(--accent2)}
+footer{max-width:760px;margin:0 auto;padding:0 20px 40px;color:var(--muted);font-size:13px}
+footer a{color:var(--muted)}
+.cards a.card{display:block;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:14px;text-decoration:none;box-shadow:0 1px 6px rgba(25,25,15,.05)}
+.cards a.card b{color:var(--ink);font-size:17px}
+.cards a.card p{color:var(--ink2);margin:6px 0 0;font-size:14.5px}
+label{display:block;font-size:13.5px;color:var(--ink2);font-weight:600;margin:14px 0 4px}
+input,textarea{width:100%;border:1px solid #d7d6cf;border-radius:8px;padding:10px 12px;font:inherit;background:#fff}
+input:focus,textarea:focus{outline:none;border-color:var(--accent)}
+button{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:12px 22px;font:inherit;font-weight:600;cursor:pointer;margin-top:16px}
+button:hover{background:var(--accent2)}
+.ok{background:#e8f4e8;color:#006300;padding:10px 14px;border-radius:8px;margin-top:14px;display:none}
+.err{background:#fbebeb;color:#d03b3b;padding:10px 14px;border-radius:8px;margin-top:14px;display:none}
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="/"><img src="/logo.png" width="26" height="26" alt="Kuantile logosu">Kuantile</a>
+  <nav><a href="/">App</a><a href="/en/guides/">Guides</a><a href="/en/about/">About</a><a href="/en/contact/">Contact</a><a href="/rehber/stres-testi/" style="font-weight:700;color:var(--accent2)">TR</a></nav>
+</header>
+<main>
+<article>
+<h1>Portfolio Stress Testing: What If You Held This Portfolio Through 2008?</h1>
+<p class="meta">Kuantile Guides · 15.07.2026</p>
+
+<p>The most honest question in risk measurement is: <b>"What does this portfolio do when the bad day comes?"</b> VaR gives you a statistical boundary; a stress test replays history. Kuantile runs your portfolio through 14 real crisis windows — from the 2008 global crisis to the 2025 tariff shock — and prices each scenario's bill for your current holdings in TRY.</p>
+<h2>The method: replaying history with today's weights</h2>
+<p>The logic is simple: take the daily returns inside a crisis window (say 20 February – 23 March 2020, the Covid crash), apply them to your <i>current</i> portfolio weights, and compound the period's impact. The "this stock didn't exist back then" problem is handled transparently: assets with no data in the window are excluded and listed clearly next to the result.</p>
+<h2>Why Türkiye-specific scenarios matter</h2>
+<p>Global tools usually test only S&P 500 crises. For a TRY-based portfolio, the 2018 Brunson crisis, the 2021 pre-KKM currency shock or the 2023 post-election adjustment are as instructive as Lehman — and in those windows, foreign-currency assets <i>rise</i> in TRY terms. Indeed, most mixed portfolios show a positive result for the "2021 currency crisis" scenario: the lira shock inflated the TRY value of their dollar assets. That is why your stress-test chart mixes red and blue bars; which crisis hurts you reveals your portfolio's character.</p>
+<h2>Custom simulation: pick your own window</h2>
+<p>If the preset scenarios aren't enough, Kuantile lets you choose any date range: "If I had entered 2022 with this portfolio, where would I have ended the year?" — answered with a day-by-day value curve that also visualises drawdown depth and recovery time.</p>
+<h2>How to read a stress test</h2>
+<ul>
+<li><b>Look at your worst scenario:</b> if that number became real, would you sleep? If not, your risk budget is exceeded.</li>
+<li><b>Look at the spread across scenarios:</b> losing equally hard in every crisis means your portfolio depends on a single factor — usually a single country.</li>
+<li><b>Look at the excluded list:</b> recent IPOs and young coins can't be tested in old scenarios; their tail risk is invisible in the table. Decide with that in mind.</li>
+</ul>
+<p>The past is not the future; but it is the only realistic stage on which to rehearse for future crises.</p>
+<a class="cta" href="/">Stress-test your portfolio →</a>
+
+<h2>Related articles</h2>
+<ul><li><a href="/en/guides/what-is-var/">What Is Value at Risk (VaR)? A Plain-Language Guide</a></li><li><a href="/en/guides/diversification-and-correlation/">Diversification and Correlation: Are Your Eggs Really in Different Baskets?</a></li><li><a href="/en/guides/bond-duration-and-dv01/">Bond Duration and DV01: Measure Your Rate Risk with One Number</a></li></ul>
+</article>
+</main>
+<footer>© 2026 Kuantile — Nothing on this site constitutes investment advice.<br><a href="/en/privacy/">Privacy Policy</a> · <a href="/en/terms/">Terms of Use</a> · <a href="/en/about/">About</a> · <a href="/en/contact/">Contact</a> · <a href="/en/guides/">Guides</a></footer>
+</body>
+</html>
