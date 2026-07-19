@@ -235,7 +235,6 @@ export default function App() {
         <Logo />
         <a href={lang === "en" ? "/en/guides/" : "/rehber/"} className="navlink">{t("navGuide")}</a>
         <div className="spacer" />
-        {notice && <div className={`msg ${notice.kind}`}>{notice.text}</div>}
         <LangSwitch lang={lang} setLang={(l) => {
           setLang(l);
           if (user) api.setLang(l).catch(() => { /* dil tercihi arka planda; hata kritik değil */ });
@@ -250,6 +249,8 @@ export default function App() {
           onMailPrefs={setMailPrefs}
         />
       </header>
+
+      {notice && <div className={`msg ${notice.kind} toast`}>{notice.text}</div>}
 
       <main className="layout">
         <div className="stack">

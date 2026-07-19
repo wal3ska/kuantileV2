@@ -228,7 +228,7 @@ export function Dashboard({ data, positions }: { data: AnalyzeResponse; position
       {risk && Object.keys(risk.correlation).length >= 2 && (
         <div className="card">
           <h3>{t("corr")}</h3>
-          <CorrHeatmap matrix={risk.correlation} />
+          <div className="heat-scroll"><CorrHeatmap matrix={risk.correlation} /></div>
           <p className="section-note">{t("corrNote")}</p>
         </div>
       )}

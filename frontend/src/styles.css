@@ -65,8 +65,9 @@ body {
 .topbar {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 28px;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  padding: calc(12px + env(safe-area-inset-top)) clamp(14px, 3vw, 28px) 12px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
   position: sticky;
@@ -90,6 +91,10 @@ body {
   font-weight: 400;
   color: var(--muted);
   margin-left: 2px;
+}
+
+@media (max-width: 760px) {
+  .logo .tag { display: none; }
 }
 
 .topbar .spacer { flex: 1; }
@@ -489,6 +494,17 @@ table.tbl {
 }
 
 .msg { font-size: 12.5px; padding: 8px 11px; border-radius: 8px; }
+
+/* Bildirimler sabit toast olarak yüzer — yerleşimi itmez */
+.toast {
+  position: fixed;
+  top: calc(64px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 90;
+  max-width: min(92vw, 460px);
+  box-shadow: var(--pop-shadow);
+}
 .msg.ok { background: rgba(12, 163, 12, 0.14); color: var(--delta-up); }
 .msg.err { background: rgba(208, 59, 59, 0.14); color: var(--status-critical); }
 .msg.info { background: var(--accent-soft); color: var(--accent-strong); }
@@ -598,3 +614,25 @@ details.acc .inner { padding: 13px; display: flex; flex-direction: column; gap: 
 .site-footer a:hover { color: var(--accent-strong); }
 
 .site-footer p { margin: 0; }
+
+
+/* ---------- mobil ince ayar ---------- */
+
+.heat-scroll { overflow-x: auto; padding-bottom: 4px; }
+
+@media (max-width: 700px) {
+  .layout { padding: 12px; gap: 14px; }
+  .stack { gap: 14px; }
+  .card { padding: 14px; }
+  .tiles { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .tile { padding: 12px 14px; }
+  .tile .v { font-size: 19px; }
+  .tile .v.hero { font-size: 23px; }
+  .empty { padding: 28px 16px; }
+  .empty h2 { font-size: 20px; }
+  .hbar-row { grid-template-columns: 92px 1fr 76px; gap: 6px; }
+  .hbar-label, .hbar-val { font-size: 11.5px; }
+  .userchip { flex-wrap: wrap; row-gap: 6px; justify-content: flex-end; font-size: 12.5px; }
+  .site-footer { padding: 8px 14px 28px; }
+  button.big { font-size: 14.5px; padding: 12px; }
+}
