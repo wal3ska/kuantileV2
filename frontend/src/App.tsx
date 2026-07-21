@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { AnalyzeResponse, BondIn, MailPrefs, PositionIn } from "./api";
+import type { AnalyzeResponse, BondIn, MailPrefs, PositionIn, RiskFree } from "./api";
 import { api, ApiError, getToken, setToken } from "./api";
 import { AuthArea, type UserInfo } from "./Auth";
 import { Builder, newBond, nextId, num, type BondRow, type PosRow } from "./Builder";
@@ -120,6 +120,8 @@ export default function App() {
   const [analyzing, setAnalyzing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confidence, setConfidence] = useState(0.99);
+  const [rfChoice, setRfChoice] = useState<"deposit" | "bill" | "usd" | "eur">("deposit");
+  const [rfRate, setRfRate] = useState("40");
   const [notice, setNotice] = useState<{ kind: "ok" | "err" | "info"; text: string } | null>(null);
   const [theme, setTheme] = useState(() => localStorage.getItem("kt_theme") ?? "light");
 
@@ -170,8 +172,11 @@ export default function App() {
     }
     setAnalyzing(true);
     setNotice(null);
+    const riskFree: RiskFree = rfChoice === "usd" || rfChoice === "eur"
+      ? { kind: rfChoice, annual_rate: 0 }
+      : { kind: "rate", annual_rate: Math.max(0, num(rfRate)) / 100 };
     try {
-      setResult(await api.analyze(positions, bs, confidence));
+      setResult(await api.analyze(positions, bs, confidence, riskFree));
       setAnalyzedPositions(positions);
     } catch (err) {
       flash("err", err instanceof ApiError ? err.message : t("analyzeFailed"));
@@ -264,12 +269,26 @@ export default function App() {
               <button className="primary big" style={{ flex: "1 1 220px" }} onClick={() => analyze()} disabled={analyzing || !hasInput}>
                 {analyzing ? (<><span className="spin" />{t("analyzing")}</>) : t("analyzeBtn")}
               </button>
-              <label className="f" style={{ flex: "0 0 150px" }}>{t("varConf")}
+              <label className="f" style={{ flex: "0 0 130px" }}>{t("varConf")}
                 <select value={confidence} onChange={(e) => setConfidence(+e.target.value)}>
                   <option value={0.95}>{lang === "en" ? "95%" : "%95"}</option>
                   <option value={0.99}>{lang === "en" ? "99%" : "%99"}</option>
                 </select>
               </label>
+              <label className="f" style={{ flex: "1 1 190px" }}>{t("rfLabel")}
+                <select value={rfChoice} onChange={(e) => setRfChoice(e.target.value as typeof rfChoice)}>
+                  <option value="deposit">{t("rfDeposit")}</option>
+                  <option value="bill">{t("rfBill")}</option>
+                  <option value="usd">{t("rfUsd")}</option>
+                  <option value="eur">{t("rfEur")}</option>
+                </select>
+              </label>
+              {(rfChoice === "deposit" || rfChoice === "bill") && (
+                <label className="f" style={{ flex: "0 0 110px" }}>{t("rfRate")}
+                  <input type="text" inputMode="decimal" value={rfRate}
+                    onChange={(e) => setRfRate(e.target.value)} />
+                </label>
+              )}
             </div>
             {!hasInput && <p className="section-note">{t("analyzeHint")}</p>}
           </div>

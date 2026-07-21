@@ -103,6 +103,39 @@ def run_stress_tests(prices: pd.DataFrame, investments: dict,
     return out
 
 
+SHARPE_WINDOW = 252   # son 1 yillik islem gunu
+SHARPE_MIN_OBS = 60
+
+
+def sharpe_ratio(port_returns: pd.Series, rf_daily) -> dict | None:
+    """Yillik Sharpe orani. port_returns: gunluk log getiriler (TL bazli).
+    rf_daily: skaler gunluk log getiri (sabit oran) veya ayni takvimde
+    hizalanacak gunluk log getiri serisi (kur kiyasi)."""
+    window = port_returns.tail(SHARPE_WINDOW).dropna()
+    if len(window) < SHARPE_MIN_OBS:
+        return None
+    if isinstance(rf_daily, pd.Series):
+        rf = rf_daily.reindex(window.index).ffill().dropna()
+        common = window.index.intersection(rf.index)
+        if len(common) < SHARPE_MIN_OBS:
+            return None
+        window = window.loc[common]
+        ann_rf = float(rf.loc[common].mean()) * 252
+    else:
+        ann_rf = float(rf_daily) * 252
+    ann_ret = float(window.mean()) * 252
+    ann_vol = float(window.std()) * np.sqrt(252)
+    if ann_vol <= 0:
+        return None
+    return {
+        "sharpe": (ann_ret - ann_rf) / ann_vol,
+        "ann_return": ann_ret,
+        "ann_vol": ann_vol,
+        "ann_rf": ann_rf,
+        "observations": len(window),
+    }
+
+
 def bond_metrics(coupon_rate: float, ytm: float, years: float, freq: int) -> tuple:
     """Kupon akislarinin bugunku degerinden fiyat, Macaulay ve Modified Duration.
     coupon_rate/ytm ondalik (0.40 = %40). 100 nominal bazinda."""

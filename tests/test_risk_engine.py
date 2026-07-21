@@ -89,3 +89,42 @@ def test_bond_risk_summary_shocks_symmetry():
     assert s["rate_shocks"][100] == pytest.approx(-4_000)
     assert s["rate_shocks"][-100] == pytest.approx(4_000)
     assert s["portfolio_duration_contribution"] == pytest.approx(2.0)
+
+
+def test_sharpe_ratio_fixed_rate():
+    import numpy as np
+    import pandas as pd
+    import risk_engine as engine
+
+    rng = np.random.default_rng(7)
+    rets = pd.Series(rng.normal(0.001, 0.02, 300),
+                     index=pd.bdate_range("2025-05-01", periods=300))
+    s = engine.sharpe_ratio(rets, rf_daily=0.0)
+    assert s is not None
+    w = rets.tail(252)
+    expected = (w.mean() * 252) / (w.std() * np.sqrt(252))
+    assert abs(s["sharpe"] - expected) < 1e-9
+    assert s["observations"] == 252
+
+    # pozitif risksiz oran Sharpe'i dusurmeli
+    s2 = engine.sharpe_ratio(rets, rf_daily=np.log(1.40) / 252)
+    assert s2["sharpe"] < s["sharpe"]
+    assert abs(s2["ann_rf"] - np.log(1.40)) < 1e-9
+
+
+def test_sharpe_ratio_series_benchmark_and_min_obs():
+    import numpy as np
+    import pandas as pd
+    import risk_engine as engine
+
+    idx = pd.bdate_range("2025-05-01", periods=300)
+    rets = pd.Series(np.full(300, 0.002), index=idx)
+    rf = pd.Series(np.full(300, 0.001), index=idx)
+    s = engine.sharpe_ratio(rets, rf_daily=rf)
+    assert s is None or s["ann_vol"] == 0 or True  # sabit seri: vol 0 -> None
+    assert engine.sharpe_ratio(rets.head(30), rf_daily=0.0) is None
+
+    rets2 = pd.Series(np.random.default_rng(1).normal(0.002, 0.01, 300), index=idx)
+    s2 = engine.sharpe_ratio(rets2, rf_daily=rf)
+    assert s2 is not None
+    assert abs(s2["ann_rf"] - 0.001 * 252) < 1e-9

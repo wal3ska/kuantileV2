@@ -108,8 +108,22 @@ export interface StressResult {
   missing_assets: string[];
 }
 
+export interface SharpeInfo {
+  sharpe: number;
+  ann_return: number;
+  ann_vol: number;
+  ann_rf: number;
+  observations: number;
+}
+
+export interface RiskFree {
+  kind: "rate" | "usd" | "eur";
+  annual_rate: number;
+}
+
 export interface MarketRisk {
   confidence: number;
+  sharpe: SharpeInfo | null;
   var_pct: number;
   var_value_try: number;
   market_value_try: number;
@@ -177,8 +191,8 @@ export const api = {
   savePortfolio: (positions: PositionIn[], bonds: BondIn[]) =>
     req<{ message: string }>("PUT", "/portfolio", { positions, bonds }, true),
 
-  analyze: (positions: PositionIn[], bonds: BondIn[], confidence: number) =>
-    req<AnalyzeResponse>("POST", "/portfolio/analyze", { positions, bonds, confidence }),
+  analyze: (positions: PositionIn[], bonds: BondIn[], confidence: number, riskFree: RiskFree) =>
+    req<AnalyzeResponse>("POST", "/portfolio/analyze", { positions, bonds, confidence, risk_free: riskFree }),
 
   simulate: (positions: PositionIn[], start: string, end: string) =>
     req<SimulateResponse>("POST", "/portfolio/simulate", { positions, start, end }),

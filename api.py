@@ -51,11 +51,19 @@ class Bond(BaseModel):
     cost: Optional[float] = Field(default=None, description="Alış fiyatı, 100 nominal başına")
 
 
+class RiskFree(BaseModel):
+    """Sharpe kiyasi: sabit yillik oran (mevduat/kisa vadeli borclanma)
+    veya kur getirisi (usd/eur)."""
+    kind: Literal["rate", "usd", "eur"] = "rate"
+    annual_rate: float = Field(default=0.40, ge=0, le=3.0)
+
+
 class AnalyzeRequest(BaseModel):
     positions: list[Position] = []
     bonds: list[Bond] = []
     confidence: float = Field(default=0.99, gt=0.5, lt=1.0)
     stress_regions: Optional[list[str]] = None
+    risk_free: Optional[RiskFree] = None
 
 
 class BondDurationRequest(BaseModel):
@@ -218,9 +226,25 @@ def analyze(req: AnalyzeRequest):
         if not returns.empty:
             port_rets = engine.portfolio_returns(returns, investments)
             var_pct = engine.historical_var(port_rets, req.confidence)
+
+            sharpe = None
+            if req.risk_free is not None:
+                if req.risk_free.kind == "rate":
+                    rf_daily = np.log(1 + req.risk_free.annual_rate) / 252
+                else:
+                    fx_t = "TRY=X" if req.risk_free.kind == "usd" else "EURTRY=X"
+                    try:
+                        raw_fx = dp.fetch_yahoo_prices((fx_t,))
+                        fx_series = raw_fx[fx_t].dropna()
+                        rf_daily = np.log(fx_series / fx_series.shift(1)).dropna()
+                    except (RuntimeError, KeyError):
+                        rf_daily = None
+                if rf_daily is not None:
+                    sharpe = engine.sharpe_ratio(port_rets, rf_daily)
             market_value = sum(investments[n] for n in valid)
             risk = {
                 "confidence": req.confidence,
+                "sharpe": sharpe,
                 "var_pct": var_pct,
                 "var_value_try": market_value * var_pct,
                 "market_value_try": market_value,
