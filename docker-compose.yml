@@ -21,6 +21,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       RESEND_API_KEY: ${RESEND_API_KEY}
       MAIL_FROM: ${MAIL_FROM}
+      EVDS_API_KEY: ${EVDS_API_KEY:-}
       APP_BASE_URL: https://api.kuantile.com
     depends_on:
       - db
