@@ -191,14 +191,18 @@ export function Dashboard({ data, positions }: { data: AnalyzeResponse; position
             <div className="sub">{fmtPct(risk.var_pct)} · {risk.observations.toLocaleString()} {t("observations")}</div>
           </div>
         )}
-        {risk?.sharpe && (
+        {risk?.sharpe?.["1y"] && (
           <div className="tile">
             <div className="k">{t("sharpeTile")}</div>
-            <div className="v"><Delta v={risk.sharpe.sharpe}>{fmtNum(risk.sharpe.sharpe)}</Delta></div>
+            <div className="v"><Delta v={risk.sharpe["1y"].sharpe}>{fmtNum(risk.sharpe["1y"].sharpe)}</Delta></div>
+            <div className="sub">{t("sharpeHorizons", {
+              a: risk.sharpe["3y"] ? fmtNum(risk.sharpe["3y"].sharpe) : "—",
+              b: risk.sharpe["5y"] ? fmtNum(risk.sharpe["5y"].sharpe) : "—",
+            })}</div>
             <div className="sub">{t("sharpeSub", {
-              r: fmtPct(risk.sharpe.ann_return),
-              v: fmtPct(risk.sharpe.ann_vol).replace("+", ""),
-              rf: fmtPct(risk.sharpe.ann_rf),
+              r: fmtPct(risk.sharpe["1y"].ann_return),
+              v: fmtPct(risk.sharpe["1y"].ann_vol).replace("+", ""),
+              rf: fmtPct(risk.sharpe["1y"].ann_rf),
             })}</div>
           </div>
         )}

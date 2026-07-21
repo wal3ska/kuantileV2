@@ -116,14 +116,20 @@ export interface SharpeInfo {
   observations: number;
 }
 
+export interface SharpeMulti {
+  "1y": SharpeInfo | null;
+  "3y": SharpeInfo | null;
+  "5y": SharpeInfo | null;
+}
+
 export interface RiskFree {
-  kind: "rate" | "usd" | "eur";
+  kind: "rate" | "deposit" | "tlref" | "usd" | "eur";
   annual_rate: number;
 }
 
 export interface MarketRisk {
   confidence: number;
-  sharpe: SharpeInfo | null;
+  sharpe: SharpeMulti | null;
   var_pct: number;
   var_value_try: number;
   market_value_try: number;
@@ -195,7 +201,8 @@ export const api = {
     req<AnalyzeResponse>("POST", "/portfolio/analyze", { positions, bonds, confidence, risk_free: riskFree }),
 
   rates: () =>
-    req<{ deposit_gross: number; deposit_net: number; stopaj: number; as_of: string; source: string }>("GET", "/rates"),
+    req<{ deposit_gross: number; deposit_net: number; stopaj: number; as_of: string; source: string;
+          tlref?: number; tlref_as_of?: string }>("GET", "/rates"),
 
   simulate: (positions: PositionIn[], start: string, end: string) =>
     req<SimulateResponse>("POST", "/portfolio/simulate", { positions, start, end }),

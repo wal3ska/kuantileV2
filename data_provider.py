@@ -19,49 +19,88 @@ GOLD_OUNCE_TICKER = "GC=F"
 OUNCE_TO_GRAM = 31.1034768
 
 
-# --- TCMB EVDS: agirlikli ortalama mevduat faizi (haftalik seri) ---
+# --- TCMB EVDS: mevduat faizi (haftalik) ve BIST TLREF (gunluk) ---
 # Anahtar ucretsiz: evds3.tcmb.gov.tr -> kayit -> profil -> API Anahtari.
 # Eski evds2 servisi kapatildi; yeni taban yol igmevdsms-dis.
 EVDS_BASE_URL = os.getenv("EVDS_BASE_URL", "https://evds3.tcmb.gov.tr/igmevdsms-dis/")
 EVDS_API_KEY = os.getenv("EVDS_API_KEY", "")
 EVDS_DEPOSIT_SERIES = os.getenv("EVDS_DEPOSIT_SERIES", "TP.TRY.MT03")  # 3 aya kadar vadeli
+EVDS_TLREF_SERIES = os.getenv("EVDS_TLREF_SERIES", "TP.BISTTLREF.ORAN")
 DEPOSIT_STOPAJ = float(os.getenv("DEPOSIT_STOPAJ", "0.15"))
 _RATES_TTL = 12 * 3600
 _rates_cache: dict = {"t": 0.0, "data": None}
+_rf_hist_cache: dict = {}  # kind -> {"t": ..., "data": pd.Series}
+
+
+def fetch_evds_series(series_code: str, start: date, end: date) -> "pd.Series":
+    """EVDS serisini gunluk/haftalik tarihli pd.Series (yuzde deger) olarak doner.
+    Anahtar tanimsizsa veya EVDS cevap vermezse RuntimeError."""
+    if not EVDS_API_KEY:
+        raise RuntimeError("EVDS_API_KEY tanımlı değil.")
+    url = (f"{EVDS_BASE_URL}series={series_code}"
+           f"&startDate={start.strftime('%d-%m-%Y')}&endDate={end.strftime('%d-%m-%Y')}&type=json")
+    resp = httpx.get(url, headers={"key": EVDS_API_KEY}, timeout=20)
+    if resp.status_code >= 400:
+        raise RuntimeError(f"EVDS hatası: {resp.status_code}")
+    col = series_code.replace(".", "_")
+    dates, vals = [], []
+    try:
+        items = resp.json().get("items", [])
+    except ValueError:
+        raise RuntimeError("EVDS beklenmeyen cevap döndü.")
+    for item in items:
+        v = item.get(col)
+        if v not in (None, "", "null"):
+            dates.append(pd.to_datetime(item["Tarih"], format="%d-%m-%Y"))
+            vals.append(float(v))
+    if not vals:
+        raise RuntimeError(f"EVDS serisi boş döndü: {series_code}")
+    return pd.Series(vals, index=dates).sort_index()
 
 
 def fetch_deposit_rate() -> dict:
-    """TCMB haftalik agirlikli ortalama TRY mevduat faizi (brut ve stopaj sonrasi net).
-    Anahtar tanimsizsa veya EVDS cevap vermezse RuntimeError."""
+    """Guncel oranlar: TCMB haftalik agirlikli ortalama TRY mevduat faizi
+    (brut ve stopaj sonrasi net) + BIST TLREF gecelik referans faizi."""
     if _rates_cache["data"] and time.time() - _rates_cache["t"] < _RATES_TTL:
         return _rates_cache["data"]
-    if not EVDS_API_KEY:
-        raise RuntimeError("EVDS_API_KEY tanımlı değil.")
     end = date.today()
-    start = end - timedelta(days=90)
-    url = (f"{EVDS_BASE_URL}series={EVDS_DEPOSIT_SERIES}"
-           f"&startDate={start.strftime('%d-%m-%Y')}&endDate={end.strftime('%d-%m-%Y')}&type=json")
-    resp = httpx.get(url, headers={"key": EVDS_API_KEY}, timeout=15)
-    if resp.status_code >= 400:
-        raise RuntimeError(f"EVDS hatası: {resp.status_code}")
-    col = EVDS_DEPOSIT_SERIES.replace(".", "_")
-    latest_val, latest_date = None, None
-    for item in resp.json().get("items", []):
-        v = item.get(col)
-        if v not in (None, "", "null"):
-            latest_val, latest_date = float(v), item.get("Tarih")
-    if latest_val is None:
-        raise RuntimeError("EVDS mevduat serisi boş döndü.")
-    gross = latest_val / 100
+    dep = fetch_evds_series(EVDS_DEPOSIT_SERIES, end - timedelta(days=90), end)
+    gross = float(dep.iloc[-1]) / 100
     data = {
         "deposit_gross": gross,
         "deposit_net": gross * (1 - DEPOSIT_STOPAJ),
         "stopaj": DEPOSIT_STOPAJ,
-        "as_of": latest_date,
+        "as_of": dep.index[-1].strftime("%d-%m-%Y"),
         "source": "TCMB EVDS",
     }
+    try:
+        tlref = fetch_evds_series(EVDS_TLREF_SERIES, end - timedelta(days=30), end)
+        data["tlref"] = float(tlref.iloc[-1]) / 100
+        data["tlref_as_of"] = tlref.index[-1].strftime("%d-%m-%Y")
+    except RuntimeError:
+        pass  # mevduat geldiyse TLREF'siz de cevap ver
     _rates_cache.update(t=time.time(), data=data)
     return data
+
+
+def fetch_rf_history(kind: str, years: int = 6) -> "pd.Series":
+    """Cok vadeli Sharpe icin gunluk yillik-oran serisi (ondalik, net).
+    kind: 'deposit' (stopaj dusulmus mevduat, haftalik->gunluk ffill)
+    veya 'tlref' (BIST TLREF gunluk)."""
+    cached = _rf_hist_cache.get(kind)
+    if cached and time.time() - cached["t"] < _RATES_TTL:
+        return cached["data"]
+    end = date.today()
+    start = end - timedelta(days=365 * years)
+    if kind == "deposit":
+        s = fetch_evds_series(EVDS_DEPOSIT_SERIES, start, end) / 100 * (1 - DEPOSIT_STOPAJ)
+    elif kind == "tlref":
+        s = fetch_evds_series(EVDS_TLREF_SERIES, start, end) / 100
+    else:
+        raise RuntimeError(f"Bilinmeyen oran türü: {kind}")
+    daily = s.resample("D").ffill()
+    _rf_hist_cache[kind] = {"t": time.time(), "data": daily}
+    return daily
 
 
 def fetch_yahoo_prices(tickers: tuple, start: str = YAHOO_START, retries: int = 3) -> pd.DataFrame:

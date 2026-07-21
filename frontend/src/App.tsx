@@ -122,8 +122,9 @@ export default function App() {
   const [confidence, setConfidence] = useState(0.99);
   const [rfChoice, setRfChoice] = useState<"deposit" | "bill" | "usd" | "eur">("deposit");
   const [rfRate, setRfRate] = useState("40");
-  const [rfAuto, setRfAuto] = useState<{ net: number; asOf: string } | null>(null);
+  const [rfAuto, setRfAuto] = useState<{ net: number; asOf: string; tlref?: number; tlrefAsOf?: string } | null>(null);
   const rfEdited = useRef(false);
+  const rfChoiceInit = useRef(true);
   const [notice, setNotice] = useState<{ kind: "ok" | "err" | "info"; text: string } | null>(null);
   const [theme, setTheme] = useState(() => localStorage.getItem("kt_theme") ?? "light");
 
@@ -133,14 +134,25 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
-    // TCMB mevduat faizini cek; kullanici elle degistirmediyse kutuyu doldur
+    // TCMB mevduat faizi + TLREF cek; kullanici elle degistirmediyse kutuyu doldur
     api.rates()
       .then((r) => {
-        setRfAuto({ net: r.deposit_net, asOf: r.as_of });
+        setRfAuto({ net: r.deposit_net, asOf: r.as_of, tlref: r.tlref, tlrefAsOf: r.tlref_as_of });
         if (!rfEdited.current) setRfRate((r.deposit_net * 100).toFixed(1).replace(".", ","));
       })
       .catch(() => { /* EVDS yoksa elle giris devam eder */ });
   }, []);
+
+  useEffect(() => {
+    // Kiyas degisince kutuyu o kiyasin guncel oraniyla yeniden doldur
+    if (rfChoiceInit.current) { rfChoiceInit.current = false; return; }
+    rfEdited.current = false;
+    if (!rfAuto) return;
+    if (rfChoice === "deposit") setRfRate((rfAuto.net * 100).toFixed(1).replace(".", ","));
+    else if (rfChoice === "bill" && rfAuto.tlref != null)
+      setRfRate((rfAuto.tlref * 100).toFixed(1).replace(".", ","));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rfChoice]);
 
   const flash = (kind: "ok" | "err" | "info", text: string) => {
     setNotice({ kind, text });
@@ -184,9 +196,14 @@ export default function App() {
     }
     setAnalyzing(true);
     setNotice(null);
+    // Elle degistirilmediyse EVDS tarihsel serisi kullanilir (3-5 yillik
+    // Sharpe o gunun faiziyle hesaplanir); girilen oran yedek deger olur.
     const riskFree: RiskFree = rfChoice === "usd" || rfChoice === "eur"
       ? { kind: rfChoice, annual_rate: 0 }
-      : { kind: "rate", annual_rate: Math.max(0, num(rfRate)) / 100 };
+      : {
+          kind: rfEdited.current ? "rate" : rfChoice === "bill" ? "tlref" : "deposit",
+          annual_rate: Math.max(0, num(rfRate)) / 100,
+        };
     try {
       setResult(await api.analyze(positions, bs, confidence, riskFree));
       setAnalyzedPositions(positions);
@@ -304,6 +321,9 @@ export default function App() {
             </div>
             {rfChoice === "deposit" && rfAuto && (
               <p className="section-note">{t("rfAutoNote", { d: rfAuto.asOf })}</p>
+            )}
+            {rfChoice === "bill" && rfAuto?.tlref != null && (
+              <p className="section-note">{t("rfTlrefNote", { d: rfAuto.tlrefAsOf ?? "" })}</p>
             )}
             {!hasInput && <p className="section-note">{t("analyzeHint")}</p>}
           </div>

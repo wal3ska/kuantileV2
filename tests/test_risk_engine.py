@@ -128,3 +128,20 @@ def test_sharpe_ratio_series_benchmark_and_min_obs():
     s2 = engine.sharpe_ratio(rets2, rf_daily=rf)
     assert s2 is not None
     assert abs(s2["ann_rf"] - 0.001 * 252) < 1e-9
+
+
+def test_sharpe_multi_windows():
+    import numpy as np
+    import pandas as pd
+    import risk_engine as engine
+
+    rng = np.random.default_rng(3)
+    # 700 gozlem: 1y (252) ve 3y (min 453) hesaplanir, 5y (min 756) None kalir
+    rets = pd.Series(rng.normal(0.001, 0.02, 700),
+                     index=pd.bdate_range("2023-11-01", periods=700))
+    m = engine.sharpe_multi(rets, rf_daily=0.0)
+    assert set(m) == {"1y", "3y", "5y"}
+    assert m["1y"] is not None and m["1y"]["observations"] == 252
+    assert m["3y"] is not None and m["3y"]["observations"] == 700
+    assert m["5y"] is None
+    assert m["1y"]["sharpe"] == engine.sharpe_ratio(rets, 0.0, 252)["sharpe"]

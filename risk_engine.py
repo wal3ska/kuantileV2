@@ -105,19 +105,24 @@ def run_stress_tests(prices: pd.DataFrame, investments: dict,
 
 SHARPE_WINDOW = 252   # son 1 yillik islem gunu
 SHARPE_MIN_OBS = 60
+# Cok vadeli Sharpe pencereleri (islem gunu). Uzun pencerede eksik gecmisle
+# yaniltici deger uretmemek icin pencerenin en az %60'i dolu olmali.
+SHARPE_WINDOWS = {"1y": 252, "3y": 756, "5y": 1260}
 
 
-def sharpe_ratio(port_returns: pd.Series, rf_daily) -> dict | None:
+def sharpe_ratio(port_returns: pd.Series, rf_daily,
+                 window_days: int = SHARPE_WINDOW) -> dict | None:
     """Yillik Sharpe orani. port_returns: gunluk log getiriler (TL bazli).
     rf_daily: skaler gunluk log getiri (sabit oran) veya ayni takvimde
-    hizalanacak gunluk log getiri serisi (kur kiyasi)."""
-    window = port_returns.tail(SHARPE_WINDOW).dropna()
-    if len(window) < SHARPE_MIN_OBS:
+    hizalanacak gunluk log getiri serisi (kur/faiz kiyasi)."""
+    min_obs = SHARPE_MIN_OBS if window_days <= SHARPE_WINDOW else int(window_days * 0.6)
+    window = port_returns.tail(window_days).dropna()
+    if len(window) < min_obs:
         return None
     if isinstance(rf_daily, pd.Series):
         rf = rf_daily.reindex(window.index).ffill().dropna()
         common = window.index.intersection(rf.index)
-        if len(common) < SHARPE_MIN_OBS:
+        if len(common) < min_obs:
             return None
         window = window.loc[common]
         ann_rf = float(rf.loc[common].mean()) * 252
@@ -134,6 +139,12 @@ def sharpe_ratio(port_returns: pd.Series, rf_daily) -> dict | None:
         "ann_rf": ann_rf,
         "observations": len(window),
     }
+
+
+def sharpe_multi(port_returns: pd.Series, rf_daily) -> dict:
+    """1/3/5 yillik pencerelerde Sharpe. Yetersiz gecmiste ilgili vade None."""
+    return {h: sharpe_ratio(port_returns, rf_daily, w)
+            for h, w in SHARPE_WINDOWS.items()}
 
 
 def bond_metrics(coupon_rate: float, ytm: float, years: float, freq: int) -> tuple:

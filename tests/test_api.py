@@ -97,20 +97,34 @@ def test_contact_rejects_short_message():
     assert r.status_code == 422
 
 
+class _FakeEvdsResp:
+    status_code = 200
+
+    def __init__(self, items):
+        self._items = items
+
+    def json(self):
+        return {"items": self._items}
+
+
+def _fake_evds_get(url, headers=None, timeout=None):
+    if "BISTTLREF" in url:
+        return _FakeEvdsResp([
+            {"Tarih": "16-07-2026", "TP_BISTTLREF_ORAN": "40.01"},
+            {"Tarih": "17-07-2026", "TP_BISTTLREF_ORAN": "39.98"},
+        ])
+    return _FakeEvdsResp([
+        {"Tarih": "04-07-2026", "TP_TRY_MT03": "46.5"},
+        {"Tarih": "11-07-2026", "TP_TRY_MT03": "47.2"},
+        {"Tarih": "18-07-2026", "TP_TRY_MT03": None},
+    ])
+
+
 def test_rates_endpoint(monkeypatch):
     import data_provider as dp
 
-    class FakeResp:
-        status_code = 200
-        def json(self):
-            return {"items": [
-                {"Tarih": "04-07-2026", "TP_TRY_MT03": "46.5"},
-                {"Tarih": "11-07-2026", "TP_TRY_MT03": "47.2"},
-                {"Tarih": "18-07-2026", "TP_TRY_MT03": None},
-            ]}
-
     monkeypatch.setattr(dp, "EVDS_API_KEY", "test-key")
-    monkeypatch.setattr(dp.httpx, "get", lambda url, headers=None, timeout=None: FakeResp())
+    monkeypatch.setattr(dp.httpx, "get", _fake_evds_get)
     dp._rates_cache.update(t=0, data=None)
 
     r = client.get("/rates")
@@ -119,7 +133,24 @@ def test_rates_endpoint(monkeypatch):
     assert abs(d["deposit_gross"] - 0.472) < 1e-9      # null atlanip son gecerli deger
     assert abs(d["deposit_net"] - 0.472 * 0.85) < 1e-9
     assert d["as_of"] == "11-07-2026"
+    assert abs(d["tlref"] - 0.3998) < 1e-9
+    assert d["tlref_as_of"] == "17-07-2026"
     dp._rates_cache.update(t=0, data=None)
+
+
+def test_rf_history_deposit(monkeypatch):
+    import data_provider as dp
+
+    monkeypatch.setattr(dp, "EVDS_API_KEY", "test-key")
+    monkeypatch.setattr(dp.httpx, "get", _fake_evds_get)
+    dp._rf_hist_cache.clear()
+
+    s = dp.fetch_rf_history("deposit")
+    # haftalik seri gunluge ffill edilir, stopaj dusulur
+    assert abs(s.iloc[-1] - 0.472 * 0.85) < 1e-9
+    assert abs(s.loc["2026-07-08"] - 0.465 * 0.85) < 1e-9  # 04-07 degeri ileri tasinir
+    assert (s.index[1] - s.index[0]).days == 1
+    dp._rf_hist_cache.clear()
 
 
 def test_rates_unavailable_without_key(monkeypatch):

@@ -52,9 +52,10 @@ class Bond(BaseModel):
 
 
 class RiskFree(BaseModel):
-    """Sharpe kiyasi: sabit yillik oran (mevduat/kisa vadeli borclanma)
-    veya kur getirisi (usd/eur)."""
-    kind: Literal["rate", "usd", "eur"] = "rate"
+    """Sharpe kiyasi. rate: kullanicinin girdigi sabit yillik oran;
+    deposit/tlref: EVDS tarihsel faiz serisi (annual_rate yedek deger);
+    usd/eur: kur getirisi."""
+    kind: Literal["rate", "deposit", "tlref", "usd", "eur"] = "rate"
     annual_rate: float = Field(default=0.40, ge=0, le=3.0)
 
 
@@ -240,6 +241,14 @@ def analyze(req: AnalyzeRequest):
             if req.risk_free is not None:
                 if req.risk_free.kind == "rate":
                     rf_daily = np.log(1 + req.risk_free.annual_rate) / 252
+                elif req.risk_free.kind in ("deposit", "tlref"):
+                    # Tarihsel faiz serisi: 3-5 yillik Sharpe bugunun degil
+                    # o gunun faiziyle hesaplanir. EVDS yoksa sabit orana dus.
+                    try:
+                        hist = dp.fetch_rf_history(req.risk_free.kind)
+                        rf_daily = np.log(1 + hist) / 252
+                    except RuntimeError:
+                        rf_daily = np.log(1 + req.risk_free.annual_rate) / 252
                 else:
                     fx_t = "TRY=X" if req.risk_free.kind == "usd" else "EURTRY=X"
                     try:
@@ -249,7 +258,7 @@ def analyze(req: AnalyzeRequest):
                     except (RuntimeError, KeyError):
                         rf_daily = None
                 if rf_daily is not None:
-                    sharpe = engine.sharpe_ratio(port_rets, rf_daily)
+                    sharpe = engine.sharpe_multi(port_rets, rf_daily)
             market_value = sum(investments[n] for n in valid)
             risk = {
                 "confidence": req.confidence,
