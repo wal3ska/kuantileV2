@@ -20,7 +20,9 @@ OUNCE_TO_GRAM = 31.1034768
 
 
 # --- TCMB EVDS: agirlikli ortalama mevduat faizi (haftalik seri) ---
-# Anahtar ucretsiz: evds2.tcmb.gov.tr -> kayit -> profil -> API Anahtari.
+# Anahtar ucretsiz: evds3.tcmb.gov.tr -> kayit -> profil -> API Anahtari.
+# Eski evds2 servisi kapatildi; yeni taban yol igmevdsms-dis.
+EVDS_BASE_URL = os.getenv("EVDS_BASE_URL", "https://evds3.tcmb.gov.tr/igmevdsms-dis/")
 EVDS_API_KEY = os.getenv("EVDS_API_KEY", "")
 EVDS_DEPOSIT_SERIES = os.getenv("EVDS_DEPOSIT_SERIES", "TP.TRY.MT03")  # 3 aya kadar vadeli
 DEPOSIT_STOPAJ = float(os.getenv("DEPOSIT_STOPAJ", "0.15"))
@@ -37,7 +39,7 @@ def fetch_deposit_rate() -> dict:
         raise RuntimeError("EVDS_API_KEY tanımlı değil.")
     end = date.today()
     start = end - timedelta(days=90)
-    url = (f"https://evds2.tcmb.gov.tr/service/evds/series={EVDS_DEPOSIT_SERIES}"
+    url = (f"{EVDS_BASE_URL}series={EVDS_DEPOSIT_SERIES}"
            f"&startDate={start.strftime('%d-%m-%Y')}&endDate={end.strftime('%d-%m-%Y')}&type=json")
     resp = httpx.get(url, headers={"key": EVDS_API_KEY}, timeout=15)
     if resp.status_code >= 400:
