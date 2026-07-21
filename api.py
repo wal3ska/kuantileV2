@@ -78,6 +78,15 @@ def health():
     return {"status": "ok"}
 
 
+@app.get("/rates")
+def rates():
+    """Guncel TCMB mevduat faizi (Sharpe kiyasi icin otomatik doldurma)."""
+    try:
+        return dp.fetch_deposit_rate()
+    except RuntimeError as exc:
+        raise HTTPException(503, str(exc))
+
+
 @app.post("/bond/duration")
 def bond_duration(req: BondDurationRequest):
     fair, mac, mod = engine.bond_metrics(req.coupon_rate, req.ytm, req.years, req.frequency)

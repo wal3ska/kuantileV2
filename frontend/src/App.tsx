@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { AnalyzeResponse, BondIn, MailPrefs, PositionIn, RiskFree } from "./api";
 import { api, ApiError, getToken, setToken } from "./api";
 import { AuthArea, type UserInfo } from "./Auth";
@@ -122,6 +122,8 @@ export default function App() {
   const [confidence, setConfidence] = useState(0.99);
   const [rfChoice, setRfChoice] = useState<"deposit" | "bill" | "usd" | "eur">("deposit");
   const [rfRate, setRfRate] = useState("40");
+  const [rfAuto, setRfAuto] = useState<{ net: number; asOf: string } | null>(null);
+  const rfEdited = useRef(false);
   const [notice, setNotice] = useState<{ kind: "ok" | "err" | "info"; text: string } | null>(null);
   const [theme, setTheme] = useState(() => localStorage.getItem("kt_theme") ?? "light");
 
@@ -129,6 +131,16 @@ export default function App() {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem("kt_theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    // TCMB mevduat faizini cek; kullanici elle degistirmediyse kutuyu doldur
+    api.rates()
+      .then((r) => {
+        setRfAuto({ net: r.deposit_net, asOf: r.as_of });
+        if (!rfEdited.current) setRfRate((r.deposit_net * 100).toFixed(1).replace(".", ","));
+      })
+      .catch(() => { /* EVDS yoksa elle giris devam eder */ });
+  }, []);
 
   const flash = (kind: "ok" | "err" | "info", text: string) => {
     setNotice({ kind, text });
@@ -286,10 +298,13 @@ export default function App() {
               {(rfChoice === "deposit" || rfChoice === "bill") && (
                 <label className="f" style={{ flex: "0 0 110px" }}>{t("rfRate")}
                   <input type="text" inputMode="decimal" value={rfRate}
-                    onChange={(e) => setRfRate(e.target.value)} />
+                    onChange={(e) => { setRfRate(e.target.value); rfEdited.current = true; }} />
                 </label>
               )}
             </div>
+            {rfChoice === "deposit" && rfAuto && (
+              <p className="section-note">{t("rfAutoNote", { d: rfAuto.asOf })}</p>
+            )}
             {!hasInput && <p className="section-note">{t("analyzeHint")}</p>}
           </div>
 

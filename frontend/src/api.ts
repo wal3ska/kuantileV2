@@ -194,6 +194,9 @@ export const api = {
   analyze: (positions: PositionIn[], bonds: BondIn[], confidence: number, riskFree: RiskFree) =>
     req<AnalyzeResponse>("POST", "/portfolio/analyze", { positions, bonds, confidence, risk_free: riskFree }),
 
+  rates: () =>
+    req<{ deposit_gross: number; deposit_net: number; stopaj: number; as_of: string; source: string }>("GET", "/rates"),
+
   simulate: (positions: PositionIn[], start: string, end: string) =>
     req<SimulateResponse>("POST", "/portfolio/simulate", { positions, start, end }),
 };

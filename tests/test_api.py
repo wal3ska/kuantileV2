@@ -95,3 +95,35 @@ def test_contact_form(monkeypatch):
 def test_contact_rejects_short_message():
     r = client.post("/contact", json={"name": "Ali", "email": "a@b.c", "message": "kısa"})
     assert r.status_code == 422
+
+
+def test_rates_endpoint(monkeypatch):
+    import data_provider as dp
+
+    class FakeResp:
+        status_code = 200
+        def json(self):
+            return {"items": [
+                {"Tarih": "04-07-2026", "TP_TRY_MT03": "46.5"},
+                {"Tarih": "11-07-2026", "TP_TRY_MT03": "47.2"},
+                {"Tarih": "18-07-2026", "TP_TRY_MT03": None},
+            ]}
+
+    monkeypatch.setattr(dp, "EVDS_API_KEY", "test-key")
+    monkeypatch.setattr(dp.httpx, "get", lambda url, headers=None, timeout=None: FakeResp())
+    dp._rates_cache.update(t=0, data=None)
+
+    r = client.get("/rates")
+    assert r.status_code == 200
+    d = r.json()
+    assert abs(d["deposit_gross"] - 0.472) < 1e-9      # null atlanip son gecerli deger
+    assert abs(d["deposit_net"] - 0.472 * 0.85) < 1e-9
+    assert d["as_of"] == "11-07-2026"
+    dp._rates_cache.update(t=0, data=None)
+
+
+def test_rates_unavailable_without_key(monkeypatch):
+    import data_provider as dp
+    monkeypatch.setattr(dp, "EVDS_API_KEY", "")
+    dp._rates_cache.update(t=0, data=None)
+    assert client.get("/rates").status_code == 503

@@ -1,7 +1,11 @@
 """Veri katmani soyutlamasi. Kaynak degisikligi (lisansli API'ye gecis)
 yalnizca bu dosyayi degistirir; motor ve UI etkilenmez."""
 
+import os
 import time
+from datetime import date, timedelta
+
+import httpx
 import pandas as pd
 import yfinance as yf
 
@@ -13,6 +17,49 @@ TEFAS_MAX_YEARS = 5
 GRAM_GOLD_TICKER = "GRAMALTIN"
 GOLD_OUNCE_TICKER = "GC=F"
 OUNCE_TO_GRAM = 31.1034768
+
+
+# --- TCMB EVDS: agirlikli ortalama mevduat faizi (haftalik seri) ---
+# Anahtar ucretsiz: evds2.tcmb.gov.tr -> kayit -> profil -> API Anahtari.
+EVDS_API_KEY = os.getenv("EVDS_API_KEY", "")
+EVDS_DEPOSIT_SERIES = os.getenv("EVDS_DEPOSIT_SERIES", "TP.TRY.MT03")  # 3 aya kadar vadeli
+DEPOSIT_STOPAJ = float(os.getenv("DEPOSIT_STOPAJ", "0.15"))
+_RATES_TTL = 12 * 3600
+_rates_cache: dict = {"t": 0.0, "data": None}
+
+
+def fetch_deposit_rate() -> dict:
+    """TCMB haftalik agirlikli ortalama TRY mevduat faizi (brut ve stopaj sonrasi net).
+    Anahtar tanimsizsa veya EVDS cevap vermezse RuntimeError."""
+    if _rates_cache["data"] and time.time() - _rates_cache["t"] < _RATES_TTL:
+        return _rates_cache["data"]
+    if not EVDS_API_KEY:
+        raise RuntimeError("EVDS_API_KEY tanımlı değil.")
+    end = date.today()
+    start = end - timedelta(days=90)
+    url = (f"https://evds2.tcmb.gov.tr/service/evds/series={EVDS_DEPOSIT_SERIES}"
+           f"&startDate={start.strftime('%d-%m-%Y')}&endDate={end.strftime('%d-%m-%Y')}&type=json")
+    resp = httpx.get(url, headers={"key": EVDS_API_KEY}, timeout=15)
+    if resp.status_code >= 400:
+        raise RuntimeError(f"EVDS hatası: {resp.status_code}")
+    col = EVDS_DEPOSIT_SERIES.replace(".", "_")
+    latest_val, latest_date = None, None
+    for item in resp.json().get("items", []):
+        v = item.get(col)
+        if v not in (None, "", "null"):
+            latest_val, latest_date = float(v), item.get("Tarih")
+    if latest_val is None:
+        raise RuntimeError("EVDS mevduat serisi boş döndü.")
+    gross = latest_val / 100
+    data = {
+        "deposit_gross": gross,
+        "deposit_net": gross * (1 - DEPOSIT_STOPAJ),
+        "stopaj": DEPOSIT_STOPAJ,
+        "as_of": latest_date,
+        "source": "TCMB EVDS",
+    }
+    _rates_cache.update(t=time.time(), data=data)
+    return data
 
 
 def fetch_yahoo_prices(tickers: tuple, start: str = YAHOO_START, retries: int = 3) -> pd.DataFrame:
