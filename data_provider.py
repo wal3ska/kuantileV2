@@ -121,30 +121,65 @@ def fetch_yahoo_prices(tickers: tuple, start: str = YAHOO_START, retries: int = 
     return close
 
 
+TEFAS_RETRIES = 3
+TEFAS_CACHE_DIR = os.getenv("TEFAS_CACHE_DIR", "/tmp/tefas_cache")
+
+
+def _tefas_cache_path(code: str) -> str:
+    return os.path.join(TEFAS_CACHE_DIR, f"{code}.csv")
+
+
+def _tefas_cache_save(code: str, series: pd.Series) -> None:
+    try:
+        os.makedirs(TEFAS_CACHE_DIR, exist_ok=True)
+        series.to_csv(_tefas_cache_path(code), header=False)
+    except OSError:
+        pass  # onbellek yazilamasa da veri donmeye devam eder
+
+
+def _tefas_cache_load(code: str) -> pd.Series | None:
+    try:
+        df = pd.read_csv(_tefas_cache_path(code), header=None,
+                         index_col=0, parse_dates=[0])
+        return df[1].astype(float).sort_index()
+    except Exception:
+        return None
+
+
 def fetch_tefas_funds(fund_codes: tuple, years: int = TEFAS_MAX_YEARS) -> dict:
     """Fon kodu -> gunluk fiyat serisi (TRY). Bulunamayan fon None doner.
-    YAT -> EMK -> BYF sirasiyla denenir."""
+    YAT -> EMK -> BYF sirasiyla denenir. TEFAS gecici olarak cevap
+    vermezse birkac kez yeniden denenir; yine olmazsa son basarili
+    cekimin disk kopyasi kullanilir (raporlar 'veri yok' dusmesin)."""
     from tefas import Crawler
 
-    crawler = Crawler()
     end = pd.Timestamp.today().normalize()
     start = end - pd.DateOffset(years=years) + pd.DateOffset(days=1)
     result = {}
     for code in fund_codes:
         series = None
-        for kind in ["YAT", "EMK", "BYF"]:
-            try:
-                df = crawler.fetch(start=start.strftime("%Y-%m-%d"),
-                                   end=end.strftime("%Y-%m-%d"),
-                                   name=code, columns=["date", "price"], kind=kind)
-                if df is not None and not df.empty:
-                    s = df.set_index("date")["price"].astype(float)
-                    s.index = pd.to_datetime(s.index)
-                    s = s[s > 0]
-                    series = s[~s.index.duplicated(keep="last")].sort_index()
-                    break
-            except Exception:
-                continue
+        for attempt in range(TEFAS_RETRIES):
+            if attempt:
+                time.sleep(5 * attempt)
+            for kind in ["YAT", "EMK", "BYF"]:
+                try:
+                    df = Crawler().fetch(start=start.strftime("%Y-%m-%d"),
+                                         end=end.strftime("%Y-%m-%d"),
+                                         name=code, columns=["date", "price"], kind=kind)
+                    if df is not None and not df.empty:
+                        s = df.set_index("date")["price"].astype(float)
+                        s.index = pd.to_datetime(s.index)
+                        s = s[s > 0]
+                        series = s[~s.index.duplicated(keep="last")].sort_index()
+                        break
+                except Exception:
+                    continue
+            if series is not None:
+                break
+        if series is not None:
+            _tefas_cache_save(code, series)
+        else:
+            series = _tefas_cache_load(code)
         result[code] = series
     return result
 

@@ -138,6 +138,34 @@ def test_rates_endpoint(monkeypatch):
     dp._rates_cache.update(t=0, data=None)
 
 
+def test_tefas_cache_fallback(monkeypatch, tmp_path):
+    import sys
+    import types
+
+    import pandas as pd
+
+    import data_provider as dp
+
+    monkeypatch.setattr(dp, "TEFAS_CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(dp, "TEFAS_RETRIES", 1)
+    s = pd.Series([1.0, 1.1], index=pd.to_datetime(["2026-07-20", "2026-07-21"]))
+    dp._tefas_cache_save("IOO", s)
+
+    class BoomCrawler:
+        def fetch(self, **kw):
+            raise RuntimeError("tefas down")
+
+    fake = types.ModuleType("tefas")
+    fake.Crawler = BoomCrawler
+    monkeypatch.setitem(sys.modules, "tefas", fake)
+
+    res = dp.fetch_tefas_funds(("IOO", "XXX"))
+    assert res["XXX"] is None                      # onbellegi olmayan fon None
+    assert res["IOO"] is not None                  # onbellekten doner
+    assert abs(res["IOO"].iloc[-1] - 1.1) < 1e-9
+    assert res["IOO"].index[-1] == pd.Timestamp("2026-07-21")
+
+
 def test_rf_history_deposit(monkeypatch):
     import data_provider as dp
 
