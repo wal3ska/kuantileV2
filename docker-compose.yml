@@ -23,6 +23,10 @@ services:
       MAIL_FROM: ${MAIL_FROM}
       EVDS_API_KEY: ${EVDS_API_KEY:-}
       APP_BASE_URL: https://api.kuantile.com
+    volumes:
+      # TEFAS fiyat onbellegi: container yeniden olusturulsa da kalir,
+      # TEFAS gecici cevap vermediginde raporlar/analiz son veriyle devam eder.
+      - tefas-cache:/tmp/tefas_cache
     depends_on:
       - db
     mem_limit: 350m
@@ -63,5 +67,6 @@ services:
 
 volumes:
   pgdata:
+  tefas-cache:
   certbot-www:
   certbot-conf:
