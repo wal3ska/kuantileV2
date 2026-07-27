@@ -159,7 +159,7 @@ export interface AdvancedBlock {
     var995_pct: number; es995_pct: number;
   } | null;
   tail_dependence: { pairs: { pair: string; lambda_lower: number; pearson: number }[]; q: number } | null;
-  hrp: { weights: Record<string, number> } | null;
+  hrp: { weights: Record<string, number>; excluded_cash_like?: string[] } | null;
   real: {
     inflation_12m: number; nominal_return_12m: number; real_return_12m: number;
     prob_real_loss_12m: number | null; cpi_as_of: string;

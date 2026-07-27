@@ -276,6 +276,9 @@ export function AdvancedSection({ adv, varPct }: {
               .map(([name, w]) => ({ label: name, value: w }))}
             format={(v) => fmtPct(v).replace("+", "")}
           />
+          {adv.hrp.excluded_cash_like && adv.hrp.excluded_cash_like.length > 0 && (
+            <p className="section-note">{t("advHrpCash", { list: adv.hrp.excluded_cash_like.join(", ") })}</p>
+          )}
           <p className="section-note">{t("advHrpNote")}</p>
           <GuideLink slug={ATTRIB} />
         </div>

@@ -406,11 +406,22 @@ def tail_dependence(returns: pd.DataFrame, q: float = 0.05) -> dict | None:
 
 # ---------- 12) HRP ----------
 
+HRP_MIN_ANN_VOL = 0.05  # bunun altindaki varliklar nakit benzeri sayilir
+
+
 def hrp_weights(returns: pd.DataFrame) -> dict | None:
     """Hierarchical Risk Parity (Lopez de Prado): korelasyon uzakligiyla
-    tek-baglanti kumeleme, seriasyon, ozyinelemeli ikiye bolme."""
+    tek-baglanti kumeleme, seriasyon, ozyinelemeli ikiye bolme.
+    Nakit benzeri (cok dusuk oynaklikli) varliklar dagilim disinda tutulur;
+    aksi halde ters-varyans tahsisi tum agirligi nakite yigar ve cikti
+    anlamsizlasir. Nakit orani ayri bir karardir."""
     rets = returns.dropna()
-    if rets.shape[1] < 3 or len(rets) < 120:
+    if rets.shape[1] < 2 or len(rets) < 120:
+        return None
+    ann_vol = rets.std() * np.sqrt(252)
+    cash_like = [c for c in rets.columns if ann_vol[c] < HRP_MIN_ANN_VOL]
+    rets = rets.drop(columns=cash_like)
+    if rets.shape[1] < 2:
         return None
     cols = list(rets.columns)
     corr = rets.corr().values
@@ -461,7 +472,8 @@ def hrp_weights(returns: pd.DataFrame) -> dict | None:
 
     _bisect(order)
     w = w / w.sum()
-    return {"weights": {cols[i]: float(w[i]) for i in range(len(cols))}}
+    return {"weights": {cols[i]: float(w[i]) for i in range(len(cols))},
+            "excluded_cash_like": cash_like}
 
 
 # ---------- Risk sinifi (SRRI/TEFAS 1-7) + Kuantile Skoru ----------

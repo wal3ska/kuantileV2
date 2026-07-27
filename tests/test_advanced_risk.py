@@ -143,6 +143,22 @@ def test_hrp_weights():
     w = h["weights"]
     assert sum(w.values()) == pytest.approx(1.0, rel=1e-9)
     assert w["Sakin"] > w["Vahsi"]            # dusuk volatiliteye yuksek pay
+    assert h["excluded_cash_like"] == []
+
+
+def test_hrp_excludes_cash_like():
+    # para piyasasi benzeri varlik dagilim disinda kalmali; aksi halde
+    # ters-varyans tum agirligi nakite yigar
+    rng = np.random.default_rng(14)
+    idx = pd.bdate_range("2023-01-02", periods=500)
+    rets = pd.DataFrame({"ParaPiyasasi": rng.normal(0.0015, 0.0003, 500),
+                         "HisseFonu": rng.normal(0.001, 0.02, 500),
+                         "Altin": rng.normal(0.001, 0.015, 500)}, index=idx)
+    h = adv.hrp_weights(rets)
+    assert h is not None
+    assert h["excluded_cash_like"] == ["ParaPiyasasi"]
+    assert set(h["weights"]) == {"HisseFonu", "Altin"}
+    assert sum(h["weights"].values()) == pytest.approx(1.0, rel=1e-9)
 
 
 def test_srri_class_bands():
