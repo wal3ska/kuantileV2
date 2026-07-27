@@ -32,6 +32,17 @@ _rates_cache: dict = {"t": 0.0, "data": None}
 _rf_hist_cache: dict = {}  # kind -> {"t": ..., "data": pd.Series}
 
 
+def _parse_evds_date(t: str) -> pd.Timestamp:
+    """EVDS tarihleri seri frekansina gore degisir: '11-07-2026' (gunluk/haftalik)
+    veya '2026-6' (aylik). Ikisini de kabul et."""
+    for fmt in ("%d-%m-%Y", "%Y-%m", "%Y-%m-%d"):
+        try:
+            return pd.to_datetime(t, format=fmt)
+        except ValueError:
+            continue
+    return pd.to_datetime(t, dayfirst=True)
+
+
 def fetch_evds_series(series_code: str, start: date, end: date) -> "pd.Series":
     """EVDS serisini gunluk/haftalik tarihli pd.Series (yuzde deger) olarak doner.
     Anahtar tanimsizsa veya EVDS cevap vermezse RuntimeError."""
@@ -51,7 +62,7 @@ def fetch_evds_series(series_code: str, start: date, end: date) -> "pd.Series":
     for item in items:
         v = item.get(col)
         if v not in (None, "", "null"):
-            dates.append(pd.to_datetime(item["Tarih"], format="%d-%m-%Y"))
+            dates.append(_parse_evds_date(item["Tarih"]))
             vals.append(float(v))
     if not vals:
         raise RuntimeError(f"EVDS serisi boş döndü: {series_code}")
