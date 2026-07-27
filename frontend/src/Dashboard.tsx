@@ -213,14 +213,29 @@ export function Dashboard({ data, positions }: { data: AnalyzeResponse; position
             <div className={`v ${risk.advanced.score.score >= 70 ? "up" : risk.advanced.score.score < 40 ? "down" : ""}`}>
               {fmtNum(risk.advanced.score.score)}<span className="tile-of">/100</span>
             </div>
-            <div className="sub">
-              {risk.advanced.risk_class && (
-                <>{t("advScoreTileSub", { c: String(risk.advanced.risk_class.risk_class) })} · </>
-              )}
-              <a className="tile-link" href="#advanced">{t("advScrollHint")}</a>
-            </div>
+            <div className="sub"><a className="tile-link" href="#advanced">{t("advScrollHint")}</a></div>
           </div>
         )}
+        {risk?.advanced?.risk_class && (() => {
+          const rc = risk.advanced!.risk_class!.risk_class;
+          return (
+            <div className="tile">
+              <div className="k">{t("advRiskClass")}</div>
+              <div className={`v ${rc <= 2 ? "up" : rc >= 6 ? "down" : ""}`}>
+                {rc}<span className="tile-of">/7</span>
+              </div>
+              <div className="riskseg mini">
+                {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                  <span key={i} className={`seg${i <= rc ? ` on r${rc}` : ""}`} />
+                ))}
+              </div>
+              <div className="sub">{t("advRiskClassSub", {
+                v: fmtPct(risk.advanced!.risk_class!.ann_vol_weekly).replace("+", ""),
+                n: String(risk.advanced!.risk_class!.weeks),
+              })}</div>
+            </div>
+          );
+        })()}
         {risk && (
           <div className="tile">
             <div className="k">{t("divTile")}</div>
