@@ -26,7 +26,7 @@ export function AdvancedSection({ adv, varPct }: {
 
   return (
     <>
-      <h2 className="adv-heading">{t("advTitle")}</h2>
+      <h2 className="adv-heading" id="advanced">{t("advTitle")}</h2>
 
       {(adv.score || adv.risk_class) && (
         <div className="card score-card">

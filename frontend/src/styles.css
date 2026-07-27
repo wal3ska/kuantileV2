@@ -682,3 +682,9 @@ details.acc .inner { padding: 13px; display: flex; flex-direction: column; gap: 
   .score-comp { grid-template-columns: 130px minmax(0,1fr) 34px; }
   .score-big { font-size: 32px; }
 }
+
+/* skor tile'i */
+html { scroll-behavior: smooth; }
+.tile-of { font-size: 13px; font-weight: 500; color: var(--muted); margin-left: 2px; }
+.tile-link { color: var(--accent); text-decoration: none; }
+.tile-link:hover { text-decoration: underline; }

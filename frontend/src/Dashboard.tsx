@@ -207,6 +207,20 @@ export function Dashboard({ data, positions }: { data: AnalyzeResponse; position
             })}</div>
           </div>
         )}
+        {risk?.advanced?.score && (
+          <div className="tile">
+            <div className="k">{t("advScore")}</div>
+            <div className={`v ${risk.advanced.score.score >= 70 ? "up" : risk.advanced.score.score < 40 ? "down" : ""}`}>
+              {fmtNum(risk.advanced.score.score)}<span className="tile-of">/100</span>
+            </div>
+            <div className="sub">
+              {risk.advanced.risk_class && (
+                <>{t("advScoreTileSub", { c: String(risk.advanced.risk_class.risk_class) })} · </>
+              )}
+              <a className="tile-link" href="#advanced">{t("advScrollHint")}</a>
+            </div>
+          </div>
+        )}
         {risk && (
           <div className="tile">
             <div className="k">{t("divTile")}</div>
