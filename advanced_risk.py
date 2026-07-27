@@ -466,9 +466,24 @@ def hrp_weights(returns: pd.DataFrame) -> dict | None:
 
 # ---------- 13) TEFAS stil analizi ----------
 
-def style_analysis(fund_rets: pd.Series, factors: pd.DataFrame) -> dict | None:
+def style_analysis(fund_rets: pd.Series, factors: pd.DataFrame,
+                   max_lag: int = 1) -> dict | None:
     """Sharpe stil analizi: kisitli regresyon (agirliklar >=0, toplam 1).
+    TEFAS fiyati bir gun gecikmeli ilan edilir (T gunu fiyati T-1 degerlemesi);
+    bu yuzden 0..max_lag gun kaydirma denenir, R2'si yuksek olan secilir.
     Projeksiyonlu gradyan inisiyle cozulur; R2, tracking error, IR doner."""
+    best = None
+    for lag in range(max_lag + 1):
+        shifted = fund_rets.shift(-lag) if lag else fund_rets
+        res = _style_fit(shifted.dropna(), factors)
+        if res is not None:
+            res["lag_days"] = lag
+            if best is None or (res["r2"] or 0) > (best["r2"] or 0):
+                best = res
+    return best
+
+
+def _style_fit(fund_rets: pd.Series, factors: pd.DataFrame) -> dict | None:
     df = factors.join(fund_rets.rename("__f__"), how="inner").dropna()
     if len(df) < 120:
         return None

@@ -158,3 +158,20 @@ def test_style_analysis_recovers_mix():
     assert s["weights"]["F2"] == pytest.approx(0.4, abs=0.02)
     assert s["r2"] > 0.99
     assert s["tracking_error_ann"] < 0.01
+    assert s["lag_days"] == 0
+
+
+def test_style_analysis_detects_nav_lag():
+    # TEFAS fiyati 1 gun gecikmeli ilan edilir: fon(t) = karisim(t-1).
+    # Ayni gun regresyonu iliskiyi goremez, lag=1 hizalamasi gormeli.
+    rng = np.random.default_rng(11)
+    idx = pd.bdate_range("2023-01-02", periods=500)
+    f1 = pd.Series(rng.normal(0.001, 0.02, 500), index=idx)
+    f2 = pd.Series(rng.normal(0.0005, 0.01, 500), index=idx)
+    factors = pd.DataFrame({"F1": f1, "F2": f2})
+    fund = (0.7 * f1 + 0.3 * f2).shift(1).dropna()
+    s = adv.style_analysis(fund, factors)
+    assert s is not None
+    assert s["lag_days"] == 1
+    assert s["weights"]["F1"] == pytest.approx(0.7, abs=0.02)
+    assert s["r2"] > 0.99

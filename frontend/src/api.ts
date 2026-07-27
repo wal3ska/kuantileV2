@@ -139,6 +139,7 @@ export interface AdvComponent {
 export interface AdvStyle {
   weights: Record<string, number>; r2: number | null; tracking_error_ann: number;
   alpha_ann: number; information_ratio: number | null; observations: number;
+  lag_days?: number;
 }
 export interface AdvancedBlock {
   es: { es_pct: number | null; es975_pct: number | null } | null;
