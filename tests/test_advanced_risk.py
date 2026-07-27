@@ -145,6 +145,43 @@ def test_hrp_weights():
     assert w["Sakin"] > w["Vahsi"]            # dusuk volatiliteye yuksek pay
 
 
+def test_srri_class_bands():
+    # gunluk sigma 0.02 -> haftalik ~0.045 -> yillik ~%32 -> sinif 7
+    r = _rets(1000, mu=0, sig=0.02, seed=12)
+    c = adv.srri_class(r)
+    assert c is not None and c["risk_class"] == 7
+    # cok stabil seri -> sinif 1
+    calm = pd.Series(np.full(1000, 1e-5), index=pd.bdate_range("2022-01-03", periods=1000))
+    assert adv.srri_class(calm)["risk_class"] == 1
+    # gunluk sigma 0.005 -> yillik ~%8 -> sinif 4
+    mid = _rets(1000, mu=0, sig=0.005, seed=13)
+    assert adv.srri_class(mid)["risk_class"] == 4
+
+
+def test_kuantile_score():
+    blocks = {
+        "concentration": {"n_assets": 4, "effective_bets": 4.0},
+        "es": {"es_pct": -0.036},
+        "_var_pct": -0.030,                      # ES/VaR = 1.2
+        "backtest": {"basel_zone": "green"},
+        "real": {"prob_real_loss_12m": 0.0},
+        "drawdown": {"calmar": 2.0},
+    }
+    s = adv.kuantile_score(1.0, blocks)          # sharpe 1.0 -> 100p
+    assert s is not None
+    assert s["components"]["sharpe"] == 100.0
+    assert s["components"]["diversification"] == 100.0
+    assert s["components"]["tail"] == pytest.approx(75.0)
+    assert s["components"]["model"] == 100.0
+    assert 90 < s["score"] <= 100
+
+    # daha kotu sharpe skoru dusurmeli; eksik bilesenler yeniden agirliklanmali
+    s2 = adv.kuantile_score(-0.5, {"_var_pct": -0.03})
+    assert s2["components"] == {"sharpe": 25.0}
+    assert s2["score"] == 25.0
+    assert adv.kuantile_score(None, {}) is None
+
+
 def test_style_analysis_recovers_mix():
     rng = np.random.default_rng(10)
     idx = pd.bdate_range("2023-01-02", periods=500)

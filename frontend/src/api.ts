@@ -170,6 +170,12 @@ export interface AdvancedBlock {
     lvar_multiplier: number; lvar_value_tl: number;
   } | null;
   style: Record<string, AdvStyle | null> | null;
+  risk_class?: { risk_class: number; ann_vol_weekly: number; weeks: number } | null;
+  score?: {
+    score: number;
+    components: Record<string, number>;
+    weights_used: Record<string, number>;
+  } | null;
 }
 
 export interface MarketRisk {

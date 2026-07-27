@@ -28,6 +28,50 @@ export function AdvancedSection({ adv, varPct }: {
     <>
       <h2 className="adv-heading">{t("advTitle")}</h2>
 
+      {(adv.score || adv.risk_class) && (
+        <div className="card score-card">
+          <div className="score-row">
+            {adv.score && (
+              <div className="score-main">
+                <div className="k">{t("advScore")}</div>
+                <div className={`score-big ${adv.score.score >= 70 ? "up" : adv.score.score < 40 ? "down" : ""}`}>
+                  {fmtNum(adv.score.score)}<span className="score-of">/100</span>
+                </div>
+              </div>
+            )}
+            {adv.risk_class && (
+              <div className="score-main">
+                <div className="k">{t("advRiskClass")}</div>
+                <div className="riskseg" aria-label={`${adv.risk_class.risk_class}/7`}>
+                  {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                    <span key={i}
+                      className={`seg${i <= adv.risk_class!.risk_class ? ` on r${adv.risk_class!.risk_class}` : ""}`}>
+                      {i}
+                    </span>
+                  ))}
+                </div>
+                <div className="sub">{t("advRiskClassSub", {
+                  v: fmtPct(adv.risk_class.ann_vol_weekly).replace("+", ""),
+                  n: String(adv.risk_class.weeks),
+                })}</div>
+              </div>
+            )}
+          </div>
+          {adv.score && (
+            <div className="score-comps">
+              {Object.entries(adv.score.components).map(([k, v]) => (
+                <div key={k} className="score-comp">
+                  <span>{(t as unknown as (key: string) => string)(`advC_${k}`)}</span>
+                  <div className="score-bar"><i style={{ width: `${v}%` }} /></div>
+                  <b>{fmtNum(v)}</b>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="section-note">{t("advScoreNote")}</p>
+        </div>
+      )}
+
       <div className="grid2">
         {/* Model karsilastirma + backtest */}
         {(adv.es || adv.ewma || adv.evt || adv.backtest) && (

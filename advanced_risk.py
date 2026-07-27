@@ -464,6 +464,88 @@ def hrp_weights(returns: pd.DataFrame) -> dict | None:
     return {"weights": {cols[i]: float(w[i]) for i in range(len(cols))}}
 
 
+# ---------- Risk sinifi (SRRI/TEFAS 1-7) + Kuantile Skoru ----------
+
+# SRRI bantlari: haftalik getirilerin yillik volatilitesi (AB/SPK metodolojisi,
+# TEFAS fon risk degeri de ayni yaklasimla hesaplanir).
+SRRI_BANDS = [(0.005, 1), (0.02, 2), (0.05, 3), (0.10, 4), (0.15, 5), (0.25, 6)]
+
+
+def srri_class(port_rets: pd.Series) -> dict | None:
+    """Portfoyun 1-7 risk sinifi: gunluk getiriler haftaliga cevrilir,
+    yillik volatilite SRRI bantlarina oturtulur."""
+    r = port_rets.dropna()
+    if len(r) < 120:
+        return None
+    weekly = r.resample("W").sum().dropna()
+    if len(weekly) < 24:
+        return None
+    ann_vol = float(weekly.tail(260).std()) * math.sqrt(52)
+    cls = 7
+    for bound, c in SRRI_BANDS:
+        if ann_vol < bound:
+            cls = c
+            break
+    return {"risk_class": cls, "ann_vol_weekly": ann_vol,
+            "weeks": int(min(len(weekly), 260))}
+
+
+def _clamp(v: float) -> float:
+    return max(0.0, min(100.0, v))
+
+
+def kuantile_score(sharpe_1y: float | None, blocks: dict) -> dict | None:
+    """Kuantile Skoru (0-100): risk sinifi verili kabul edilir, o riskin ne
+    kadar verimli tasindigi puanlanir. Tum bilesenler risk-ayarli oldugundan
+    siniflar arasi karsilastirilabilir. Eksik bilesenlerde agirliklar kalanlara
+    yeniden dagitilir."""
+    comps: dict = {}
+
+    if sharpe_1y is not None:
+        # Sharpe -1 -> 0p, 0 -> 50p, +1 -> 100p
+        comps["sharpe"] = _clamp(50 + 50 * sharpe_1y)
+
+    conc = blocks.get("concentration")
+    if conc:
+        n = min(conc["n_assets"], 5)
+        if n >= 2:
+            comps["diversification"] = _clamp(
+                (conc["effective_bets"] - 1) / (n - 1) * 100)
+
+    es_b, evt_b = blocks.get("es"), blocks.get("evt")
+    var_ref = blocks.get("_var_pct")
+    if es_b and es_b.get("es_pct") and var_ref:
+        # ES/VaR orani kuyruk kalinligi: 1.0 -> 100p, 1.8+ -> 0p
+        ratio = es_b["es_pct"] / var_ref if var_ref else None
+        if ratio and ratio > 0:
+            comps["tail"] = _clamp((1.8 - ratio) / 0.8 * 100)
+
+    bt = blocks.get("backtest")
+    if bt:
+        comps["model"] = {"green": 100.0, "yellow": 50.0, "red": 0.0}[bt["basel_zone"]]
+
+    real = blocks.get("real")
+    if real and real.get("prob_real_loss_12m") is not None:
+        # reel kayip olasiligi 0 -> 100p, %60+ -> 0p
+        comps["real"] = _clamp((0.6 - real["prob_real_loss_12m"]) / 0.6 * 100)
+
+    dd = blocks.get("drawdown")
+    if dd and dd.get("calmar") is not None:
+        comps["drawdown"] = _clamp(dd["calmar"] / 2 * 100)
+
+    if not comps:
+        return None
+    weights = {"sharpe": 35, "diversification": 20, "tail": 15,
+               "model": 10, "real": 10, "drawdown": 10}
+    total_w = sum(weights[k] for k in comps)
+    score = sum(comps[k] * weights[k] for k in comps) / total_w
+    return {
+        "score": round(score, 1),
+        "components": {k: round(v, 1) for k, v in comps.items()},
+        "weights_used": {k: weights[k] for k in comps},
+    }
+
+
 # ---------- 13) TEFAS stil analizi ----------
 
 def style_analysis(fund_rets: pd.Series, factors: pd.DataFrame,

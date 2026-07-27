@@ -392,6 +392,15 @@ def analyze(req: AnalyzeRequest):
             risk["advanced"] = _advanced_block(
                 req, req.positions, returns, port_rets, investments, valid,
                 market_value, var_pct, prices_try, last_native, fx_now)
+            try:
+                risk["advanced"]["risk_class"] = adv.srri_class(port_rets)
+                sh1 = sharpe.get("1y") if isinstance(sharpe, dict) else None
+                risk["advanced"]["score"] = adv.kuantile_score(
+                    sh1["sharpe"] if sh1 else None,
+                    {**risk["advanced"], "_var_pct": var_pct})
+            except Exception:
+                risk["advanced"]["risk_class"] = None
+                risk["advanced"]["score"] = None
 
     return {
         "fx_usdtry": fx_now,

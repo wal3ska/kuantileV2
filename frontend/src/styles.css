@@ -657,3 +657,28 @@ details.acc .inner { padding: 13px; display: flex; flex-direction: column; gap: 
 .guide-link:hover { text-decoration: underline; }
 .style-block { margin-top: 10px; }
 .style-block h4 { margin: 0 0 6px; font-size: 13.5px; color: var(--ink); }
+
+/* --- Kuantile Skoru karti --- */
+.score-card { border-left: 3px solid var(--accent); }
+.score-row { display: flex; gap: 36px; flex-wrap: wrap; align-items: flex-start; }
+.score-main .k { font-size: 12.5px; color: var(--muted); margin-bottom: 4px; }
+.score-big { font-size: 40px; font-weight: 700; line-height: 1.05; color: var(--ink); }
+.score-big .score-of { font-size: 16px; font-weight: 500; color: var(--muted); margin-left: 3px; }
+.riskseg { display: flex; gap: 4px; margin: 6px 0 4px; }
+.riskseg .seg {
+  width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border); border-radius: 6px; font-size: 13px; color: var(--muted);
+}
+.riskseg .seg.on { color: #fff; border-color: transparent; background: var(--accent); }
+.riskseg .seg.on.r6, .riskseg .seg.on.r7 { background: var(--delta-down); }
+.riskseg .seg.on.r1, .riskseg .seg.on.r2 { background: var(--delta-up); }
+.score-comps { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+.score-comp { display: grid; grid-template-columns: 210px minmax(0,1fr) 40px; gap: 10px; align-items: center; font-size: 12.5px; }
+.score-comp span { color: var(--muted); }
+.score-comp b { text-align: right; }
+.score-bar { height: 7px; background: var(--grid); border-radius: 4px; overflow: hidden; }
+.score-bar i { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
+@media (max-width: 700px) {
+  .score-comp { grid-template-columns: 130px minmax(0,1fr) 34px; }
+  .score-big { font-size: 32px; }
+}
