@@ -1,14 +1,17 @@
 """FastAPI backend. Calistirma: uvicorn api:app --host 0.0.0.0 --port 8000
 Dokumantasyon otomatik: http://localhost:8000/docs"""
 
+import math
 import os
 from datetime import date
 from typing import Literal, Optional
 
 import numpy as np
+import pandas as pd
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+import advanced_risk as adv
 import data_provider as dp
 import risk_engine as engine
 from auth import router as auth_router
@@ -183,6 +186,112 @@ def simulate(req: SimulateRequest):
     }
 
 
+FACTOR_TICKERS = ("XU100.IS", "GC=F", "TRY=X", "^GSPC")
+FACTOR_LABELS = {"XU100.IS": "BIST 100", "GOLDTL": "Altın (TL)",
+                 "TRY=X": "USD/TRY", "SP500TL": "S&P 500 (TL)", "CASH": "Nakit/Mevduat"}
+
+
+def _advanced_block(req, positions, returns, port_rets, investments, valid,
+                    market_value, var_pct, prices_try, last_native, fx_now):
+    """Gelismis metrikler: her biri bagimsiz try/except ile hesaplanir,
+    veri/kaynak sorunu analizin geri kalanini asla bloklamaz."""
+    out = {}
+
+    def _safe(key, fn):
+        try:
+            out[key] = fn()
+        except Exception:
+            out[key] = None
+
+    conf = req.confidence
+    _safe("es", lambda: {
+        "es_pct": adv.expected_shortfall(port_rets, conf),
+        "es975_pct": adv.expected_shortfall(port_rets, 0.975),
+    })
+    _safe("backtest", lambda: adv.var_backtest(port_rets, conf))
+    _safe("attribution", lambda: adv.risk_attribution(returns, investments, conf, var_pct))
+    _safe("ewma", lambda: adv.ewma_fhs(port_rets, conf))
+    _safe("drawdown", lambda: adv.drawdown_stats(port_rets))
+    _safe("concentration", lambda: adv.concentration(returns, investments))
+    _safe("evt", lambda: adv.evt_tail(port_rets))
+    _safe("tail_dependence", lambda: adv.tail_dependence(returns[valid]))
+    _safe("hrp", lambda: adv.hrp_weights(returns[valid]))
+
+    def _real():
+        cpi = dp.fetch_cpi()  # EVDS anahtari yoksa RuntimeError -> None
+        return adv.real_metrics(port_rets, cpi)
+    _safe("real", _real)
+
+    # Fakat serileri: kur ayristirmasi + stil analizi ayni cekimi paylasir
+    factors_raw = None
+    try:
+        factors_raw = dp.fetch_yahoo_prices(FACTOR_TICKERS)
+    except RuntimeError:
+        pass
+
+    def _fx():
+        if factors_raw is None or "TRY=X" not in factors_raw.columns:
+            return None
+        fx_series = factors_raw["TRY=X"].dropna()
+        fx_rets = np.log(fx_series / fx_series.shift(1)).dropna()
+        usd_names = {p.name for p in positions
+                     if p.currency == "USD" or p.ticker == dp.GRAM_GOLD_TICKER}
+        return adv.fx_decomposition(returns, fx_rets, investments, usd_names)
+    _safe("fx", _fx)
+
+    def _liquidity():
+        eq = [p for p in positions if p.name in investments and p.source == "yahoo"
+              and p.ticker != dp.GRAM_GOLD_TICKER
+              and "=" not in p.ticker and "-" not in p.ticker]
+        vols = dp.fetch_yahoo_volumes(tuple(sorted({p.ticker for p in eq}))) if eq else {}
+        info = []
+        for p in positions:
+            if p.name not in investments:
+                continue
+            if p.source == "tefas":
+                kind, adv_tl = "fund", None
+            elif p.ticker in vols:
+                fx = fx_now if p.currency == "USD" else 1.0
+                kind, adv_tl = "equity", vols[p.ticker] * last_native[p.name] * fx
+            else:
+                kind, adv_tl = "liquid", None
+            info.append({"name": p.name, "value_tl": investments[p.name],
+                         "adv_tl": adv_tl, "kind": kind})
+        return adv.liquidity_var(info, market_value * var_pct)
+    _safe("liquidity", _liquidity)
+
+    def _style():
+        funds = [p for p in positions if p.source == "tefas"
+                 and p.name in (prices_try.columns if prices_try is not None else [])]
+        if not funds or factors_raw is None:
+            return None
+        f = pd.DataFrame(index=factors_raw.index)
+        fx_s = factors_raw["TRY=X"].ffill()
+        if "XU100.IS" in factors_raw:
+            f["BIST 100"] = factors_raw["XU100.IS"]
+        if "GC=F" in factors_raw:
+            f["Altın (TL)"] = factors_raw["GC=F"] * fx_s
+        f["USD/TRY"] = factors_raw["TRY=X"]
+        if "^GSPC" in factors_raw:
+            f["S&P 500 (TL)"] = factors_raw["^GSPC"] * fx_s
+        f_rets = np.log(f / f.shift(1)).replace([np.inf, -np.inf], np.nan)
+        # nakit faktoru: TLREF gunluk getirisi (yoksa sabit yaklasik)
+        try:
+            cash = np.log(1 + dp.fetch_rf_history("tlref")) / 252
+            f_rets["Nakit/Mevduat"] = cash.reindex(f_rets.index).ffill()
+        except RuntimeError:
+            f_rets["Nakit/Mevduat"] = math.log(1.40) / 252
+        result = {}
+        for p in funds:
+            s = prices_try[p.name].dropna()
+            fr = np.log(s / s.shift(1)).dropna()
+            result[p.name] = adv.style_analysis(fr, f_rets)
+        return result or None
+    _safe("style", _style)
+
+    return out
+
+
 @app.post("/portfolio/analyze")
 def analyze(req: AnalyzeRequest):
     if not req.positions and not req.bonds:
@@ -280,6 +389,9 @@ def analyze(req: AnalyzeRequest):
                                                             regions=req.stress_regions).items()
                 },
             }
+            risk["advanced"] = _advanced_block(
+                req, req.positions, returns, port_rets, investments, valid,
+                market_value, var_pct, prices_try, last_native, fx_now)
 
     return {
         "fx_usdtry": fx_now,

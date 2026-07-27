@@ -103,6 +103,43 @@ def fetch_rf_history(kind: str, years: int = 6) -> "pd.Series":
     return daily
 
 
+EVDS_CPI_SERIES = os.getenv("EVDS_CPI_SERIES", "TP.FG.J0")  # TUFE genel endeks (aylik)
+
+
+def fetch_cpi() -> pd.Series:
+    """TUIK TUFE genel endeksi (EVDS uzerinden, aylik). Reel getiri icin."""
+    cached = _rf_hist_cache.get("cpi")
+    if cached and time.time() - cached["t"] < _RATES_TTL:
+        return cached["data"]
+    end = date.today()
+    s = fetch_evds_series(EVDS_CPI_SERIES, end - timedelta(days=365 * 7), end)
+    _rf_hist_cache["cpi"] = {"t": time.time(), "data": s}
+    return s
+
+
+def fetch_yahoo_volumes(tickers: tuple, lookback_days: int = 90) -> dict:
+    """Ticker -> ortalama gunluk islem hacmi (adet, son ~3 ay).
+    Likidite ayarli VaR icin; veri yoksa ticker atlanir."""
+    try:
+        data = yf.download(list(tickers), period=f"{lookback_days}d",
+                           progress=False, auto_adjust=True)
+        if data is None or data.empty or "Volume" not in data:
+            return {}
+        vol = data["Volume"]
+        if isinstance(vol, pd.Series):
+            vol = vol.to_frame(name=tickers[0])
+        out = {}
+        for t in tickers:
+            if t in vol.columns:
+                s = vol[t].dropna()
+                s = s[s > 0]
+                if len(s) >= 10:
+                    out[t] = float(s.mean())
+        return out
+    except Exception:
+        return {}
+
+
 def fetch_yahoo_prices(tickers: tuple, start: str = YAHOO_START, retries: int = 3) -> pd.DataFrame:
     """Kapanis fiyatlari (auto-adjusted). Bos sonucta RuntimeError firlatir ki
     cagiran taraf bos veriyi cache'lemesin."""

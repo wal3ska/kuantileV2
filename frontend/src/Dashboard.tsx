@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { AnalyzeResponse, PositionIn, SimulateResponse, ValuationRow } from "./api";
 import { api, ApiError, fmtNum, fmtPct, fmtTL } from "./api";
+import { AdvancedSection } from "./Advanced";
 import { CorrHeatmap, HBars, LineChart } from "./charts";
 import { useT } from "./i18n";
 
@@ -278,6 +279,10 @@ export function Dashboard({ data, positions }: { data: AnalyzeResponse; position
           </div>
           <p className="section-note">{t("shockNote")}</p>
         </div>
+      )}
+
+      {risk?.advanced && (
+        <AdvancedSection adv={risk.advanced} varPct={risk.var_pct} />
       )}
 
       <p className="footer-note">{t("disclaimer")}</p>

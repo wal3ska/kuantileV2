@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script>if(localStorage.getItem("kt_theme")==="dark")document.documentElement.dataset.theme="dark";</script>
-<title>Guides — Portfolio & Risk Management Articles | Kuantile</title>
-<meta name="description" content="Plain-language articles on VaR, diversification, stress testing, bond duration, gold and fund analysis.">
-<link rel="canonical" href="https://kuantile.com/en/guides/">
-<link rel="alternate" hreflang="tr" href="https://kuantile.com/rehber/">
-<link rel="alternate" hreflang="en" href="https://kuantile.com/en/guides/">
-<link rel="alternate" hreflang="x-default" href="https://kuantile.com/rehber/">
+<title>Where Risk Comes From: Component VaR, Concentration, Tail Dependence and HRP | Kuantile</title>
+<meta name="description" content="What are component VaR and incremental VaR? HHI, effective number of bets, diversification ratio, tail dependence and Hierarchical Risk Parity explained simply.">
+<link rel="canonical" href="https://kuantile.com/en/guides/risk-attribution-concentration/">
+<link rel="alternate" hreflang="tr" href="https://kuantile.com/rehber/risk-atfi-yogunlasma/">
+<link rel="alternate" hreflang="en" href="https://kuantile.com/en/guides/risk-attribution-concentration/">
+<link rel="alternate" hreflang="x-default" href="https://kuantile.com/rehber/risk-atfi-yogunlasma/">
 <link rel="icon" type="image/png" href="/logo.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -57,12 +57,39 @@ button:hover{background:var(--accent2)}
 <body>
 <header>
   <a class="logo" href="/"><img src="/logo.png" width="26" height="26" alt="Kuantile logosu">Kuantile</a>
-  <nav><a href="/">App</a><a href="/en/guides/">Guides</a><a href="/en/about/">About</a><a href="/en/contact/">Contact</a><a href="/rehber/" style="font-weight:700;color:var(--accent2)">TR</a><button id="th" aria-label="Tema">◐</button></nav>
+  <nav><a href="/">App</a><a href="/en/guides/">Guides</a><a href="/en/about/">About</a><a href="/en/contact/">Contact</a><a href="/rehber/risk-atfi-yogunlasma/" style="font-weight:700;color:var(--accent2)">TR</a><button id="th" aria-label="Tema">◐</button></nav>
 </header>
 <main>
-<h1 style="margin-bottom:6px">Guides</h1>
-<p style="color:#52514e;margin-bottom:24px">Original articles by the Kuantile team that make portfolio and risk management simple. New content is added regularly.</p>
-<div class="cards"><a class="card" href="/en/guides/advanced-risk-metrics/"><b>Advanced Risk Measurement: Expected Shortfall, VaR Backtesting, EWMA and EVT</b><p>What is Expected Shortfall and how is VaR backtested? Kupiec and Christoffersen tests, the Basel traffic light, EWMA volatility, FHS and EVT tail modeling explained.</p></a><a class="card" href="/en/guides/risk-attribution-concentration/"><b>Where Risk Comes From: Component VaR, Concentration, Tail Dependence and HRP</b><p>What are component VaR and incremental VaR? HHI, effective number of bets, diversification ratio, tail dependence and Hierarchical Risk Parity explained simply.</p></a><a class="card" href="/en/guides/real-return-fx-liquidity/"><b>Real Return, Currency Decomposition, Liquidity Risk and Fund Style Analysis</b><p>How is inflation-adjusted real return computed? Probability of purchasing-power loss, the FX share of portfolio risk, liquidity-adjusted VaR and TEFAS fund style analysis.</p></a><a class="card" href="/en/guides/what-is-var/"><b>What Is Value at Risk (VaR)? A Plain-Language Guide</b><p>What is VaR, how is it computed, and what does 99% confidence mean? Historical simulation explained with examples.</p></a><a class="card" href="/en/guides/diversification-and-correlation/"><b>Diversification and Correlation: Are Your Eggs Really in Different Baskets?</b><p>Why diversification is measured with correlation, how to read a correlation matrix, and how to quantify the benefit.</p></a><a class="card" href="/en/guides/portfolio-stress-testing/"><b>Portfolio Stress Testing: What If You Held This Portfolio Through 2008?</b><p>What is stress testing and how does historical scenario analysis work? Simulating your portfolio through 2008, Covid and lira shocks.</p></a><a class="card" href="/en/guides/bond-duration-and-dv01/"><b>Bond Duration and DV01: Measure Your Rate Risk with One Number</b><p>What are Macaulay and modified duration, how is DV01 computed? The impact of rate hikes on bond portfolios, with practical examples.</p></a><a class="card" href="/en/guides/gram-gold-vs-ounce-gold/"><b>Gram Gold vs Ounce Gold: The Real Difference for a TRY Investor</b><p>What separates gram gold from ounce gold? Currency effects, correlation and the mechanics of TRY-based gold investing.</p></a><a class="card" href="/en/guides/tracking-tefas-funds/"><b>How to Track TEFAS Funds in Your Portfolio</b><p>What is a TEFAS fund, when are prices published, and how do you measure a fund's contribution to portfolio risk?</p></a><a class="card" href="/en/guides/try-based-portfolio-tracking/"><b>Why Tracking Your Portfolio in TRY Terms Is Vital</b><p>Dollar-based or TRY-based tracking? How currency moves mask returns, and why consolidating in one currency matters.</p></a><a class="card" href="/en/guides/crypto-risk-management/"><b>Crypto Risk Management: Learning to Live with Volatility</b><p>How to include Bitcoin and crypto in portfolio risk: position sizing, correlation and VaR for volatile assets.</p></a><a class="card" href="/en/guides/percentile-based-returns/"><b>Was It a Good Week? Judge Your Return by Its Historical Percentile</b><p>What does the historical percentile of a weekly or monthly return tell you? The percentile concept in portfolio reports.</p></a><a class="card" href="/en/guides/portfolio-rebalancing/"><b>Portfolio Rebalancing: When, How and Why?</b><p>What is rebalancing and how often should you do it? Calendar-based and threshold-based strategies with practical tips.</p></a></div>
+<article>
+<h1>Where Risk Comes From: Component VaR, Concentration, Tail Dependence and HRP</h1>
+<p class="meta">Kuantile Guides · 27.07.2026</p>
+
+<p>"Your portfolio VaR is 3.2%" does not translate into action. <b>"ASELS is 15% of your money but 41% of your risk"</b> does. Kuantile's risk attribution and concentration cards break the single risk figure into parts and show what each position really carries.</p>
+
+<h2>Component VaR: risk with an address</h2>
+<p>The Euler decomposition splits total VaR across positions so that <b>the parts sum exactly to the total</b> — nothing is left over, nothing is double-counted. Each position's share comes from its own volatility and its correlation with the rest: a small but volatile position that moves with the portfolio can carry more risk than a large, quiet one. The table shows <b>money share next to risk share</b>; when risk share is clearly higher, that position is the true source of your risk.</p>
+
+<h2>Incremental VaR: "what if I close it?"</h2>
+<p>This is usually the question investors actually ask. Incremental VaR computes how VaR changes if you close a position entirely and spread the money across the rest. Negative means less risk; near zero means the position sits in your portfolio almost for free thanks to diversification.</p>
+
+<h2>Concentration: how many independent bets?</h2>
+<p>Owning twenty stocks does not mean making twenty independent decisions — if they all watch the same index, the same currency and the same interest rate, you effectively hold one or two bets. Three measures quantify this:</p>
+<ul>
+<li><b>HHI and effective positions:</b> the sum of squared weights. Four equal-weighted assets give HHI 0.25 and 4 effective positions; put half your money in one asset and the effective count collapses.</li>
+<li><b>Diversification ratio:</b> the weighted sum of individual volatilities divided by portfolio volatility. Near 1, diversification is doing nothing; the higher it goes, the harder correlations work for you.</li>
+<li><b>Effective independent bets (PCA):</b> an entropy measure derived from the eigenvalues of the correlation matrix. "You own 20 assets but effectively hold 2.8 independent bets" comes from here — the number that stops everyone who thinks they are diversified.</li>
+</ul>
+
+<h2>Tail dependence: crisis-day correlation</h2>
+<p>Pearson correlation describes average days; in a crisis, correlations "break" and assets that looked unrelated crash together. Empirical tail dependence (λ) measures this directly: <b>how often two assets land in their own worst 5% on the same day.</b> Independent assets give ~0.05; a pair showing 0.4-0.5 behaves like a single asset on crisis days. For the BIST-crypto-FX triangle, this metric confirms with daily data what stress tests suggest with scenarios.</p>
+
+<h2>HRP: allocation without inverting the covariance matrix</h2>
+<p>Classical mean-variance optimization inverts the covariance matrix; when the matrix is noisy (and with 250 observations and 30 assets it always is), the output is extreme, fragile weights. López de Prado's <b>Hierarchical Risk Parity</b> never inverts: it clusters assets by correlation distance, then splits the risk budget recursively down the cluster tree. The HRP weights Kuantile shows are a <b>reference frame</b>: large gaps between them and your current weights reveal where you are taking deliberate bets — or concentrating without noticing. A suggestion, not advice.</p>
+<a class="cta" href="/">See where your risk comes from →</a>
+
+<h2>Related articles</h2>
+<ul><li><a href="/en/guides/diversification-and-correlation/">Diversification and Correlation</a></li><li><a href="/en/guides/advanced-risk-metrics/">Advanced Risk Measurement: ES, Backtesting, EWMA and EVT</a></li><li><a href="/en/guides/portfolio-rebalancing/">Portfolio Rebalancing</a></li></ul>
+</article>
 </main>
 <footer>© 2026 Kuantile — Nothing on this site constitutes investment advice.<br><a href="/en/privacy/">Privacy Policy</a> · <a href="/en/terms/">Terms of Use</a> · <a href="/en/about/">About</a> · <a href="/en/contact/">Contact</a> · <a href="/en/guides/">Guides</a></footer>
 <script>

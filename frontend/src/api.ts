@@ -127,9 +127,54 @@ export interface RiskFree {
   annual_rate: number;
 }
 
+export interface AdvBacktest {
+  days: number; violations: number; expected: number;
+  kupiec_p: number; christoffersen_p: number | null;
+  basel_zone: "green" | "yellow" | "red";
+}
+export interface AdvComponent {
+  name: string; weight: number; cvar_tl: number;
+  cvar_share: number | null; incremental_tl: number | null;
+}
+export interface AdvStyle {
+  weights: Record<string, number>; r2: number | null; tracking_error_ann: number;
+  alpha_ann: number; information_ratio: number | null; observations: number;
+}
+export interface AdvancedBlock {
+  es: { es_pct: number | null; es975_pct: number | null } | null;
+  backtest: AdvBacktest | null;
+  attribution: { components: AdvComponent[]; total_var_tl: number } | null;
+  ewma: { ewma_vol_ann: number; var_ewma_pct: number; var_fhs_pct: number; lambda: number } | null;
+  drawdown: {
+    max_drawdown: number; calmar: number | null; ulcer_index: number;
+    underwater_days_now: number; longest_underwater_days: number; ann_return: number | null;
+  } | null;
+  concentration: {
+    hhi: number; effective_positions: number; diversification_ratio: number;
+    effective_bets: number; n_assets: number;
+  } | null;
+  evt: {
+    tail_index: number; threshold_pct: number; exceedances: number;
+    var995_pct: number; es995_pct: number;
+  } | null;
+  tail_dependence: { pairs: { pair: string; lambda_lower: number; pearson: number }[]; q: number } | null;
+  hrp: { weights: Record<string, number> } | null;
+  real: {
+    inflation_12m: number; nominal_return_12m: number; real_return_12m: number;
+    prob_real_loss_12m: number | null; cpi_as_of: string;
+  } | null;
+  fx: { usd_exposure_share: number; local_share: number; fx_share: number; cov_share: number } | null;
+  liquidity: {
+    positions: { name: string; days_to_exit: number; value_share: number }[];
+    lvar_multiplier: number; lvar_value_tl: number;
+  } | null;
+  style: Record<string, AdvStyle | null> | null;
+}
+
 export interface MarketRisk {
   confidence: number;
   sharpe: SharpeMulti | null;
+  advanced?: AdvancedBlock;
   var_pct: number;
   var_value_try: number;
   market_value_try: number;

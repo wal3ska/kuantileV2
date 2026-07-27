@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script>if(localStorage.getItem("kt_theme")==="dark")document.documentElement.dataset.theme="dark";</script>
-<title>Rehber — Portföy ve Risk Yönetimi Yazıları | Kuantile</title>
-<meta name="description" content="VaR, çeşitlendirme, stres testi, tahvil durasyonu, gram altın ve fon analizi üzerine Türkçe rehber yazıları.">
-<link rel="canonical" href="https://kuantile.com/rehber/">
-<link rel="alternate" hreflang="tr" href="https://kuantile.com/rehber/">
-<link rel="alternate" hreflang="en" href="https://kuantile.com/en/guides/">
-<link rel="alternate" hreflang="x-default" href="https://kuantile.com/rehber/">
+<title>Reel Getiri, Kur Ayrıştırması, Likidite Riski ve Fon Stil Analizi | Kuantile</title>
+<meta name="description" content="Enflasyon sonrası reel getiri nasıl hesaplanır? Satın alma gücü kaybı olasılığı, portföyde kur riskinin payı, likidite ayarlı VaR ve TEFAS fon stil analizi.">
+<link rel="canonical" href="https://kuantile.com/rehber/reel-getiri-kur-likidite/">
+<link rel="alternate" hreflang="tr" href="https://kuantile.com/rehber/reel-getiri-kur-likidite/">
+<link rel="alternate" hreflang="en" href="https://kuantile.com/en/guides/real-return-fx-liquidity/">
+<link rel="alternate" hreflang="x-default" href="https://kuantile.com/rehber/reel-getiri-kur-likidite/">
 <link rel="icon" type="image/png" href="/logo.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -57,12 +57,31 @@ button:hover{background:var(--accent2)}
 <body>
 <header>
   <a class="logo" href="/"><img src="/logo.png" width="26" height="26" alt="Kuantile logosu">Kuantile</a>
-  <nav><a href="/">Uygulama</a><a href="/rehber/">Rehber</a><a href="/hakkimizda/">Hakkımızda</a><a href="/iletisim/">İletişim</a><a href="/en/guides/" style="font-weight:700;color:var(--accent2)">EN</a><button id="th" aria-label="Tema">◐</button></nav>
+  <nav><a href="/">Uygulama</a><a href="/rehber/">Rehber</a><a href="/hakkimizda/">Hakkımızda</a><a href="/iletisim/">İletişim</a><a href="/en/guides/real-return-fx-liquidity/" style="font-weight:700;color:var(--accent2)">EN</a><button id="th" aria-label="Tema">◐</button></nav>
 </header>
 <main>
-<h1 style="margin-bottom:6px">Rehber</h1>
-<p style="color:#52514e;margin-bottom:24px">Portföy ve risk yönetimini sadeleştiren, Kuantile ekibinin kaleme aldığı özgün yazılar. Düzenli olarak yeni içerik eklenir.</p>
-<div class="cards"><a class="card" href="/rehber/gelismis-risk-metrikleri/"><b>Gelişmiş Risk Ölçümü: Expected Shortfall, VaR Backtesting, EWMA ve EVT</b><p>Expected Shortfall nedir, VaR backtest nasıl yapılır? Kupiec ve Christoffersen testleri, Basel trafik ışığı, EWMA volatilite, FHS ve EVT kuyruk modeli sade anlatımla.</p></a><a class="card" href="/rehber/risk-atfi-yogunlasma/"><b>Riskin Kaynağı: Component VaR, Yoğunlaşma, Kuyruk Bağımlılığı ve HRP</b><p>Component VaR ve incremental VaR nedir? HHI, efektif bahis sayısı, çeşitlendirme oranı, kuyruk bağımlılığı ve Hierarchical Risk Parity sade anlatımla.</p></a><a class="card" href="/rehber/reel-getiri-kur-likidite/"><b>Reel Getiri, Kur Ayrıştırması, Likidite Riski ve Fon Stil Analizi</b><p>Enflasyon sonrası reel getiri nasıl hesaplanır? Satın alma gücü kaybı olasılığı, portföyde kur riskinin payı, likidite ayarlı VaR ve TEFAS fon stil analizi.</p></a><a class="card" href="/rehber/var-nedir/"><b>Riske Maruz Değer (VaR) Nedir? Yatırımcı İçin Sade Bir Anlatım</b><p>VaR (Value at Risk) nedir, nasıl hesaplanır, %99 güven düzeyi ne demek? Tarihsel simülasyon yöntemini örneklerle anlatıyoruz.</p></a><a class="card" href="/rehber/cesitlendirme-ve-korelasyon/"><b>Çeşitlendirme ve Korelasyon: Yumurtalar Gerçekten Farklı Sepetlerde mi?</b><p>Portföy çeşitlendirmesi neden korelasyona bakılarak yapılır? Korelasyon matrisi nasıl okunur, çeşitlendirme faydası nasıl ölçülür?</p></a><a class="card" href="/rehber/stres-testi/"><b>Portföy Stres Testi: 2008'i Bugünkü Portföyünüzle Yaşasaydınız?</b><p>Stres testi nedir, tarihsel senaryo analizi nasıl çalışır? 2008 krizi, Covid çöküşü ve kur şoklarında portföyünüzün simülasyonu.</p></a><a class="card" href="/rehber/tahvil-durasyonu-dv01/"><b>Tahvil Durasyonu ve DV01: Faiz Riskinizi Tek Sayıyla Ölçün</b><p>Macaulay ve modified duration nedir, DV01 nasıl hesaplanır? Faiz artışının tahvil portföyüne etkisini pratik örneklerle anlatıyoruz.</p></a><a class="card" href="/rehber/gram-altin-mi-ons-mu/"><b>Gram Altın mı, Ons Altın mı? TL Yatırımcısı İçin Gerçek Fark</b><p>Gram altın ile ons altın arasındaki fark nedir? Kur etkisi, korelasyon ve TL bazlı altın yatırımının incelikleri.</p></a><a class="card" href="/rehber/tefas-fon-analizi/"><b>TEFAS Fonları Portföyde Nasıl Takip Edilir?</b><p>TEFAS fonu nedir, fiyatı ne zaman açıklanır, portföy riskine katkısı nasıl ölçülür? Fon yatırımcısı için pratik rehber.</p></a><a class="card" href="/rehber/tl-bazli-takip/"><b>Portföyü TL Bazında Takip Etmek Neden Hayati?</b><p>Dolar bazlı mı TL bazlı mı takip? Kur etkisi getiriyi nasıl maskeler? Tek para biriminde konsolide portföy takibinin önemi.</p></a><a class="card" href="/rehber/kriptoda-risk/"><b>Kripto Varlıklarda Risk Yönetimi: Oynaklıkla Yaşamayı Öğrenmek</b><p>Bitcoin ve kripto portföy riskine nasıl dahil edilir? Pozisyon boyutu, korelasyon ve VaR ile kripto oynaklığını yönetme rehberi.</p></a><a class="card" href="/rehber/yuzdelik-dilim/"><b>Getiriniz İyi mi Kötü mü? Tarihsel Yüzdelik Dilimle Değerlendirin</b><p>Haftalık veya aylık getirinizin tarihsel yüzdelik dilimi ne anlatır? Percentile kavramı ve portföy raporlarında kullanımı.</p></a><a class="card" href="/rehber/portfoy-dengeleme/"><b>Portföy Dengeleme (Rebalancing): Ne Zaman, Nasıl, Neden?</b><p>Portföy dengelemesi nedir, hangi sıklıkla yapılmalı? Eşik bazlı ve takvim bazlı rebalancing stratejileri ve pratik ipuçları.</p></a></div>
+<article>
+<h1>Reel Getiri, Kur Ayrıştırması, Likidite Riski ve Fon Stil Analizi</h1>
+<p class="meta">Kuantile Rehber · 27.07.2026</p>
+
+<p>Bu yazıdaki dört kavramın ortak paydası şu: hepsi, ekran getirinizin <b>görmediğiniz maliyetlerini</b> ölçer. Enflasyon, kur, likidite ve fonun gerçek içeriği — dördü de nominal rakamın arkasına saklanır.</p>
+
+<h2>Reel getiri: %45 kazanmak yetmeyebilir</h2>
+<p>Türkiye'de nominal getiri tek başına anlamsızdır: %45 getiren bir portföy, enflasyon %55 koştuysa satın alma gücü <b>kaybettirmiştir</b>. Kuantile, TÜİK TÜFE endeksiyle getiriyi deflate eder ve son 12 ayın reel sonucunu gösterir. Asıl vurucu metrik ise <b>reel kayıp olasılığıdır</b>: mevcut getiri ve oynaklık düzeyi sürerse, 12 ay sonra reel olarak zararda olma ihtimaliniz. "Getiri iyi görünüyor" hissini tek bir olasılık sayısına çevirir. v1 yaklaşımında enflasyon beklentisi son 12 aylık gerçekleşmedir; enflasyonun kendi belirsizliği modele katılmamıştır — bu, olasılığı bir miktar iyimser veya kötümser saptırabilir, rakamı kesinlik değil pusula olarak okuyun.</p>
+
+<h2>Kur ayrıştırması: tek bahis mi, çok bahis mi?</h2>
+<p>TL bazlı bir yatırımcının ABD hissesi + kripto + gram altın portföyünde riskin ne kadarı gerçekte USDTRY'dir? Cevap çoğu zaman "çoğu"dur ve bunu görmek bir aydınlanma anıdır. Matematik basittir: dolar bazlı bir varlığın TL getirisi, <b>yerel getiri + kur getirisi</b> olarak tam ayrışır. Portföy oynaklığı da buradan üç parçaya bölünür: yerel varlık riski, kur riski ve ikisinin birlikte hareketinden gelen kovaryans terimi. Kur payı yüksekse, farklı varlıklara yayıldığınızı sanırken tek bir kur bahsi tutuyorsunuz demektir — bu kötü bir şey olmak zorunda değildir, ama <b>bilerek</b> tutulması gereken bir bahistir.</p>
+
+<h2>Likidite ayarlı VaR: çıkış kapısının genişliği</h2>
+<p>VaR, pozisyonu bugün kapatabildiğinizi varsayar. BIST'in ikinci-üçüncü kademe hisselerinde bu varsayım kırılır: pozisyonunuz günlük hacmin katlarıysa, satışınız fiyatı kendisi düşürür. Basit ama etkili yaklaşım: ortalama günlük hacmin %25'iyle çıkabileceğinizi varsayıp <b>çıkış süresini (T gün)</b> hesaplamak ve VaR'ı √T ile ölçeklemek — riske T gün boyunca maruz kalırsınız çünkü. Kuantile her pozisyonun çıkış süresini listeler; 5 günü aşanlar işaretlenir. Dürüstlük notu: alış-satış farkı (spread) maliyeti, güvenilir spread verisi olmadığı için dahil edilmemiştir; küçük hisselerde gerçek maliyet gösterilenden bir miktar yüksektir. TEFAS fonları için süre, itfa takvimine yaklaşık ~2 gün alınır.</p>
+
+<h2>Fon stil analizi: etiket değil, davranış</h2>
+<p>Bir TEFAS fonu adında "hisse" yazabilir; ama fiilen ne yaptığını fiyat hareketleri söyler. Sharpe'ın stil analizi, fonun getirilerini temel endekslerin (BIST 100, USD/TRY, altın, S&P 500, nakit) getirileriyle <b>kısıtlı regresyona</b> sokar: ağırlıklar negatif olamaz ve toplamı 1'dir. Sonuç, fonun "fiili kompozisyonudur". Yanındaki üç sayı da önemlidir: <b>R²</b> (fonun davranışının ne kadarı bu endekslerle açıklanıyor), <b>izleme hatası</b> (endeks karışımından yıllık sapma) ve <b>bilgi oranı</b> (sapmanın getiriye dönüşüp dönüşmediği). "Hisse fonu" etiketli bir ürünün ağırlığı fiilen nakitte çıkıyorsa, bunu Türkiye'de başka bir yerde göremezsiniz.</p>
+<a class="cta" href="/">Portföyünüzün görünmeyen maliyetlerini görün →</a>
+
+<h2>İlgili yazılar</h2>
+<ul><li><a href="/rehber/tl-bazli-takip/">Portföyü TL Bazında Takip Etmek Neden Hayati?</a></li><li><a href="/rehber/tefas-fon-analizi/">TEFAS Fonları Portföyde Nasıl Takip Edilir?</a></li><li><a href="/rehber/gelismis-risk-metrikleri/">Gelişmiş Risk Ölçümü: ES, Backtesting, EWMA ve EVT</a></li></ul>
+</article>
 </main>
 <footer>© 2026 Kuantile — Bu sitedeki hiçbir içerik yatırım danışmanlığı değildir.<br><a href="/gizlilik/">Gizlilik Politikası</a> · <a href="/kullanim-sartlari/">Kullanım Şartları</a> · <a href="/hakkimizda/">Hakkımızda</a> · <a href="/iletisim/">İletişim</a> · <a href="/rehber/">Rehber</a></footer>
 <script>

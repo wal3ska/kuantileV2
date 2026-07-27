@@ -641,3 +641,19 @@ details.acc .inner { padding: 13px; display: flex; flex-direction: column; gap: 
   .site-footer { padding: 8px 14px 28px; }
   button.big { font-size: 14.5px; padding: 12px; }
 }
+
+/* --- Gelismis risk bolumu --- */
+.adv-heading { font-size: 17px; margin: 22px 0 0; color: var(--ink); }
+.kv-list { display: flex; flex-direction: column; gap: 7px; margin-top: 4px; }
+.kv-list > div {
+  display: flex; justify-content: space-between; align-items: baseline;
+  border-bottom: 1px dashed var(--grid); padding-bottom: 6px; font-size: 13.5px;
+}
+.kv-list span { color: var(--muted); }
+.guide-link {
+  display: inline-block; margin-top: 10px; font-size: 12.5px;
+  color: var(--accent); text-decoration: none;
+}
+.guide-link:hover { text-decoration: underline; }
+.style-block { margin-top: 10px; }
+.style-block h4 { margin: 0 0 6px; font-size: 13.5px; color: var(--ink); }
