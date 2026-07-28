@@ -61,7 +61,49 @@ def test_beat_deposit_probability():
     r = r + rng.normal(0, 0.008, 300)
     b = adv.beat_deposit_probability(r, deposit_annual=0.40)
     assert b is not None and b["prob_below_deposit"] < 0.3
+    # parametre belirsizligi olasiligi 0.5'e yaklastirir (nokta tahminden buyuk)
+    assert b["prob_below_deposit"] > b["prob_below_point"]
     assert adv.beat_deposit_probability(r, None) is None
+
+
+def test_pick_headline_var():
+    bt = {"models": {"historical": {"basel_zone": "yellow", "kupiec_p": 0.16},
+                     "ewma": {"basel_zone": "green", "kupiec_p": 0.38},
+                     "fhs": {"basel_zone": "green", "kupiec_p": 0.76}}}
+    mv = {"historical": -0.023, "ewma": -0.026, "fhs": -0.024}
+    h = adv.pick_headline_var(bt, mv)
+    assert h["model"] == "fhs"                 # yesil + en yuksek Kupiec p
+    assert h["var_pct"] == -0.024
+    assert h["basel_zone"] == "green"
+    assert adv.pick_headline_var(None, mv)["model"] == "historical"
+
+
+def test_vol_regime():
+    rng = np.random.default_rng(41)
+    r = pd.Series(rng.normal(0, 0.01, 600),
+                  index=pd.bdate_range("2022-01-03", periods=600))
+    v = adv.vol_regime(r)
+    assert v is not None and 0 <= v["percentile"] <= 1
+    assert v["current_vol_ann"] > 0
+    assert adv.vol_regime(r.head(100)) is None
+
+
+def test_factor_betas_and_shock_grid():
+    rng = np.random.default_rng(42)
+    idx = pd.bdate_range("2023-01-02", periods=400)
+    bist = pd.Series(rng.normal(0, 0.02, 400), index=idx)
+    fx = pd.Series(rng.normal(0, 0.01, 400), index=idx)
+    factors = pd.DataFrame({"BIST 100": bist, "USD/TRY": fx})
+    asset = 0.8 * bist + 0.3 * fx + rng.normal(0, 0.001, 400)
+    r2, betas, lag = adv.factor_betas(asset, factors)
+    assert betas["BIST 100"] == pytest.approx(0.8, abs=0.03)
+    assert betas["USD/TRY"] == pytest.approx(0.3, abs=0.03)
+    assert r2 > 0.95
+    grid = adv.factor_shock_grid({"BIST 100": 0.8, "USD/TRY": 0.3}, 1_000_000,
+        scenarios=[{"name": "BIST −%20", "shocks": {"BIST 100": -0.20}}])
+    sc = grid["scenarios"][0]
+    assert sc["impact_pct"] == pytest.approx(-0.16, abs=1e-9)     # 0.8 × −0.20
+    assert sc["impact_tl"] == pytest.approx(-160_000, abs=1e-3)
 
 
 def test_risk_attribution_sums_to_total():

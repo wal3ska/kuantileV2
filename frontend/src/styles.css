@@ -692,3 +692,12 @@ html { scroll-behavior: smooth; }
 .riskseg.mini .seg { width: 16px; height: 8px; border-radius: 3px; font-size: 0; }
 .bt-block { margin-top: 12px; }
 .bt-head { font-size: 12.5px; color: var(--muted); margin-bottom: 6px; }
+
+/* faktor sok + vol rejim + zone rozeti */
+.vol-regime-banner {
+  margin: 10px 0 0; padding: 10px 14px; border-radius: 9px; font-size: 13px;
+  background: var(--surface); border: 1px solid var(--border); color: var(--ink2, var(--muted));
+}
+.vol-regime-banner.calm { border-left: 3px solid var(--delta-up); }
+.vol-regime-banner.hot { border-left: 3px solid var(--delta-down); }
+.zone-badge { font-size: 10.5px; font-weight: 700; margin-left: 7px; letter-spacing: .2px; }

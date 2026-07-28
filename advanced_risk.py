@@ -564,21 +564,120 @@ def sharpe_confidence(port_rets: pd.Series, rf_annual: float,
 
 def beat_deposit_probability(port_rets: pd.Series, deposit_annual: float | None,
                              horizon_days: int = 252) -> dict | None:
-    """12 ay sonunda portfoyun mevduatin ALTINDA kalma olasiligi. Log getiri
-    ~ N(mu, sigma) yaklasimiyla (Turkiye'de her yatirimcinin asil sorusu)."""
+    """12 ay sonunda portfoyun mevduatin ALTINDA kalma olasiligi. Iki
+    belirsizlik birlikte: gerceklesme (12 ay sonucu rastgele) + PARAMETRE
+    (Sharpe'in kendi SE'si). Nokta tahminden Phi(-z) yerine, Lo SE ile
+    genisletilmis Phi(-z/sqrt(1+se^2)) - skordaki dürüstlestirmenin aynisi."""
     r = port_rets.dropna()
-    if len(r) < 120 or deposit_annual is None:
+    n = len(r)
+    if n < 120 or deposit_annual is None:
         return None
-    mu = float(r.mean()) * horizon_days
-    sig = float(r.std()) * math.sqrt(horizon_days)
-    if sig <= 0:
+    rf_d = math.log(1 + max(deposit_annual, -0.99)) / 252
+    mo = _moments((r - rf_d).values)
+    if mo is None:
         return None
-    dep = math.log(1 + max(deposit_annual, -0.99)) / 252 * horizon_days
+    _n, mu, sd, skew, kurt = mo
+    sr_ann = (mu / sd) * math.sqrt(252)
+    se_ann = math.sqrt((1 + 0.5 * (mu / sd) ** 2) / n) * math.sqrt(252)
+    scale = math.sqrt(horizon_days / 252)
+    z_point = sr_ann * scale
+    z_adj = z_point / math.sqrt(1 + (se_ann * scale) ** 2)   # parametre belirsizligi
     return {
-        "prob_below_deposit": float(_N.cdf((dep - mu) / sig)),
+        "prob_below_deposit": float(_N.cdf(-z_adj)),          # belirsizlik entegre
+        "prob_below_point": float(_N.cdf(-z_point)),          # nokta tahmin (kiyas)
         "deposit_annual": deposit_annual,
         "horizon_days": horizon_days,
     }
+
+
+def pick_headline_var(backtest: dict | None, model_vars: dict) -> dict:
+    """Manset VaR: backtest'i EN IYI gecen modelin VaR'i (yesil > sari > kirmizi,
+    esitlikte Kupiec p yuksek). Boylece manset testi gecen modeli gosterir;
+    tarihsel VaR karsilastirma satirinda kalir."""
+    if not backtest or not backtest.get("models"):
+        return {"model": "historical", "var_pct": model_vars.get("historical"),
+                "basel_zone": None, "kupiec_p": None}
+    rank = {"green": 2, "yellow": 1, "red": 0}
+    name = max(backtest["models"],
+               key=lambda m: (rank[backtest["models"][m]["basel_zone"]],
+                              backtest["models"][m]["kupiec_p"]))
+    m = backtest["models"][name]
+    return {"model": name, "var_pct": model_vars.get(name, model_vars.get("historical")),
+            "basel_zone": m["basel_zone"], "kupiec_p": m["kupiec_p"]}
+
+
+def vol_regime(port_rets: pd.Series, lam: float = 0.94) -> dict | None:
+    """Guncel EWMA volatilitenin KENDI tarihsel dagilimindaki yuzdelik dilimi.
+    'Su an oynaklik kendi 3 yillik dagiliminin %20'inci yuzdeliginde' - tum
+    sayfadaki sayilarin hangi rejimden geldigini tek cumlede soyler."""
+    r = port_rets.dropna()
+    vals = r.values
+    n = len(vals)
+    if n < 250:
+        return None
+    sig2 = np.empty(n)
+    v0 = float(np.var(vals[:30]))
+    sig2[0] = v0 if v0 > 0 else 1e-8
+    for i in range(1, n):
+        sig2[i] = lam * sig2[i - 1] + (1 - lam) * vals[i - 1] ** 2
+    sig = np.sqrt(sig2[30:])
+    cur = float(sig[-1])
+    pct = float((sig <= cur).mean())
+    return {"current_vol_ann": cur * math.sqrt(252), "percentile": pct,
+            "median_vol_ann": float(np.median(sig)) * math.sqrt(252),
+            "observations": len(sig)}
+
+
+# ---------- Faktor sok izgarasi (hipotetik parametrik stres) ----------
+
+FACTOR_SHOCKS = [
+    {"name": "USD/TRY +%15", "shocks": {"USD/TRY": 0.15}},
+    {"name": "BIST −%20", "shocks": {"BIST 100": -0.20}},
+    {"name": "Gram altın −%10", "shocks": {"Altın (TL)": -0.10}},
+    {"name": "Kur şoku + BIST düşüşü", "shocks": {"USD/TRY": 0.15, "BIST 100": -0.20}},
+    {"name": "Risk-off (kur↑ BIST↓ altın↑)",
+     "shocks": {"USD/TRY": 0.20, "BIST 100": -0.25, "Altın (TL)": 0.10}},
+    {"name": "Global satış (S&P −%15, kur +%10)",
+     "shocks": {"S&P 500 (TL)": -0.15, "USD/TRY": 0.10}},
+]
+
+
+def factor_betas(asset_rets: pd.Series, factors: pd.DataFrame,
+                 max_lag: int = 0) -> tuple | None:
+    """Varligin faktorlere OLS betalari (sabit terimli). Fonlarda 1 gunluk
+    fiyat gecikmesi icin 0..max_lag kaydirma denenir, R2'si en iyi secilir.
+    Doner: (r2, {faktor: beta}, lag) veya None."""
+    best = None
+    for lag in range(max_lag + 1):
+        y = asset_rets.shift(-lag) if lag else asset_rets
+        df = factors.join(y.rename("__y__"), how="inner").dropna()
+        if len(df) < 120:
+            continue
+        cols = list(factors.columns)
+        X = np.column_stack([np.ones(len(df)), df[cols].values])
+        yv = df["__y__"].values
+        coef, _, _, _ = np.linalg.lstsq(X, yv, rcond=None)
+        pred = X @ coef
+        ss_res = float(((yv - pred) ** 2).sum())
+        ss_tot = float(((yv - yv.mean()) ** 2).sum())
+        r2 = 1 - ss_res / ss_tot if ss_tot > 0 else 0.0
+        if best is None or r2 > best[0]:
+            best = (r2, dict(zip(cols, coef[1:])), lag)
+    return best
+
+
+def factor_shock_grid(port_betas: dict, market_value: float,
+                      scenarios: list = FACTOR_SHOCKS) -> dict:
+    """Portfoy faktor betalarina hipotetik soklar uygulanir. Tarihsel pencereye
+    sormaz ('peg kopsa ne olur'), fonlarin gecmiste var olmamasindan etkilenmez.
+    Soklar faktorun kendi getiri uzayindadir; korele faktorler icin yaklasiktir."""
+    out = []
+    for sc in scenarios:
+        imp = sum(port_betas.get(f, 0.0) * s for f, s in sc["shocks"].items())
+        out.append({"name": sc["name"], "impact_pct": imp,
+                    "impact_tl": market_value * imp, "shocks": sc["shocks"]})
+    out.sort(key=lambda d: d["impact_tl"])
+    return {"scenarios": out, "betas": {k: round(v, 3) for k, v in port_betas.items()}}
 
 
 # ---------- Risk sinifi (SRRI/TEFAS 1-7) + Kuantile Skoru ----------

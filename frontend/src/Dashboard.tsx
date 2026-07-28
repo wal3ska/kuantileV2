@@ -114,6 +114,7 @@ function CustomSim({ positions }: { positions: PositionIn[] }) {
 
 export function Dashboard({ data, positions }: { data: AnalyzeResponse; positions: PositionIn[] }) {
   const { t } = useT();
+  const tk = t as unknown as (key: string) => string;  // dinamik anahtarlar
   const risk = data.market_risk;
   const bond = data.bond_risk;
 
@@ -190,13 +191,27 @@ export function Dashboard({ data, positions }: { data: AnalyzeResponse; position
           <div className="v">{fmtNum(data.fx_usdtry)}</div>
           <div className="sub">{t("fxSub")}</div>
         </div>
-        {risk && (
-          <div className="tile">
-            <div className="k">{t("varTile", { c: (risk.confidence * 100).toFixed(0) })}</div>
-            <div className="v down">{fmtTL(risk.var_value_try)}</div>
-            <div className="sub">{fmtPct(risk.var_pct)} · {risk.observations.toLocaleString()} {t("observations")}</div>
-          </div>
-        )}
+        {risk && (() => {
+          const hv = risk.advanced?.headline_var;
+          const useHv = hv && hv.var_pct != null && hv.model !== "historical";
+          const varPct = useHv ? (hv!.var_pct as number) : risk.var_pct;
+          const zone = hv?.basel_zone ?? null;
+          const zoneCls = { green: "up", yellow: "dim", red: "down" } as const;
+          return (
+            <div className="tile">
+              <div className="k">
+                {t("varTile", { c: (risk.confidence * 100).toFixed(0) })}
+                {zone && <span className={`zone-badge ${zoneCls[zone]}`}>● {tk(`advZoneShort_${zone}`)}</span>}
+              </div>
+              <div className="v down">{fmtTL(risk.market_value_try * varPct)}</div>
+              <div className="sub">
+                {fmtPct(varPct)}
+                {useHv && ` · ${tk(`advModel_${hv!.model}`)}`}
+                {" · "}{risk.observations.toLocaleString()} {t("observations")}
+              </div>
+            </div>
+          );
+        })()}
         {risk?.sharpe?.["1y"] && (
           <div className="tile">
             <div className="k">{t("sharpeTile")}</div>

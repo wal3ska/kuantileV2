@@ -29,6 +29,15 @@ export function AdvancedSection({ adv, varPct }: {
     <>
       <h2 className="adv-heading" id="advanced">{t("advTitle")}</h2>
 
+      {adv.vol_regime && (
+        <p className={`vol-regime-banner ${adv.vol_regime.percentile < 0.35 ? "calm" : adv.vol_regime.percentile > 0.7 ? "hot" : ""}`}>
+          {t("advVolRegime", {
+            p: fmtPct(adv.vol_regime.percentile).replace("+", ""),
+            v: fmtPct(adv.vol_regime.current_vol_ann).replace("+", ""),
+          })}
+        </p>
+      )}
+
       {(adv.score || adv.risk_class) && (
         <div className="card score-card">
           <div className="score-row">
@@ -88,6 +97,7 @@ export function AdvancedSection({ adv, varPct }: {
                 </div>
               </div>
               <p className="section-note">{t("advPSRNote", { n: String(adv.sharpe_ci.observations) })}</p>
+              <p className="section-note">{t("advPSRvsBeat")}</p>
               <GuideLink slug={MODELS} />
             </div>
           )}
@@ -102,6 +112,7 @@ export function AdvancedSection({ adv, varPct }: {
               <p className="section-note">{t("advBeatDepNote", {
                 r: fmtPct(adv.beat_deposit.deposit_annual).replace("+", ""),
                 p: fmtPct(adv.beat_deposit.prob_below_deposit).replace("+", ""),
+                pt: fmtPct(1 - adv.beat_deposit.prob_below_point).replace("+", ""),
               })}</p>
               <GuideLink slug={MODELS} />
             </div>
@@ -321,6 +332,20 @@ export function AdvancedSection({ adv, varPct }: {
           </div>
         )}
       </div>
+
+      {/* Faktor sok izgarasi (hipotetik parametrik stres) */}
+      {adv.factor_shock && adv.factor_shock.scenarios.length > 0 && (
+        <div className="card">
+          <h3>{t("advFactorShock")}</h3>
+          <HBars
+            items={adv.factor_shock.scenarios.map((s) => ({ label: s.name, value: s.impact_tl }))}
+            format={fmtTL}
+            diverging
+          />
+          <p className="section-note">{t("advFactorShockNote")}</p>
+          <GuideLink slug={REALFX} />
+        </div>
+      )}
 
       {/* HRP */}
       {adv.hrp && (

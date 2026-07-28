@@ -221,6 +221,7 @@ def _advanced_block(req, positions, returns, port_rets, investments, valid,
     _safe("backtest", lambda: adv.var_backtest(port_rets, conf))
     _safe("sharpe_ci", lambda: adv.sharpe_confidence(port_rets, dep_annual or 0.0))
     _safe("beat_deposit", lambda: adv.beat_deposit_probability(port_rets, dep_annual))
+    _safe("vol_regime", lambda: adv.vol_regime(port_rets))
     _safe("attribution", lambda: adv.risk_attribution(returns, investments, conf, var_pct))
     _safe("ewma", lambda: adv.ewma_fhs(port_rets, conf))
     _safe("drawdown", lambda: adv.drawdown_stats(port_rets))
@@ -310,6 +311,45 @@ def _advanced_block(req, positions, returns, port_rets, investments, valid,
                          "adv_tl": adv_tl, "kind": kind})
         return adv.liquidity_var(info, market_value * var_pct)
     _safe("liquidity", _liquidity)
+
+    def _factor_shock():
+        if factors_raw is None:
+            return None
+        fx_s = factors_raw["TRY=X"].ffill()
+        f = pd.DataFrame(index=factors_raw.index)
+        if "XU100.IS" in factors_raw:
+            f["BIST 100"] = factors_raw["XU100.IS"]
+        if "GC=F" in factors_raw:
+            f["Altın (TL)"] = factors_raw["GC=F"] * fx_s
+        f["USD/TRY"] = factors_raw["TRY=X"]
+        if "^GSPC" in factors_raw:
+            f["S&P 500 (TL)"] = factors_raw["^GSPC"] * fx_s
+        f_rets = np.log(f / f.shift(1)).replace([np.inf, -np.inf], np.nan).dropna()
+        tot = sum(investments[c] for c in returns.columns if c in investments)
+        if tot <= 0:
+            return None
+        fund_names = {p.name for p in positions if p.source == "tefas"}
+        port_betas: dict = {}
+        for c in returns.columns:
+            if c not in investments:
+                continue
+            res = adv.factor_betas(returns[c], f_rets, max_lag=1 if c in fund_names else 0)
+            if res is None:
+                continue
+            wc = investments[c] / tot
+            for fac, b in res[1].items():
+                port_betas[fac] = port_betas.get(fac, 0.0) + wc * b
+        if not port_betas:
+            return None
+        return adv.factor_shock_grid(port_betas, market_value)
+    _safe("factor_shock", _factor_shock)
+
+    # Manset VaR: testi en iyi gecen modelin VaR'i (tarihsel karsilastirmada kalir)
+    model_vars = {"historical": var_pct}
+    if out.get("ewma"):
+        model_vars["ewma"] = out["ewma"]["var_ewma_pct"]
+        model_vars["fhs"] = out["ewma"]["var_fhs_pct"]
+    out["headline_var"] = adv.pick_headline_var(out.get("backtest"), model_vars)
 
     return out
 

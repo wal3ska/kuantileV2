@@ -142,7 +142,8 @@ export interface AdvSharpeCI {
   psr: number; observations: number; skew: number; excess_kurtosis: number;
 }
 export interface AdvBeatDeposit {
-  prob_below_deposit: number; deposit_annual: number; horizon_days: number;
+  prob_below_deposit: number; prob_below_point: number;
+  deposit_annual: number; horizon_days: number;
 }
 export interface AdvComponent {
   name: string; weight: number; cvar_tl: number;
@@ -190,6 +191,15 @@ export interface AdvancedBlock {
     lvar_multiplier: number; lvar_value_tl: number;
   } | null;
   style: Record<string, AdvStyle | null> | null;
+  vol_regime: { current_vol_ann: number; percentile: number; median_vol_ann: number; observations: number } | null;
+  factor_shock: {
+    scenarios: { name: string; impact_pct: number; impact_tl: number; shocks: Record<string, number> }[];
+    betas: Record<string, number>;
+  } | null;
+  headline_var?: {
+    model: string; var_pct: number | null;
+    basel_zone: "green" | "yellow" | "red" | null; kupiec_p: number | null;
+  } | null;
   risk_class?: { risk_class: number; ann_vol_weekly: number; weeks: number } | null;
   score?: {
     score: number;
