@@ -178,15 +178,14 @@ def risk_attribution(returns: pd.DataFrame, investments: dict,
     port_sigma = math.sqrt(port_var)
     out = []
     for i, c in enumerate(cols):
-        # Incremental VaR: pozisyon kapatilir, sermaye AYNI kalir (kalanlara
-        # yeniden dagitilir). Kovaryans temelli (ampirik kuantil gurultusu yok):
-        # VaR ~ sigma ile orantili, tam portfoyun VaR'i total_var_tl'e olceklenir.
-        # Isaret: +  kapatinca VaR artar (koruyucu/cesitlendirici pozisyon),
-        #         -  kapatinca VaR duser (risk kaynagi pozisyon).
+        # Incremental VaR (standart): pozisyon satilir, parasi nakde cikar;
+        # kalan pozisyonlar DOGAL buyuklugunde kalir (yeniden dagitim yok).
+        # Kovaryans temelli, ampirik kuantil gurultusu yok. Isaret:
+        #   -  kapatinca VaR duser (risk kaynagi)   +  kapatinca VaR artar (koruyucu)
         inc = None
         idx_o = [j for j in range(len(cols)) if j != i]
-        if idx_o and w[idx_o].sum() > 0:
-            w_o = w[idx_o] * (total / w[idx_o].sum())  # sabit sermaye, renormalize
+        if idx_o:
+            w_o = w[idx_o]
             cov_o = cov[np.ix_(idx_o, idx_o)]
             sigma_o = math.sqrt(max(float(w_o @ cov_o @ w_o), 0.0))
             if port_sigma > 0:
@@ -230,13 +229,14 @@ def real_metrics(port_rets: pd.Series, cpi: pd.Series) -> dict | None:
 
 # ---------- 4) Kur ayristirmasi ----------
 
-def fx_decomposition(returns: pd.DataFrame, fx_rets: pd.Series,
-                     investments: dict, usd_names: set | None = None) -> dict | None:
+def fx_decomposition(returns: pd.DataFrame, fx_rets: pd.Series, investments: dict,
+                     usd_names: set | None = None, fund_usd: float = 0.0) -> dict | None:
     """Toplam varyansi yerel + kur + kovaryans olarak boler. Kur maruziyeti
-    her varligin FX'e regresyon betasindan tahmin edilir; boylece fonlarin
-    DOLAYLI kur maruziyeti de yakalanir (isimden degil davranistan).
-    Ayrica kur oynakligi VE surukleme (drift) raporlanir: yonetilen deger
-    kaybi rejiminde kur riski varyansta degil sürüklenmede birikir."""
+    YAPISAL alinir: gram altin ve USD cinsi varliklarin TL getirisi
+    = yerel + kur (beta=1). Fonlarin DOLAYLI kur maruziyeti (fund_usd) stil
+    analizinden gelir - fonlarin gunluk fiyat gecikmesi betayi bozacagi icin
+    dogrudan regresyon degil. Kur oynakligi VE surukleme (drift) raporlanir:
+    yonetilen deger kaybi rejiminde kur riski varyansta degil sürüklenmede birikir."""
     cols = [c for c in returns.columns if c in investments]
     if not cols:
         return None
@@ -246,23 +246,19 @@ def fx_decomposition(returns: pd.DataFrame, fx_rets: pd.Series,
     total = sum(investments[c] for c in cols)
     w = {c: investments[c] / total for c in cols}
     fx = df["__fx__"]
-    var_fx = float(fx.var())
-    if var_fx <= 0:
+    if float(fx.var()) <= 0:
         return None
-    betas = {c: float(df[c].cov(fx) / var_fx) for c in cols}
+    usd_direct = sum(w[c] for c in cols if usd_names and c in usd_names)
+    usd_share = min(usd_direct + max(fund_usd, 0.0), 1.0)  # dogrudan + fon dolayli
     port = sum(df[c] * w[c] for c in cols)
-    beta_p = sum(w[c] * betas[c] for c in cols)     # = cov(port, fx)/var(fx)
-    fx_part = beta_p * fx
+    fx_part = usd_share * fx
     local_part = port - fx_part
     v_p, v_l, v_f = float(port.var()), float(local_part.var()), float(fx_part.var())
     cov2 = v_p - v_l - v_f
     if v_p <= 0:
         return None
-    # ekonomik USD maruziyeti (fonlar dahil): beta-agirlikli, [0,1.5] kirpik
-    usd_exposure = sum(w[c] * max(0.0, min(betas[c], 1.5)) for c in cols)
     return {
-        "usd_exposure_share": usd_exposure,
-        "fx_beta": beta_p,
+        "usd_exposure_share": usd_share,
         "local_share": v_l / v_p,
         "fx_share": v_f / v_p,
         "cov_share": cov2 / v_p,
@@ -549,7 +545,8 @@ def sharpe_confidence(port_rets: pd.Series, rf_annual: float,
     n, mu, sd, skew, kurt = mo
     sr_d = mu / sd
     sr_ann = sr_d * math.sqrt(252)
-    se_ann = math.sqrt((1 + 0.5 * sr_ann ** 2) / n)   # Lo (2002), iid
+    # Lo (2002) standart hatasi GUNLUK Sharpe uzerinden, sonra yilliklandirilir
+    se_ann = math.sqrt((1 + 0.5 * sr_d ** 2) / n) * math.sqrt(252)
     sr_star_d = benchmark_sr / math.sqrt(252)
     denom = math.sqrt(max(1 - skew * sr_d + (kurt - 1) / 4 * sr_d ** 2, 1e-9))
     psr = float(_N.cdf((sr_d - sr_star_d) * math.sqrt(n - 1) / denom))

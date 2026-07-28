@@ -241,37 +241,6 @@ def _advanced_block(req, positions, returns, port_rets, investments, valid,
     except RuntimeError:
         pass
 
-    def _fx():
-        if factors_raw is None or "TRY=X" not in factors_raw.columns:
-            return None
-        fx_series = factors_raw["TRY=X"].dropna()
-        fx_rets = np.log(fx_series / fx_series.shift(1)).dropna()
-        usd_names = {p.name for p in positions
-                     if p.currency == "USD" or p.ticker == dp.GRAM_GOLD_TICKER}
-        return adv.fx_decomposition(returns, fx_rets, investments, usd_names)
-    _safe("fx", _fx)
-
-    def _liquidity():
-        eq = [p for p in positions if p.name in investments and p.source == "yahoo"
-              and p.ticker != dp.GRAM_GOLD_TICKER
-              and "=" not in p.ticker and "-" not in p.ticker]
-        vols = dp.fetch_yahoo_volumes(tuple(sorted({p.ticker for p in eq}))) if eq else {}
-        info = []
-        for p in positions:
-            if p.name not in investments:
-                continue
-            if p.source == "tefas":
-                kind, adv_tl = "fund", None
-            elif p.ticker in vols:
-                fx = fx_now if p.currency == "USD" else 1.0
-                kind, adv_tl = "equity", vols[p.ticker] * last_native[p.name] * fx
-            else:
-                kind, adv_tl = "liquid", None
-            info.append({"name": p.name, "value_tl": investments[p.name],
-                         "adv_tl": adv_tl, "kind": kind})
-        return adv.liquidity_var(info, market_value * var_pct)
-    _safe("liquidity", _liquidity)
-
     def _style():
         funds = [p for p in positions if p.source == "tefas"
                  and p.name in (prices_try.columns if prices_try is not None else [])]
@@ -299,7 +268,48 @@ def _advanced_block(req, positions, returns, port_rets, investments, valid,
             fr = np.log(s / s.shift(1)).dropna()
             result[p.name] = adv.style_analysis(fr, f_rets)
         return result or None
-    _safe("style", _style)
+    _safe("style", _style)   # fx'ten ONCE: fonlarin dolayli USD maruziyeti buradan
+
+    def _fx():
+        if factors_raw is None or "TRY=X" not in factors_raw.columns:
+            return None
+        fx_series = factors_raw["TRY=X"].dropna()
+        fx_rets = np.log(fx_series / fx_series.shift(1)).dropna()
+        usd_names = {p.name for p in positions
+                     if p.currency == "USD" or p.ticker == dp.GRAM_GOLD_TICKER}
+        # Fonlarin dolayli USD maruziyeti: stil analizinin USD/TRY agirligi
+        # (gunluk gecikme duzeltilmis) x fonun portfoy payi
+        fund_usd = 0.0
+        style = out.get("style") or {}
+        tot = sum(investments[c] for c in returns.columns if c in investments)
+        if tot > 0:
+            for fname, s in style.items():
+                if s and fname in investments:
+                    fund_usd += (investments[fname] / tot) * max(
+                        0.0, s["weights"].get("USD/TRY", 0.0))
+        return adv.fx_decomposition(returns, fx_rets, investments, usd_names, fund_usd)
+    _safe("fx", _fx)
+
+    def _liquidity():
+        eq = [p for p in positions if p.name in investments and p.source == "yahoo"
+              and p.ticker != dp.GRAM_GOLD_TICKER
+              and "=" not in p.ticker and "-" not in p.ticker]
+        vols = dp.fetch_yahoo_volumes(tuple(sorted({p.ticker for p in eq}))) if eq else {}
+        info = []
+        for p in positions:
+            if p.name not in investments:
+                continue
+            if p.source == "tefas":
+                kind, adv_tl = "fund", None
+            elif p.ticker in vols:
+                fx = fx_now if p.currency == "USD" else 1.0
+                kind, adv_tl = "equity", vols[p.ticker] * last_native[p.name] * fx
+            else:
+                kind, adv_tl = "liquid", None
+            info.append({"name": p.name, "value_tl": investments[p.name],
+                         "adv_tl": adv_tl, "kind": kind})
+        return adv.liquidity_var(info, market_value * var_pct)
+    _safe("liquidity", _liquidity)
 
     return out
 

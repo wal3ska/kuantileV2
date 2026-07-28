@@ -182,7 +182,7 @@ export interface AdvancedBlock {
     prob_real_loss_12m: number | null; cpi_as_of: string;
   } | null;
   fx: {
-    usd_exposure_share: number; fx_beta: number; local_share: number;
+    usd_exposure_share: number; local_share: number;
     fx_share: number; cov_share: number; fx_vol_ann: number; fx_drift_ann: number;
   } | null;
   liquidity: {

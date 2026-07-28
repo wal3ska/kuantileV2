@@ -91,10 +91,13 @@ def test_incremental_var_sign_and_symmetry():
     inv = {"Nakit": 40_000, "Riskli1": 30_000, "Riskli2": 30_000}
     res = adv.risk_attribution(rets, inv, 0.99, -0.03)
     comp = {c["name"]: c for c in res["components"]}
-    assert comp["Nakit"]["incremental_tl"] > 0        # nakdi kapatinca VaR artar
+    # riskli varligi (parasi nakde cikacak sekilde) kapatinca VaR DUSER
+    assert comp["Riskli1"]["incremental_tl"] < 0
+    assert comp["Riskli2"]["incremental_tl"] < 0
     # ozdes iki riskli varlik ayni isaret (eskiden zit isaret cikiyordu)
     assert (comp["Riskli1"]["incremental_tl"] < 0) == (comp["Riskli2"]["incremental_tl"] < 0)
-    assert comp["Riskli1"]["incremental_tl"] < 0      # riskli varligi kapatinca VaR duser
+    # nakdi kapatmak riski neredeyse degistirmez (|inc| riskliden cok kucuk)
+    assert abs(comp["Nakit"]["incremental_tl"]) < abs(comp["Riskli1"]["incremental_tl"])
 
 
 def test_real_metrics():
@@ -119,9 +122,22 @@ def test_fx_decomposition_pure_usd_asset():
     res = adv.fx_decomposition(rets, fx, {"USDvarlik": 100_000}, {"USDvarlik"})
     assert res is not None
     assert res["usd_exposure_share"] == pytest.approx(1.0, abs=1e-9)
-    assert res["fx_beta"] == pytest.approx(1.0, abs=1e-9)
     assert res["fx_share"] == pytest.approx(1.0, abs=1e-9)
     assert res["local_share"] == pytest.approx(0.0, abs=1e-9)
+
+
+def test_fx_decomposition_fund_indirect():
+    # fon dolayli USD maruziyeti (fund_usd) dogrudan paya eklenir
+    rng = np.random.default_rng(15)
+    idx = pd.bdate_range("2023-01-02", periods=300)
+    fx = pd.Series(rng.normal(0.0005, 0.01, 300), index=idx)
+    gold = fx + rng.normal(0.0003, 0.008, 300)   # altin: kur + yerel
+    fund = pd.Series(rng.normal(0.001, 0.02, 300), index=idx)
+    rets = pd.DataFrame({"Altin": gold, "Fon": fund})
+    res = adv.fx_decomposition(rets, fx, {"Altin": 50_000, "Fon": 50_000},
+                               {"Altin"}, fund_usd=0.10)
+    # yapisal altin payi 0.5 + fon dolayli 0.10 = 0.60
+    assert res["usd_exposure_share"] == pytest.approx(0.60, abs=1e-9)
 
 
 def test_liquidity_var_scaling():
