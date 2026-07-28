@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -39,17 +41,27 @@ def test_sharpe_confidence_and_psr():
     rng = np.random.default_rng(21)
     r = pd.Series(rng.normal(0.002, 0.01, 500),
                   index=pd.bdate_range("2023-01-02", periods=500))
-    s = adv.sharpe_confidence(r, rf_annual=0.0, benchmark_sr=0.0)
+    s = adv.sharpe_confidence(r, 0.0, benchmark_sr=0.0)
     assert s is not None
     assert s["ci_low"] < s["sharpe_ann"] < s["ci_high"]
     assert s["se_ann"] > 0
     assert 0.5 < s["psr"] <= 1.0              # acik ara pozitif -> mevduati yener
-    assert s["observations"] == 500
-    # ortalamasi tam sifir getiri: sr=0 -> PSR = Phi(0) = 0.5
-    raw = rng.normal(0.0, 0.01, 500)
-    flat = pd.Series(raw - raw.mean(), index=pd.bdate_range("2023-01-02", periods=500))
-    s2 = adv.sharpe_confidence(flat, rf_annual=0.0)
+    assert s["observations"] == 252           # 252 pencere (manset ile ayni)
+    # ortalamasi tam sifir getiri (tam 252 pencere): sr=0 -> PSR = Phi(0) = 0.5
+    raw = rng.normal(0.0, 0.01, 252)
+    flat = pd.Series(raw - raw.mean(), index=pd.bdate_range("2023-01-02", periods=252))
+    s2 = adv.sharpe_confidence(flat, 0.0)
     assert s2["psr"] == pytest.approx(0.5, abs=1e-6)
+
+
+def test_sharpe_confidence_series_rf():
+    # rf seri olarak verilince (mevduat tarihsel) de calisir, tile ile ayni kiyas
+    rng = np.random.default_rng(23)
+    idx = pd.bdate_range("2023-01-02", periods=400)
+    r = pd.Series(rng.normal(0.0015, 0.012, 400), index=idx)
+    rf = pd.Series(np.full(400, math.log(1.35) / 252), index=idx)
+    s = adv.sharpe_confidence(r, rf)
+    assert s is not None and s["observations"] == 252
 
 
 def test_beat_deposit_probability():
@@ -142,17 +154,28 @@ def test_incremental_var_sign_and_symmetry():
     assert abs(comp["Nakit"]["incremental_tl"]) < abs(comp["Riskli1"]["incremental_tl"])
 
 
-def test_real_metrics():
-    r = pd.Series(np.full(504, np.log(1.45) / 252),
-                  index=pd.bdate_range("2024-01-01", periods=504))
-    cpi = pd.Series([100 * 1.035 ** i for i in range(30)],
-                    index=pd.date_range("2024-01-31", periods=30, freq="ME"))
+def test_real_metrics_window_aligned():
+    # r yeterince uzun: enflasyon penceresi [start,end] tam kapsanir
+    idx = pd.bdate_range("2023-01-02", periods=900)
+    r = pd.Series(np.full(900, np.log(1.45) / 252), index=idx)
+    cpi = pd.Series([100 * 1.035 ** i for i in range(40)],
+                    index=pd.date_range("2023-01-31", periods=40, freq="ME"))
     m = adv.real_metrics(r, cpi)
-    assert m is not None
+    assert m is not None and m["window_aligned"]
     assert m["inflation_12m"] == pytest.approx(1.035 ** 12 - 1, rel=1e-9)
-    assert m["nominal_return_12m"] == pytest.approx(0.45, rel=1e-6)
-    exp_real = 1.45 / (1.035 ** 12) - 1
+    # nominal AYNI 12 aylik pencerede (~252 isgunu), sabit oranla ~%45
+    assert m["nominal_return_12m"] == pytest.approx(0.45, rel=0.05)
+    exp_real = (1 + m["nominal_return_12m"]) / (1.035 ** 12) - 1
     assert m["real_return_12m"] == pytest.approx(exp_real, rel=1e-6)
+
+
+def test_expected_max_drawdown():
+    rng = np.random.default_rng(31)
+    r = pd.Series(rng.normal(0.0005, 0.02, 600),
+                  index=pd.bdate_range("2022-01-03", periods=600))
+    emdd = adv.expected_max_drawdown(r, n_sims=200)
+    assert emdd is not None and emdd < 0
+    assert adv.expected_max_drawdown(r.head(50)) is None
 
 
 def test_fx_decomposition_pure_usd_asset():
@@ -312,6 +335,20 @@ def test_kuantile_score():
     assert s2["components"] == {"sharpe": 25.0}
     assert s2["score"] == 25.0
     assert adv.kuantile_score(None, {}) is None
+
+    # drawdown beklenen-max-DD yolu: sakin pencerede tavana vurmaz (Calmar 11 -> ~55)
+    s3 = adv.kuantile_score(1.0, {**blocks,
+                                  "drawdown": {"max_drawdown": -0.067, "calmar": 11.0},
+                                  "expected_mdd": -0.09})
+    assert s3["components"]["drawdown"] == pytest.approx(85 - 40 * (0.067 / 0.09), abs=0.1)
+    assert s3["components"]["drawdown"] < 65
+
+    # manset modeli varsa onun bolgesi puanlanir (FHS sari ise 50, yesil olsa da)
+    s4 = adv.kuantile_score(1.0, {**blocks,
+                                  "headline_var": {"model": "fhs"},
+                                  "backtest": {"models": {"historical": {"basel_zone": "green"},
+                                                          "fhs": {"basel_zone": "yellow"}}}})
+    assert s4["components"]["model"] == 50.0
 
 
 def test_style_analysis_recovers_mix():

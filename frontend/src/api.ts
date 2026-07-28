@@ -181,6 +181,7 @@ export interface AdvancedBlock {
   real: {
     inflation_12m: number; nominal_return_12m: number; real_return_12m: number;
     prob_real_loss_12m: number | null; cpi_as_of: string;
+    period_start?: string; window_aligned?: boolean;
   } | null;
   fx: {
     usd_exposure_share: number; local_share: number;
@@ -193,9 +194,10 @@ export interface AdvancedBlock {
   style: Record<string, AdvStyle | null> | null;
   vol_regime: { current_vol_ann: number; percentile: number; median_vol_ann: number; observations: number } | null;
   factor_shock: {
-    scenarios: { name: string; impact_pct: number; impact_tl: number; shocks: Record<string, number> }[];
+    scenarios: { name: string; impact_pct: number; impact_tl: number; impact_real_pct: number; shocks: Record<string, number> }[];
     betas: Record<string, number>;
   } | null;
+  expected_mdd?: number | null;
   headline_var?: {
     model: string; var_pct: number | null;
     basel_zone: "green" | "yellow" | "red" | null; kupiec_p: number | null;
@@ -213,6 +215,7 @@ export interface MarketRisk {
   sharpe: SharpeMulti | null;
   advanced?: AdvancedBlock;
   var_pct: number;
+  var_pct_historical?: number;
   var_value_try: number;
   market_value_try: number;
   observations: number;

@@ -204,14 +204,23 @@ def risk_attribution(returns: pd.DataFrame, investments: dict,
 # ---------- 3) Reel getiri ----------
 
 def real_metrics(port_rets: pd.Series, cpi: pd.Series) -> dict | None:
-    """TUFE ile deflate edilmis 12 aylik getiri + reel kayip olasiligi.
-    v1: enflasyon beklentisi = son 12 aylik gerceklesme (sabit)."""
+    """TUFE ile deflate edilmis reel getiri. Nominal ve enflasyon AYNI 12 aylik
+    pencerede olculur: [CPI as-of − 12 ay, CPI as-of]. TUIK verisi gecikirse
+    reel getiri o son veriye kadar hesaplanir (nominal de o pencereye hizali),
+    boylece iki farkli pencereden gelen carpik reel getiri olusmaz.
+    v1: enflasyon beklentisi = donem gerceklesmesi (sabit)."""
     r = port_rets.dropna()
     c = cpi.dropna().sort_index()
     if len(r) < 120 or len(c) < 13:
         return None
+    end, start = c.index[-1], c.index[-13]
     infl_12m = float(c.iloc[-1] / c.iloc[-13] - 1)
-    nom_12m = float(np.exp(r.tail(252).sum()) - 1)
+    # Nominal AYNI pencerede: enflasyonla ayni [start, end] araligi
+    window = r[(r.index > start) & (r.index <= end)]
+    stale = len(window) < 60
+    if stale:                       # portfoy o donemi kapsamiyorsa son 252'ye dus
+        window = r.tail(252)
+    nom_12m = float(np.exp(window.sum()) - 1)
     real_12m = (1 + nom_12m) / (1 + infl_12m) - 1
     mu = float(r.tail(504).mean()) * 252
     sigma = float(r.tail(504).std()) * math.sqrt(252)
@@ -223,7 +232,9 @@ def real_metrics(port_rets: pd.Series, cpi: pd.Series) -> dict | None:
         "nominal_return_12m": nom_12m,
         "real_return_12m": real_12m,
         "prob_real_loss_12m": prob,
-        "cpi_as_of": str(c.index[-1].date()),
+        "cpi_as_of": str(end.date()),
+        "period_start": str(start.date()),
+        "window_aligned": not stale,
     }
 
 
@@ -355,6 +366,26 @@ def drawdown_stats(port_rets: pd.Series) -> dict | None:
 
 
 # ---------- 9) Yogunlasma ----------
+
+def expected_max_drawdown(port_rets: pd.Series, n_sims: int = 400,
+                          seed: int = 0) -> float | None:
+    """Portfoyun kendi gunluk getirilerinden iid bootstrap ile AYNI pencere
+    uzunlugunda beklenen (medyan) maksimum drawdown. Maks DD asiri bir sira
+    istatistigi; ornek hatasi buyuk ve pencere uzunluguyla sistematik artar.
+    Gerceklesen/beklenen orani donem sansini notreler (Magdon-Ismail mantigi,
+    parametrik formul yerine dogrudan yeniden orneklemeyle)."""
+    r = port_rets.dropna().values
+    if len(r) < 120:
+        return None
+    rng = np.random.default_rng(seed)
+    T = len(r)
+    mdds = np.empty(n_sims)
+    for s in range(n_sims):
+        cum = np.exp(np.cumsum(rng.choice(r, size=T, replace=True)))
+        peak = np.maximum.accumulate(cum)
+        mdds[s] = float((cum / peak - 1).min())
+    return float(np.median(mdds))
+
 
 def concentration(returns: pd.DataFrame, investments: dict) -> dict | None:
     cols = [c for c in returns.columns if c in investments]
@@ -528,18 +559,23 @@ def _moments(x: np.ndarray):
     return n, m, s, float((z ** 3).mean()), float((z ** 4).mean())
 
 
-def sharpe_confidence(port_rets: pd.Series, rf_annual: float,
-                      benchmark_sr: float = 0.0) -> dict | None:
-    """Sharpe nokta tahmininin belirsizligi. Lo (2002) standart hatasiyla
-    %95 guven araligi + Probabilistic Sharpe Ratio (Bailey & Lopez de Prado):
-    getirilerin carpiklik/basikligini hesaba katarak Sharpe'in benchmark_sr
-    esigini gercekten astigina dair olasilik. benchmark_sr=0 -> 'mevduati
-    (risksiz orani) risk-ayarli gercekten yeniyor mu'."""
-    r = port_rets.dropna()
+def sharpe_confidence(port_rets: pd.Series, rf, benchmark_sr: float = 0.0,
+                      window_days: int = 252) -> dict | None:
+    """Sharpe nokta tahmininin belirsizligi. AYNI pencere (window_days) ve AYNI
+    kiyas (rf) ile hesaplanir ki manset Sharpe kartiyla birebir tutsun.
+    rf: skaler yillik oran VEYA gunluk oran serisi (mevduat/tlref tarihsel).
+    Lo (2002) SE ile %95 GA + Probabilistic Sharpe (Bailey & Lopez de Prado):
+    carpiklik/basiklik duzeltmeli, Sharpe'in benchmark_sr esigini gercekten
+    astigina dair olasilik. benchmark_sr=0 -> mevduati risk-ayarli yeniyor mu."""
+    r = port_rets.dropna().tail(window_days)
     if len(r) < 120:
         return None
-    rf_d = math.log(1 + max(rf_annual, -0.99)) / 252
-    mo = _moments((r - rf_d).values)
+    if isinstance(rf, pd.Series):
+        rf_al = rf.reindex(r.index).ffill()
+        ex = (r - rf_al).dropna().values
+    else:
+        ex = (r - math.log(1 + max(rf, -0.99)) / 252).values
+    mo = _moments(ex)
     if mo is None:
         return None
     n, mu, sd, skew, kurt = mo
@@ -620,8 +656,9 @@ def vol_regime(port_rets: pd.Series, lam: float = 0.94) -> dict | None:
     sig2[0] = v0 if v0 > 0 else 1e-8
     for i in range(1, n):
         sig2[i] = lam * sig2[i - 1] + (1 - lam) * vals[i - 1] ** 2
+    # ewma_fhs ile AYNI 'bugunku' volatilite (bir adim ileri) - iki modul cakismasin
+    cur = math.sqrt(lam * sig2[-1] + (1 - lam) * vals[-1] ** 2)
     sig = np.sqrt(sig2[30:])
-    cur = float(sig[-1])
     pct = float((sig <= cur).mean())
     return {"current_vol_ann": cur * math.sqrt(252), "percentile": pct,
             "median_vol_ann": float(np.median(sig)) * math.sqrt(252),
@@ -636,11 +673,16 @@ FACTOR_SHOCKS = [
     {"name": "USD/TRY +%15", "shocks": {"USD/TRY": 0.15}},
     {"name": "BIST −%20", "shocks": {"BIST 100": -0.20}},
     {"name": "Altın (ons) −%10", "shocks": {"XAU/USD": -0.10}},
+    {"name": "Altın (ons) −%25", "shocks": {"XAU/USD": -0.25}},
     {"name": "Kur şoku + BIST düşüşü", "shocks": {"USD/TRY": 0.15, "BIST 100": -0.20}},
     {"name": "Risk-off (kur↑ BIST↓ ons altın↑)",
      "shocks": {"USD/TRY": 0.20, "BIST 100": -0.25, "XAU/USD": 0.10}},
     {"name": "Global satış (S&P −%15, kur +%10)",
      "shocks": {"S&P 500": -0.15, "USD/TRY": 0.10}},
+    # Turkiye'nin GERCEK TL krizi kalibi: kur cakilir, BIST TL yukselir
+    # (enflasyon hedge'i), ons altin yukselir. Nominal kazanc, reel kayip.
+    {"name": "TL krizi (kur+%30, BIST+%10, ons altın+%25)",
+     "shocks": {"USD/TRY": 0.30, "BIST 100": 0.10, "XAU/USD": 0.25}},
 ]
 
 
@@ -676,8 +718,13 @@ def factor_shock_grid(port_betas: dict, market_value: float,
     out = []
     for sc in scenarios:
         imp = sum(port_betas.get(f, 0.0) * s for f, s in sc["shocks"].items())
+        # Reel (satin alma gucu) etki: kur soku ~ enflasyon gecisi kabul edilir,
+        # nominal etkiden kur sokunu dus. USD/TRY +%15 -> nominal +%5 ama reel ~ −%9.
+        fx_shock = sc["shocks"].get("USD/TRY", 0.0)
+        imp_real = imp - fx_shock
         out.append({"name": sc["name"], "impact_pct": imp,
-                    "impact_tl": market_value * imp, "shocks": sc["shocks"]})
+                    "impact_tl": market_value * imp,
+                    "impact_real_pct": imp_real, "shocks": sc["shocks"]})
     out.sort(key=lambda d: d["impact_tl"])
     return {"scenarios": out, "betas": {k: round(v, 3) for k, v in port_betas.items()}}
 
@@ -742,10 +789,15 @@ def kuantile_score(sharpe_1y: float | None, blocks: dict) -> dict | None:
             comps["tail"] = _clamp((1.8 - ratio) / 0.8 * 100)
 
     bt = blocks.get("backtest")
+    hv = blocks.get("headline_var")
     if bt and bt.get("models"):
-        zones = [m["basel_zone"] for m in bt["models"].values()]
-        best = "green" if "green" in zones else ("yellow" if "yellow" in zones else "red")
-        comps["model"] = {"green": 100.0, "yellow": 50.0, "red": 0.0}[best]
+        # Manset hangi modeli kullaniyorsa onun bolgesini puanla (tutarlilik)
+        hm = (hv or {}).get("model") if hv else None
+        zone = bt["models"].get(hm, {}).get("basel_zone") if hm in bt["models"] else None
+        if zone is None:
+            zones = [m["basel_zone"] for m in bt["models"].values()]
+            zone = "green" if "green" in zones else ("yellow" if "yellow" in zones else "red")
+        comps["model"] = {"green": 100.0, "yellow": 50.0, "red": 0.0}[zone]
 
     real = blocks.get("real")
     if real and real.get("prob_real_loss_12m") is not None:
@@ -753,8 +805,15 @@ def kuantile_score(sharpe_1y: float | None, blocks: dict) -> dict | None:
         comps["real"] = _clamp((0.6 - real["prob_real_loss_12m"]) / 0.6 * 100)
 
     dd = blocks.get("drawdown")
-    if dd and dd.get("calmar") is not None:
-        comps["drawdown"] = _clamp(dd["calmar"] / 2 * 100)
+    emdd = blocks.get("expected_mdd")
+    if dd and dd.get("max_drawdown") is not None:
+        if emdd is not None and emdd < 0 and dd["max_drawdown"] < 0:
+            # gerceklesen/beklenen: ~1 normal donem, <1 beklenenden iyi (az sig).
+            # Sakin pencerede ikisi de kucuk -> oran ~1, skor tavana vurmaz.
+            ratio = dd["max_drawdown"] / emdd
+            comps["drawdown"] = _clamp(85 - 40 * ratio)
+        elif dd.get("calmar") is not None:
+            comps["drawdown"] = _clamp(dd["calmar"] / 2 * 100)
 
     if not comps:
         return None

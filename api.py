@@ -192,9 +192,11 @@ FACTOR_LABELS = {"XU100.IS": "BIST 100", "GOLDTL": "Altın (TL)",
 
 
 def _advanced_block(req, positions, returns, port_rets, investments, valid,
-                    market_value, var_pct, prices_try, last_native, fx_now):
-    """Gelismis metrikler: her biri bagimsiz try/except ile hesaplanir,
-    veri/kaynak sorunu analizin geri kalanini asla bloklamaz."""
+                    market_value, hv_pct, prices_try, last_native, fx_now,
+                    rf_daily, backtest, ewma, headline_var, dep_annual):
+    """Gelismis metrikler. TEK BAGLAM: hv_pct = manset (FHS) VaR yuzdesi,
+    tum turev VaR metrikleri (component, likidite) bu bazi kullanir;
+    rf_daily = manset Sharpe ile ayni kiyas (CI/PSR onunla tutar)."""
     out = {}
 
     def _safe(key, fn):
@@ -204,26 +206,21 @@ def _advanced_block(req, positions, returns, port_rets, investments, valid,
             out[key] = None
 
     conf = req.confidence
-    # Mevduat/risksiz oran: belirsizlik metrikleri (PSR, mevduati yenme) icin
-    dep_annual = None
-    if req.risk_free is not None and req.risk_free.kind in ("rate", "deposit", "tlref"):
-        dep_annual = req.risk_free.annual_rate
-    else:
-        try:
-            dep_annual = dp.fetch_deposit_rate()["deposit_net"]
-        except Exception:
-            dep_annual = None
+    out["backtest"] = backtest          # analyze()'de bir kez hesaplandi
+    out["ewma"] = ewma
+    out["headline_var"] = headline_var
 
     _safe("es", lambda: {
         "es_pct": adv.expected_shortfall(port_rets, conf),
         "es975_pct": adv.expected_shortfall(port_rets, 0.975),
     })
-    _safe("backtest", lambda: adv.var_backtest(port_rets, conf))
-    _safe("sharpe_ci", lambda: adv.sharpe_confidence(port_rets, dep_annual or 0.0))
+    # CI/PSR: manset Sharpe ile AYNI kiyas (rf_daily) ve AYNI 252 pencere
+    _safe("sharpe_ci", lambda: adv.sharpe_confidence(
+        port_rets, rf_daily if rf_daily is not None else (dep_annual or 0.0)))
     _safe("beat_deposit", lambda: adv.beat_deposit_probability(port_rets, dep_annual))
     _safe("vol_regime", lambda: adv.vol_regime(port_rets))
-    _safe("attribution", lambda: adv.risk_attribution(returns, investments, conf, var_pct))
-    _safe("ewma", lambda: adv.ewma_fhs(port_rets, conf))
+    _safe("attribution", lambda: adv.risk_attribution(returns, investments, conf, hv_pct))
+    _safe("expected_mdd", lambda: adv.expected_max_drawdown(port_rets))
     _safe("drawdown", lambda: adv.drawdown_stats(port_rets))
     _safe("concentration", lambda: adv.concentration(returns, investments))
     _safe("evt", lambda: adv.evt_tail(port_rets))
@@ -309,7 +306,7 @@ def _advanced_block(req, positions, returns, port_rets, investments, valid,
                 kind, adv_tl = "liquid", None
             info.append({"name": p.name, "value_tl": investments[p.name],
                          "adv_tl": adv_tl, "kind": kind})
-        return adv.liquidity_var(info, market_value * var_pct)
+        return adv.liquidity_var(info, market_value * hv_pct)   # FHS bazi
     _safe("liquidity", _liquidity)
 
     def _factor_shock():
@@ -343,13 +340,6 @@ def _advanced_block(req, positions, returns, port_rets, investments, valid,
             return None
         return adv.factor_shock_grid(port_betas, market_value)
     _safe("factor_shock", _factor_shock)
-
-    # Manset VaR: testi en iyi gecen modelin VaR'i (tarihsel karsilastirmada kalir)
-    model_vars = {"historical": var_pct}
-    if out.get("ewma"):
-        model_vars["ewma"] = out["ewma"]["var_ewma_pct"]
-        model_vars["fhs"] = out["ewma"]["var_fhs_pct"]
-    out["headline_var"] = adv.pick_headline_var(out.get("backtest"), model_vars)
 
     return out
 
@@ -431,15 +421,41 @@ def analyze(req: AnalyzeRequest):
                 if rf_daily is not None:
                     sharpe = engine.sharpe_multi(port_rets, rf_daily)
             market_value = sum(investments[n] for n in valid)
+
+            # --- ANALIZ BAGLAMI: tek VaR bazi (manset FHS) tum modullere ---
+            _bt = adv.var_backtest(port_rets, req.confidence)
+            _ewma = adv.ewma_fhs(port_rets, req.confidence)
+            _mvars = {"historical": var_pct}
+            if _ewma:
+                _mvars["ewma"] = _ewma["var_ewma_pct"]
+                _mvars["fhs"] = _ewma["var_fhs_pct"]
+            _headline = adv.pick_headline_var(_bt, _mvars)
+            hv_pct = _headline["var_pct"] if _headline["var_pct"] is not None else var_pct
+            k = hv_pct / var_pct if var_pct else 1.0     # tarihsel -> FHS olcek
+            # mevduat orani (kullanicinin girdigi/secili) - PSR + mevduati yenme
+            dep_annual = None
+            if req.risk_free is not None and req.risk_free.kind in ("rate", "deposit", "tlref"):
+                dep_annual = req.risk_free.annual_rate
+            else:
+                try:
+                    dep_annual = dp.fetch_deposit_rate()["deposit_net"]
+                except Exception:
+                    dep_annual = None
+
+            _div = engine.diversification(returns, investments, req.confidence)
+            if isinstance(_div, dict):                    # tum bilesenleri FHS bazina olcekle
+                _div = {kk: (vv * k if isinstance(vv, (int, float)) else vv)
+                        for kk, vv in _div.items()}
             risk = {
                 "confidence": req.confidence,
                 "sharpe": sharpe,
-                "var_pct": var_pct,
-                "var_value_try": market_value * var_pct,
+                "var_pct": hv_pct,                         # manset = FHS
+                "var_pct_historical": var_pct,             # karsilastirma
+                "var_value_try": market_value * hv_pct,
                 "market_value_try": market_value,
                 "observations": len(port_rets),
                 "correlation": engine.correlation_matrix(returns).round(4).to_dict(),
-                "diversification": engine.diversification(returns, investments, req.confidence),
+                "diversification": _div,
                 "stress_tests": {
                     name: {
                         "region": sc["region"], "start": sc["start"], "end": sc["end"],
@@ -458,13 +474,16 @@ def analyze(req: AnalyzeRequest):
             }
             risk["advanced"] = _advanced_block(
                 req, req.positions, returns, port_rets, investments, valid,
-                market_value, var_pct, prices_try, last_native, fx_now)
+                market_value, hv_pct, prices_try, last_native, fx_now,
+                rf_daily, _bt, _ewma, _headline, dep_annual)
             try:
                 risk["advanced"]["risk_class"] = adv.srri_class(port_rets)
-                sh1 = sharpe.get("1y") if isinstance(sharpe, dict) else None
+                # Skor Sharpe'i CI ile AYNI kaynaktan (tutarlilik): sharpe_ci.sharpe_ann
+                sci = risk["advanced"].get("sharpe_ci")
+                sh1 = sci["sharpe_ann"] if sci else (
+                    sharpe.get("1y", {}).get("sharpe") if isinstance(sharpe, dict) and sharpe.get("1y") else None)
                 risk["advanced"]["score"] = adv.kuantile_score(
-                    sh1["sharpe"] if sh1 else None,
-                    {**risk["advanced"], "_var_pct": var_pct})
+                    sh1, {**risk["advanced"], "_var_pct": hv_pct})
             except Exception:
                 risk["advanced"]["risk_class"] = None
                 risk["advanced"]["score"] = None

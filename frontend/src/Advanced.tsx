@@ -5,6 +5,10 @@ import { useT } from "./i18n";
 
 /* Gelismis risk bolumu: her kart kisa bir ozet verir, uzun anlatim rehberde. */
 
+function Delta({ v, children }: { v: number; children?: React.ReactNode }) {
+  return <span className={v >= 0 ? "up" : "down"}>{children}</span>;
+}
+
 function GuideLink({ slug }: { slug: string }) {
   const { t, lang } = useT();
   const href = lang === "en" ? `/en/guides/${slug.split("|")[1]}/` : `/rehber/${slug.split("|")[0]}/`;
@@ -32,7 +36,7 @@ export function AdvancedSection({ adv, varPct }: {
       {adv.vol_regime && (
         <p className={`vol-regime-banner ${adv.vol_regime.percentile < 0.35 ? "calm" : adv.vol_regime.percentile > 0.7 ? "hot" : ""}`}>
           {t("advVolRegime", {
-            p: fmtPct(adv.vol_regime.percentile).replace("+", ""),
+            p: (adv.vol_regime.percentile * 100).toFixed(0),
             v: fmtPct(adv.vol_regime.current_vol_ann).replace("+", ""),
           })}
         </p>
@@ -180,6 +184,9 @@ export function AdvancedSection({ adv, varPct }: {
                 <p className="section-note">{t("advBacktestNote2")}</p>
               </div>
             )}
+            {adv.headline_var && adv.headline_var.model !== "historical" && (
+              <p className="section-note"><b>{t("advDerivedBase", { m: tk(`advModel_${adv.headline_var.model}`) })}</b></p>
+            )}
             <GuideLink slug={MODELS} />
           </div>
         )}
@@ -225,7 +232,9 @@ export function AdvancedSection({ adv, varPct }: {
                 <div><span>{t("advRealLossProb")}</span><b>{fmtPct(adv.real.prob_real_loss_12m).replace("+", "")}</b></div>
               )}
             </div>
-            <p className="section-note">{t("advRealNote", { d: adv.real.cpi_as_of })}</p>
+            <p className="section-note">{t("advRealNote", {
+              d: adv.real.cpi_as_of, s: adv.real.period_start ?? "",
+            })}</p>
             <GuideLink slug={REALFX} />
           </div>
         )}
@@ -333,16 +342,29 @@ export function AdvancedSection({ adv, varPct }: {
         )}
       </div>
 
-      {/* Faktor sok izgarasi (hipotetik parametrik stres) */}
+      {/* Faktor sok izgarasi (hipotetik parametrik stres) — nominal + reel */}
       {adv.factor_shock && adv.factor_shock.scenarios.length > 0 && (
         <div className="card">
           <h3>{t("advFactorShock")}</h3>
-          <HBars
-            items={adv.factor_shock.scenarios.map((s) => ({ label: s.name, value: s.impact_tl }))}
-            format={fmtTL}
-            diverging
-          />
+          <div className="tbl-wrap"><table className="tbl">
+            <thead><tr>
+              <th>{t("advScenarioCol")}</th>
+              <th>{t("advNominalCol")}</th>
+              <th>{t("advRealCol")}</th>
+            </tr></thead>
+            <tbody>
+              {adv.factor_shock.scenarios.map((s) => (
+                <tr key={s.name}>
+                  <td className="name">{s.name}</td>
+                  <td><Delta v={s.impact_tl}>{fmtTL(s.impact_tl)}</Delta>
+                    <span className="dim"> ({fmtPct(s.impact_pct)})</span></td>
+                  <td><Delta v={s.impact_real_pct}>{fmtPct(s.impact_real_pct)}</Delta></td>
+                </tr>
+              ))}
+            </tbody>
+          </table></div>
           <p className="section-note">{t("advFactorShockNote")}</p>
+          <p className="section-note">{t("advFactorRealNote")}</p>
           <GuideLink slug={REALFX} />
         </div>
       )}
@@ -380,11 +402,13 @@ export function AdvancedSection({ adv, varPct }: {
                 format={(v) => fmtPct(v).replace("+", "")}
               />
               <p className="section-note">
-                {t("advStyleNote", {
-                  r2: s.r2 != null ? fmtPct(s.r2).replace("+", "") : "—",
-                  te: fmtPct(s.tracking_error_ann).replace("+", ""),
-                  ir: s.information_ratio != null ? fmtNum(s.information_ratio) : "—",
-                })}
+                {s.r2 != null && s.r2 >= 0.30
+                  ? t("advStyleNote", {
+                      r2: fmtPct(s.r2).replace("+", ""),
+                      te: fmtPct(s.tracking_error_ann).replace("+", ""),
+                      ir: s.information_ratio != null ? fmtNum(s.information_ratio) : "—",
+                    })
+                  : t("advStyleLowR2", { r2: s.r2 != null ? fmtPct(s.r2).replace("+", "") : "—" })}
               </p>
             </div>
           ))}

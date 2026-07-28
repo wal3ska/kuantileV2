@@ -192,9 +192,9 @@ export function Dashboard({ data, positions }: { data: AnalyzeResponse; position
           <div className="sub">{t("fxSub")}</div>
         </div>
         {risk && (() => {
+          // risk.var_pct / var_value_try ARTIK manset (FHS) bazinda (backend tek baglam)
           const hv = risk.advanced?.headline_var;
-          const useHv = hv && hv.var_pct != null && hv.model !== "historical";
-          const varPct = useHv ? (hv!.var_pct as number) : risk.var_pct;
+          const model = hv && hv.model !== "historical" ? hv.model : null;
           const zone = hv?.basel_zone ?? null;
           const zoneCls = { green: "up", yellow: "dim", red: "down" } as const;
           return (
@@ -203,10 +203,10 @@ export function Dashboard({ data, positions }: { data: AnalyzeResponse; position
                 {t("varTile", { c: (risk.confidence * 100).toFixed(0) })}
                 {zone && <span className={`zone-badge ${zoneCls[zone]}`}>● {tk(`advZoneShort_${zone}`)}</span>}
               </div>
-              <div className="v down">{fmtTL(risk.market_value_try * varPct)}</div>
+              <div className="v down">{fmtTL(risk.var_value_try)}</div>
               <div className="sub">
-                {fmtPct(varPct)}
-                {useHv && ` · ${tk(`advModel_${hv!.model}`)}`}
+                {fmtPct(risk.var_pct)}
+                {model && ` · ${tk(`advModel_${model}`)}`}
                 {" · "}{risk.observations.toLocaleString()} {t("observations")}
               </div>
             </div>
@@ -332,7 +332,7 @@ export function Dashboard({ data, positions }: { data: AnalyzeResponse; position
       )}
 
       {risk?.advanced && (
-        <AdvancedSection adv={risk.advanced} varPct={risk.var_pct} />
+        <AdvancedSection adv={risk.advanced} varPct={risk.var_pct_historical ?? risk.var_pct} />
       )}
 
       <p className="footer-note">{t("disclaimer")}</p>
