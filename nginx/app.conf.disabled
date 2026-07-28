@@ -12,11 +12,23 @@ server {
     }
 }
 
+# www -> apex 301 (Google www surumunu ayri sayfa olarak dizine ekliyordu)
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name www.kuantile.com;
+
+    ssl_certificate     /etc/letsencrypt/live/kuantile.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/kuantile.com/privkey.pem;
+
+    return 301 https://kuantile.com$request_uri;
+}
+
 # WEB: React SPA + /api vekaleti (ayni origin -> CORS yok)
 server {
     listen 443 ssl;
     http2 on;
-    server_name kuantile.com www.kuantile.com;
+    server_name kuantile.com;
 
     ssl_certificate     /etc/letsencrypt/live/kuantile.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/kuantile.com/privkey.pem;
