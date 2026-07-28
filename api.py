@@ -315,15 +315,15 @@ def _advanced_block(req, positions, returns, port_rets, investments, valid,
     def _factor_shock():
         if factors_raw is None:
             return None
-        fx_s = factors_raw["TRY=X"].ffill()
+        # ORTUSMEYEN faktorler: altin ons (USD) + kur ayri (gram altin TL degil)
         f = pd.DataFrame(index=factors_raw.index)
         if "XU100.IS" in factors_raw:
             f["BIST 100"] = factors_raw["XU100.IS"]
         if "GC=F" in factors_raw:
-            f["Altın (TL)"] = factors_raw["GC=F"] * fx_s
+            f["XAU/USD"] = factors_raw["GC=F"]
         f["USD/TRY"] = factors_raw["TRY=X"]
         if "^GSPC" in factors_raw:
-            f["S&P 500 (TL)"] = factors_raw["^GSPC"] * fx_s
+            f["S&P 500"] = factors_raw["^GSPC"]
         f_rets = np.log(f / f.shift(1)).replace([np.inf, -np.inf], np.nan).dropna()
         tot = sum(investments[c] for c in returns.columns if c in investments)
         if tot <= 0:

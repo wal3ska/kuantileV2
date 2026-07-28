@@ -630,15 +630,17 @@ def vol_regime(port_rets: pd.Series, lam: float = 0.94) -> dict | None:
 
 # ---------- Faktor sok izgarasi (hipotetik parametrik stres) ----------
 
+# Faktorler ORTUSMEYEN secilir: altin USD bazinda (XAU/USD) ve kur (USD/TRY)
+# ayri; boylece kur soku gram altina ve USD varliklara dogru sekilde yayilir.
 FACTOR_SHOCKS = [
     {"name": "USD/TRY +%15", "shocks": {"USD/TRY": 0.15}},
     {"name": "BIST −%20", "shocks": {"BIST 100": -0.20}},
-    {"name": "Gram altın −%10", "shocks": {"Altın (TL)": -0.10}},
+    {"name": "Altın (ons) −%10", "shocks": {"XAU/USD": -0.10}},
     {"name": "Kur şoku + BIST düşüşü", "shocks": {"USD/TRY": 0.15, "BIST 100": -0.20}},
-    {"name": "Risk-off (kur↑ BIST↓ altın↑)",
-     "shocks": {"USD/TRY": 0.20, "BIST 100": -0.25, "Altın (TL)": 0.10}},
+    {"name": "Risk-off (kur↑ BIST↓ ons altın↑)",
+     "shocks": {"USD/TRY": 0.20, "BIST 100": -0.25, "XAU/USD": 0.10}},
     {"name": "Global satış (S&P −%15, kur +%10)",
-     "shocks": {"S&P 500 (TL)": -0.15, "USD/TRY": 0.10}},
+     "shocks": {"S&P 500": -0.15, "USD/TRY": 0.10}},
 ]
 
 
