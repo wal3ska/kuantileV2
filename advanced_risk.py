@@ -37,35 +37,63 @@ def _chi2_1_pvalue(lr: float) -> float:
 
 
 def var_backtest(port_rets: pd.Series, confidence: float,
-                 test_days: int = 250, min_window: int = 250) -> dict | None:
-    """Kayan pencere 1 gunluk VaR backtest'i: son test_days gunun her biri icin
-    onceki gozlemlerden (en fazla 500) VaR hesaplanir, ihlaller sayilir.
-    Kupiec POF + Christoffersen bagimsizlik + Basel trafik isigi."""
+                 min_train: int = 150, max_window: int = 500) -> dict | None:
+    """Kayan pencere 1 gunluk VaR backtest'i, UC MODEL icin ayri ayri:
+    historical (esit agirlikli tarihsel), ewma (RiskMetrics normal),
+    fhs (filtrelenmis tarihsel). Her model icin son N gunun ihlalleri sayilir;
+    Kupiec POF + Christoffersen bagimsizlik + Basel trafik isigi hesaplanir.
+    Az veride pencere kisaltilir; en az 75 test gunu gerekir."""
     r = port_rets.dropna()
-    if len(r) < min_window + test_days:
+    vals = r.values
+    n = len(vals)
+    test_days = min(250, n - min_train)
+    if test_days < 75:
         return None
     p = 1 - confidence
-    viol = []
-    vals = r.values
-    for t in range(len(vals) - test_days, len(vals)):
-        window = vals[max(0, t - 500):t]
-        var_t = np.quantile(window, p)
-        viol.append(1 if vals[t] < var_t else 0)
+
+    # Kosullu EWMA volatilite (nedensel, tek gecis)
+    sig2 = np.empty(n)
+    v0 = float(np.var(vals[:30]))
+    sig2[0] = v0 if v0 > 0 else 1e-8
+    lam = 0.94
+    for i in range(1, n):
+        sig2[i] = lam * sig2[i - 1] + (1 - lam) * vals[i - 1] ** 2
+    sig = np.sqrt(np.maximum(sig2, 1e-12))
+    z = vals / sig
+    zq = _N.inv_cdf(p)
+
+    start = n - test_days
+    models = {}
+    for name in ("historical", "ewma", "fhs"):
+        viol = []
+        for t in range(start, n):
+            lo = max(0, t - max_window)
+            if name == "historical":
+                var_t = np.quantile(vals[lo:t], p)
+            elif name == "ewma":
+                var_t = zq * sig[t]
+            else:  # fhs
+                var_t = np.quantile(z[max(30, lo):t], p) * sig[t]
+            viol.append(1 if vals[t] < var_t else 0)
+        models[name] = _score_violations(viol, p)
+    return {"days": test_days, "confidence": confidence, "models": models}
+
+
+def _score_violations(viol: list, p: float) -> dict:
+    """Ihlal dizisinden Kupiec POF + Christoffersen + Basel bolgesi."""
     n, x = len(viol), int(sum(viol))
 
-    # Kupiec POF (LR_uc)
     def _ll(prob, k, m):
-        # k ihlal, m ihlal olmayan; 0*log0 = 0
         out = 0.0
         if m:
             out += m * math.log(max(1 - prob, 1e-12))
         if k:
             out += k * math.log(max(prob, 1e-12))
         return out
+
     lr_uc = -2 * (_ll(p, x, n - x) - _ll(x / n if n else 0, x, n - x))
     kupiec_p = _chi2_1_pvalue(lr_uc)
 
-    # Christoffersen bagimsizlik (ihlaller kumeleniyor mu)
     n00 = n01 = n10 = n11 = 0
     for a, b in zip(viol[:-1], viol[1:]):
         if a == 0 and b == 0:
@@ -85,13 +113,10 @@ def var_backtest(port_rets: pd.Series, confidence: float,
                        - (_ll(pi01, n01, n00) + _ll(pi11, n11, n10)))
         christ_p = _chi2_1_pvalue(lr_ind)
 
-    # Basel trafik isigi (250 gun, %99 icin esikler)
-    scaled = x * 250 / n
+    scaled = x * 250 / n  # Basel esikleri 250 gune gore
     zone = "green" if scaled <= 4 else ("yellow" if scaled <= 9 else "red")
-    return {
-        "days": n, "violations": x, "expected": round(n * p, 1),
-        "kupiec_p": kupiec_p, "christoffersen_p": christ_p, "basel_zone": zone,
-    }
+    return {"violations": x, "expected": round(n * p, 1),
+            "kupiec_p": kupiec_p, "christoffersen_p": christ_p, "basel_zone": zone}
 
 
 # ---------- 7) Ledoit-Wolf daraltma (sabit korelasyon hedefi) ----------
@@ -150,18 +175,22 @@ def risk_attribution(returns: pd.DataFrame, investments: dict,
         return None
     total_var_tl = abs(total_var_pct) * total
     comp = w * (cov @ w) / port_var * total_var_tl  # toplami tam VaR_TL
+    port_sigma = math.sqrt(port_var)
     out = []
-    port_full = rets.dot(w / total)
-    var_full = float(np.quantile(port_full, 1 - confidence))
     for i, c in enumerate(cols):
+        # Incremental VaR: pozisyon kapatilir, sermaye AYNI kalir (kalanlara
+        # yeniden dagitilir). Kovaryans temelli (ampirik kuantil gurultusu yok):
+        # VaR ~ sigma ile orantili, tam portfoyun VaR'i total_var_tl'e olceklenir.
+        # Isaret: +  kapatinca VaR artar (koruyucu/cesitlendirici pozisyon),
+        #         -  kapatinca VaR duser (risk kaynagi pozisyon).
         inc = None
-        others = [x for x in cols if x != c]
-        w_o = np.array([investments[x] for x in others])
-        if w_o.sum() > 0:
-            port_wo = rets[others].dot(w_o / w_o.sum())
-            var_wo = float(np.quantile(port_wo, 1 - confidence))
-            # ayni sermayeyle digerlerine dagitilmis halde VaR degisimi (TL)
-            inc = abs(var_full) * total - abs(var_wo) * total
+        idx_o = [j for j in range(len(cols)) if j != i]
+        if idx_o and w[idx_o].sum() > 0:
+            w_o = w[idx_o] * (total / w[idx_o].sum())  # sabit sermaye, renormalize
+            cov_o = cov[np.ix_(idx_o, idx_o)]
+            sigma_o = math.sqrt(max(float(w_o @ cov_o @ w_o), 0.0))
+            if port_sigma > 0:
+                inc = total_var_tl * sigma_o / port_sigma - total_var_tl
         out.append({
             "name": c,
             "weight": float(w[i] / total),
@@ -202,31 +231,43 @@ def real_metrics(port_rets: pd.Series, cpi: pd.Series) -> dict | None:
 # ---------- 4) Kur ayristirmasi ----------
 
 def fx_decomposition(returns: pd.DataFrame, fx_rets: pd.Series,
-                     investments: dict, usd_names: set) -> dict | None:
-    """Toplam varyansi yerel + kur + kovaryans olarak boler.
-    USD'ye maruz varliklarin TL log getirisi = yerel log + kur log."""
+                     investments: dict, usd_names: set | None = None) -> dict | None:
+    """Toplam varyansi yerel + kur + kovaryans olarak boler. Kur maruziyeti
+    her varligin FX'e regresyon betasindan tahmin edilir; boylece fonlarin
+    DOLAYLI kur maruziyeti de yakalanir (isimden degil davranistan).
+    Ayrica kur oynakligi VE surukleme (drift) raporlanir: yonetilen deger
+    kaybi rejiminde kur riski varyansta degil sürüklenmede birikir."""
     cols = [c for c in returns.columns if c in investments]
     if not cols:
         return None
-    rets = returns[cols].join(fx_rets.rename("__fx__"), how="inner").dropna()
-    if len(rets) < 120:
+    df = returns[cols].join(fx_rets.rename("__fx__"), how="inner").dropna()
+    if len(df) < 120:
         return None
     total = sum(investments[c] for c in cols)
     w = {c: investments[c] / total for c in cols}
-    usd_share = sum(w[c] for c in cols if c in usd_names)
-    fx = rets["__fx__"]
-    port = sum(rets[c] * w[c] for c in cols)
-    fx_part = fx * usd_share
+    fx = df["__fx__"]
+    var_fx = float(fx.var())
+    if var_fx <= 0:
+        return None
+    betas = {c: float(df[c].cov(fx) / var_fx) for c in cols}
+    port = sum(df[c] * w[c] for c in cols)
+    beta_p = sum(w[c] * betas[c] for c in cols)     # = cov(port, fx)/var(fx)
+    fx_part = beta_p * fx
     local_part = port - fx_part
     v_p, v_l, v_f = float(port.var()), float(local_part.var()), float(fx_part.var())
     cov2 = v_p - v_l - v_f
     if v_p <= 0:
         return None
+    # ekonomik USD maruziyeti (fonlar dahil): beta-agirlikli, [0,1.5] kirpik
+    usd_exposure = sum(w[c] * max(0.0, min(betas[c], 1.5)) for c in cols)
     return {
-        "usd_exposure_share": usd_share,
+        "usd_exposure_share": usd_exposure,
+        "fx_beta": beta_p,
         "local_share": v_l / v_p,
         "fx_share": v_f / v_p,
         "cov_share": cov2 / v_p,
+        "fx_vol_ann": float(fx.std()) * math.sqrt(252),
+        "fx_drift_ann": float(fx.mean()) * 252,
     }
 
 
@@ -390,6 +431,7 @@ def tail_dependence(returns: pd.DataFrame, q: float = 0.05) -> dict | None:
     if len(rets) < 300 or rets.shape[1] < 2:
         return None
     cols = list(rets.columns)
+    tail_n = int(q * len(rets))  # her kuyrukta ~ gozlem sayisi
     pairs = []
     for i in range(len(cols)):
         for j in range(i + 1, len(cols)):
@@ -399,9 +441,12 @@ def tail_dependence(returns: pd.DataFrame, q: float = 0.05) -> dict | None:
             lam = both / (q * len(rets))
             pairs.append({"pair": f"{cols[i]} – {cols[j]}",
                           "lambda_lower": float(lam),
+                          "co_exceedances": both,
                           "pearson": float(a.corr(b))})
     pairs.sort(key=lambda d: -d["lambda_lower"])
-    return {"pairs": pairs[:5], "q": q}
+    # bagimsizlikta beklenen ortak asim sayisi (lambda ~ q degil, q*tail_n gibi)
+    return {"pairs": pairs[:5], "q": q, "tail_obs": tail_n,
+            "expected_co": round(q * tail_n, 1)}
 
 
 # ---------- 12) HRP ----------
@@ -476,6 +521,69 @@ def hrp_weights(returns: pd.DataFrame) -> dict | None:
             "excluded_cash_like": cash_like}
 
 
+# ---------- Belirsizlik: Sharpe guven araligi (Lo) + PSR + mevduati yenme ----------
+
+def _moments(x: np.ndarray):
+    n = len(x)
+    m, s = float(x.mean()), float(x.std())
+    if s <= 0:
+        return None
+    z = (x - m) / s
+    return n, m, s, float((z ** 3).mean()), float((z ** 4).mean())
+
+
+def sharpe_confidence(port_rets: pd.Series, rf_annual: float,
+                      benchmark_sr: float = 0.0) -> dict | None:
+    """Sharpe nokta tahmininin belirsizligi. Lo (2002) standart hatasiyla
+    %95 guven araligi + Probabilistic Sharpe Ratio (Bailey & Lopez de Prado):
+    getirilerin carpiklik/basikligini hesaba katarak Sharpe'in benchmark_sr
+    esigini gercekten astigina dair olasilik. benchmark_sr=0 -> 'mevduati
+    (risksiz orani) risk-ayarli gercekten yeniyor mu'."""
+    r = port_rets.dropna()
+    if len(r) < 120:
+        return None
+    rf_d = math.log(1 + max(rf_annual, -0.99)) / 252
+    mo = _moments((r - rf_d).values)
+    if mo is None:
+        return None
+    n, mu, sd, skew, kurt = mo
+    sr_d = mu / sd
+    sr_ann = sr_d * math.sqrt(252)
+    se_ann = math.sqrt((1 + 0.5 * sr_ann ** 2) / n)   # Lo (2002), iid
+    sr_star_d = benchmark_sr / math.sqrt(252)
+    denom = math.sqrt(max(1 - skew * sr_d + (kurt - 1) / 4 * sr_d ** 2, 1e-9))
+    psr = float(_N.cdf((sr_d - sr_star_d) * math.sqrt(n - 1) / denom))
+    return {
+        "sharpe_ann": sr_ann,
+        "se_ann": se_ann,
+        "ci_low": sr_ann - 1.96 * se_ann,
+        "ci_high": sr_ann + 1.96 * se_ann,
+        "psr": psr,
+        "observations": n,
+        "skew": skew,
+        "excess_kurtosis": kurt - 3,
+    }
+
+
+def beat_deposit_probability(port_rets: pd.Series, deposit_annual: float | None,
+                             horizon_days: int = 252) -> dict | None:
+    """12 ay sonunda portfoyun mevduatin ALTINDA kalma olasiligi. Log getiri
+    ~ N(mu, sigma) yaklasimiyla (Turkiye'de her yatirimcinin asil sorusu)."""
+    r = port_rets.dropna()
+    if len(r) < 120 or deposit_annual is None:
+        return None
+    mu = float(r.mean()) * horizon_days
+    sig = float(r.std()) * math.sqrt(horizon_days)
+    if sig <= 0:
+        return None
+    dep = math.log(1 + max(deposit_annual, -0.99)) / 252 * horizon_days
+    return {
+        "prob_below_deposit": float(_N.cdf((dep - mu) / sig)),
+        "deposit_annual": deposit_annual,
+        "horizon_days": horizon_days,
+    }
+
+
 # ---------- Risk sinifi (SRRI/TEFAS 1-7) + Kuantile Skoru ----------
 
 # SRRI bantlari: haftalik getirilerin yillik volatilitesi (AB/SPK metodolojisi,
@@ -513,9 +621,12 @@ def kuantile_score(sharpe_1y: float | None, blocks: dict) -> dict | None:
     yeniden dagitilir."""
     comps: dict = {}
 
-    if sharpe_1y is not None:
-        # Sharpe -1 -> 0p, 0 -> 50p, +1 -> 100p
-        comps["sharpe"] = _clamp(50 + 50 * sharpe_1y)
+    # Sharpe bileseni: varsa nokta tahmin yerine %95 ALT guven sinirini kullan
+    # (donem sansina karsi dürüst; friend geri bildirimi). -1 -> 0p, +1 -> 100p.
+    ci = blocks.get("sharpe_ci")
+    sr_for_score = ci["ci_low"] if ci and ci.get("ci_low") is not None else sharpe_1y
+    if sr_for_score is not None:
+        comps["sharpe"] = _clamp(50 + 50 * sr_for_score)
 
     conc = blocks.get("concentration")
     if conc:
@@ -533,8 +644,10 @@ def kuantile_score(sharpe_1y: float | None, blocks: dict) -> dict | None:
             comps["tail"] = _clamp((1.8 - ratio) / 0.8 * 100)
 
     bt = blocks.get("backtest")
-    if bt:
-        comps["model"] = {"green": 100.0, "yellow": 50.0, "red": 0.0}[bt["basel_zone"]]
+    if bt and bt.get("models"):
+        zones = [m["basel_zone"] for m in bt["models"].values()]
+        best = "green" if "green" in zones else ("yellow" if "yellow" in zones else "red")
+        comps["model"] = {"green": 100.0, "yellow": 50.0, "red": 0.0}[best]
 
     real = blocks.get("real")
     if real and real.get("prob_real_loss_12m") is not None:

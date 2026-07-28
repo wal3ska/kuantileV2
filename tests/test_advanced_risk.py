@@ -23,10 +23,45 @@ def test_var_backtest_iid_normal_green():
     bt = adv.var_backtest(r, 0.99)
     assert bt is not None
     assert bt["days"] == 250
-    assert bt["violations"] <= 9              # iid'de asiri ihlal beklenmez
-    assert bt["basel_zone"] in ("green", "yellow")
-    assert 0 <= bt["kupiec_p"] <= 1
-    assert adv.var_backtest(r.head(300), 0.99) is None
+    assert set(bt["models"]) == {"historical", "ewma", "fhs"}
+    hist = bt["models"]["historical"]
+    assert hist["violations"] <= 9            # iid'de asiri ihlal beklenmez
+    assert hist["basel_zone"] in ("green", "yellow")
+    assert 0 <= hist["kupiec_p"] <= 1
+    # adaptif: 411 gozlemle bile calisir (min_train 150, test 250)
+    bt2 = adv.var_backtest(_rets(411, seed=2), 0.99)
+    assert bt2 is not None and bt2["days"] == 250
+    assert adv.var_backtest(r.head(120), 0.99) is None   # test gunu < 75
+
+
+def test_sharpe_confidence_and_psr():
+    # guclu pozitif getiri: PSR yuksek, CI alt siniri < nokta tahmin
+    rng = np.random.default_rng(21)
+    r = pd.Series(rng.normal(0.002, 0.01, 500),
+                  index=pd.bdate_range("2023-01-02", periods=500))
+    s = adv.sharpe_confidence(r, rf_annual=0.0, benchmark_sr=0.0)
+    assert s is not None
+    assert s["ci_low"] < s["sharpe_ann"] < s["ci_high"]
+    assert s["se_ann"] > 0
+    assert 0.5 < s["psr"] <= 1.0              # acik ara pozitif -> mevduati yener
+    assert s["observations"] == 500
+    # ortalamasi tam sifir getiri: sr=0 -> PSR = Phi(0) = 0.5
+    raw = rng.normal(0.0, 0.01, 500)
+    flat = pd.Series(raw - raw.mean(), index=pd.bdate_range("2023-01-02", periods=500))
+    s2 = adv.sharpe_confidence(flat, rf_annual=0.0)
+    assert s2["psr"] == pytest.approx(0.5, abs=1e-6)
+
+
+def test_beat_deposit_probability():
+    # yuksek getiri: mevduatin altinda kalma olasiligi dusuk
+    r = pd.Series(np.full(300, np.log(1.80) / 252),
+                  index=pd.bdate_range("2024-01-01", periods=300))
+    # sabit seri sigma 0 -> None; hafif gurultu ekle
+    rng = np.random.default_rng(5)
+    r = r + rng.normal(0, 0.008, 300)
+    b = adv.beat_deposit_probability(r, deposit_annual=0.40)
+    assert b is not None and b["prob_below_deposit"] < 0.3
+    assert adv.beat_deposit_probability(r, None) is None
 
 
 def test_risk_attribution_sums_to_total():
@@ -40,6 +75,26 @@ def test_risk_attribution_sums_to_total():
     assert total == pytest.approx(res["total_var_tl"], rel=1e-9)
     # daha oynak + daha buyuk pozisyon daha cok risk tasimali
     assert res["components"][0]["name"] == "A"
+
+
+def test_incremental_var_sign_and_symmetry():
+    # nakit + iki neredeyse ozdes riskli varlik. Nakdi kapatinca VaR ARTMALI
+    # (isaret +); ozdes iki riskli varligin incremental'i ayni isaretli olmali.
+    rng = np.random.default_rng(31)
+    idx = pd.bdate_range("2023-01-02", periods=500)
+    base = rng.normal(0.0005, 0.02, 500)
+    rets = pd.DataFrame({
+        "Nakit": rng.normal(0.0004, 0.0002, 500),
+        "Riskli1": base + rng.normal(0, 0.002, 500),
+        "Riskli2": base + rng.normal(0, 0.002, 500),
+    }, index=idx)
+    inv = {"Nakit": 40_000, "Riskli1": 30_000, "Riskli2": 30_000}
+    res = adv.risk_attribution(rets, inv, 0.99, -0.03)
+    comp = {c["name"]: c for c in res["components"]}
+    assert comp["Nakit"]["incremental_tl"] > 0        # nakdi kapatinca VaR artar
+    # ozdes iki riskli varlik ayni isaret (eskiden zit isaret cikiyordu)
+    assert (comp["Riskli1"]["incremental_tl"] < 0) == (comp["Riskli2"]["incremental_tl"] < 0)
+    assert comp["Riskli1"]["incremental_tl"] < 0      # riskli varligi kapatinca VaR duser
 
 
 def test_real_metrics():
@@ -63,7 +118,8 @@ def test_fx_decomposition_pure_usd_asset():
     rets = pd.DataFrame({"USDvarlik": fx})
     res = adv.fx_decomposition(rets, fx, {"USDvarlik": 100_000}, {"USDvarlik"})
     assert res is not None
-    assert res["usd_exposure_share"] == 1.0
+    assert res["usd_exposure_share"] == pytest.approx(1.0, abs=1e-9)
+    assert res["fx_beta"] == pytest.approx(1.0, abs=1e-9)
     assert res["fx_share"] == pytest.approx(1.0, abs=1e-9)
     assert res["local_share"] == pytest.approx(0.0, abs=1e-9)
 
@@ -179,13 +235,15 @@ def test_kuantile_score():
         "concentration": {"n_assets": 4, "effective_bets": 4.0},
         "es": {"es_pct": -0.036},
         "_var_pct": -0.030,                      # ES/VaR = 1.2
-        "backtest": {"basel_zone": "green"},
+        "backtest": {"models": {"historical": {"basel_zone": "yellow"},
+                                "fhs": {"basel_zone": "green"}}},
         "real": {"prob_real_loss_12m": 0.0},
         "drawdown": {"calmar": 2.0},
     }
     s = adv.kuantile_score(1.0, blocks)          # sharpe 1.0 -> 100p
     assert s is not None
     assert s["components"]["sharpe"] == 100.0
+    assert s["components"]["model"] == 100.0     # modellerden biri yesilse yesil
     assert s["components"]["diversification"] == 100.0
     assert s["components"]["tail"] == pytest.approx(75.0)
     assert s["components"]["model"] == 100.0

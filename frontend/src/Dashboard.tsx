@@ -149,12 +149,17 @@ export function Dashboard({ data, positions }: { data: AnalyzeResponse; position
         .filter(([, s]) => s.impact_try !== null)
         .sort(([, a], [, b]) => (a.impact_try ?? 0) - (b.impact_try ?? 0))
         .map(([name, s]) => ({
-          label: name,
+          label: name + (s.coverage !== null && s.coverage < 0.8 ? " *" : ""),
           value: s.impact_try as number,
           tip: (
             <>
               <div className="t">{name} ({s.start} → {s.end})</div>
               {t("ret")}: {fmtPct(s.cumulative_return ?? 0)} · {t("impact")}: {fmtTL(s.impact_try as number)}
+              {s.coverage !== null && s.coverage < 0.999 && (
+                <div className="t" style={{ marginTop: 4 }}>
+                  {t("stressCoverage", { c: (s.coverage * 100).toFixed(0) })}
+                </div>
+              )}
               {s.missing_assets.length > 0 && (
                 <div className="t" style={{ marginTop: 4 }}>{t("notCovered")}: {s.missing_assets.join(", ")}</div>
               )}
@@ -283,6 +288,7 @@ export function Dashboard({ data, positions }: { data: AnalyzeResponse; position
           <h3>{t("stress")}</h3>
           <HBars items={stress} format={fmtTL} diverging />
           <p className="section-note">{t("stressNote")}</p>
+          <p className="section-note">{t("stressNominalNote")}</p>
         </div>
       )}
 

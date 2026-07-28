@@ -19,6 +19,7 @@ export function AdvancedSection({ adv, varPct }: {
   adv: AdvancedBlock; varPct: number;
 }) {
   const { t } = useT();
+  const tk = t as unknown as (key: string) => string;  // dinamik anahtarlar icin
   const zoneCls = { green: "up", yellow: "dim", red: "down" } as const;
 
   const hasAny = Object.values(adv).some((v) => v !== null && v !== undefined);
@@ -61,7 +62,7 @@ export function AdvancedSection({ adv, varPct }: {
             <div className="score-comps">
               {Object.entries(adv.score.components).map(([k, v]) => (
                 <div key={k} className="score-comp">
-                  <span>{(t as unknown as (key: string) => string)(`advC_${k}`)}</span>
+                  <span>{tk(`advC_${k}`)}</span>
                   <div className="score-bar"><i style={{ width: `${v}%` }} /></div>
                   <b>{fmtNum(v)}</b>
                 </div>
@@ -69,6 +70,42 @@ export function AdvancedSection({ adv, varPct }: {
             </div>
           )}
           <p className="section-note">{t("advScoreNote")}</p>
+        </div>
+      )}
+
+      {(adv.sharpe_ci || adv.beat_deposit) && (
+        <div className="grid2">
+          {adv.sharpe_ci && (
+            <div className="card">
+              <h3>{t("advUncertainty")}</h3>
+              <div className="kv-list">
+                <div><span>{t("advSharpePoint")}</span><b>{fmtNum(adv.sharpe_ci.sharpe_ann)}</b></div>
+                <div><span>{t("advSharpeCI")}</span><b>{fmtNum(adv.sharpe_ci.ci_low)} – {fmtNum(adv.sharpe_ci.ci_high)}</b></div>
+                <div><span>{t("advPSR")}</span>
+                  <b className={adv.sharpe_ci.psr >= 0.9 ? "up" : adv.sharpe_ci.psr < 0.6 ? "down" : ""}>
+                    {fmtPct(adv.sharpe_ci.psr).replace("+", "")}
+                  </b>
+                </div>
+              </div>
+              <p className="section-note">{t("advPSRNote", { n: String(adv.sharpe_ci.observations) })}</p>
+              <GuideLink slug={MODELS} />
+            </div>
+          )}
+          {adv.beat_deposit && (
+            <div className="card">
+              <h3>{t("advBeatDepTitle")}</h3>
+              <div className="score-main">
+                <div className={`score-big ${(1 - adv.beat_deposit.prob_below_deposit) >= 0.6 ? "up" : (1 - adv.beat_deposit.prob_below_deposit) < 0.4 ? "down" : ""}`}>
+                  {fmtPct(1 - adv.beat_deposit.prob_below_deposit).replace("+", "")}
+                </div>
+              </div>
+              <p className="section-note">{t("advBeatDepNote", {
+                r: fmtPct(adv.beat_deposit.deposit_annual).replace("+", ""),
+                p: fmtPct(adv.beat_deposit.prob_below_deposit).replace("+", ""),
+              })}</p>
+              <GuideLink slug={MODELS} />
+            </div>
+          )}
         </div>
       )}
 
@@ -108,18 +145,29 @@ export function AdvancedSection({ adv, varPct }: {
               <p className="section-note">{t("advEvtNote", { xi: fmtNum(adv.evt.tail_index), n: String(adv.evt.exceedances) })}</p>
             )}
             {adv.backtest && (
-              <p className="section-note">
-                <b className={zoneCls[adv.backtest.basel_zone]}>{t(`advZone_${adv.backtest.basel_zone}`)}</b>
-                {" — "}
-                {t("advBacktestNote", {
-                  x: String(adv.backtest.violations),
-                  e: String(adv.backtest.expected),
-                  n: String(adv.backtest.days),
-                  k: (adv.backtest.kupiec_p * 100).toFixed(0),
-                })}
-                {adv.backtest.christoffersen_p != null &&
-                  ` ${t("advChristNote", { c: (adv.backtest.christoffersen_p * 100).toFixed(0) })}`}
-              </p>
+              <div className="bt-block">
+                <div className="bt-head">{t("advBacktestHead", { n: String(adv.backtest.days) })}</div>
+                <div className="tbl-wrap"><table className="tbl">
+                  <thead><tr>
+                    <th>{t("advModelCol")}</th><th>{t("advViolCol")}</th>
+                    <th>Kupiec</th><th>Basel</th>
+                  </tr></thead>
+                  <tbody>
+                    {(["historical", "ewma", "fhs"] as const).map((m) => {
+                      const b = adv.backtest!.models[m];
+                      return (
+                        <tr key={m}>
+                          <td className="name">{tk(`advModel_${m}`)}</td>
+                          <td>{b.violations} / {b.expected}</td>
+                          <td className="dim">%{(b.kupiec_p * 100).toFixed(0)}</td>
+                          <td><b className={zoneCls[b.basel_zone]}>{tk(`advZoneShort_${b.basel_zone}`)}</b></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table></div>
+                <p className="section-note">{t("advBacktestNote2")}</p>
+              </div>
             )}
             <GuideLink slug={MODELS} />
           </div>
@@ -182,6 +230,10 @@ export function AdvancedSection({ adv, varPct }: {
               <div><span>{t("advFxCov")}</span><b>{fmtPct(adv.fx.cov_share)}</b></div>
             </div>
             <p className="section-note">{t("advFxNote")}</p>
+            <p className="section-note">{t("advFxDriftNote", {
+              v: fmtPct(adv.fx.fx_vol_ann).replace("+", ""),
+              d: fmtPct(adv.fx.fx_drift_ann),
+            })}</p>
             <GuideLink slug={REALFX} />
           </div>
         )}
@@ -261,6 +313,10 @@ export function AdvancedSection({ adv, varPct }: {
               </tbody>
             </table></div>
             <p className="section-note">{t("advTailDepNote")}</p>
+            <p className="section-note">{t("advTailObsNote", {
+              n: String(adv.tail_dependence.tail_obs),
+              e: String(adv.tail_dependence.expected_co),
+            })}</p>
             <GuideLink slug={ATTRIB} />
           </div>
         )}

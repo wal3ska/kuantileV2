@@ -106,6 +106,7 @@ export interface StressResult {
   cumulative_return: number | null;
   impact_try: number | null;
   missing_assets: string[];
+  coverage: number | null;
 }
 
 export interface SharpeInfo {
@@ -127,10 +128,21 @@ export interface RiskFree {
   annual_rate: number;
 }
 
-export interface AdvBacktest {
-  days: number; violations: number; expected: number;
+export interface AdvViolations {
+  violations: number; expected: number;
   kupiec_p: number; christoffersen_p: number | null;
   basel_zone: "green" | "yellow" | "red";
+}
+export interface AdvBacktest {
+  days: number; confidence: number;
+  models: { historical: AdvViolations; ewma: AdvViolations; fhs: AdvViolations };
+}
+export interface AdvSharpeCI {
+  sharpe_ann: number; se_ann: number; ci_low: number; ci_high: number;
+  psr: number; observations: number; skew: number; excess_kurtosis: number;
+}
+export interface AdvBeatDeposit {
+  prob_below_deposit: number; deposit_annual: number; horizon_days: number;
 }
 export interface AdvComponent {
   name: string; weight: number; cvar_tl: number;
@@ -144,6 +156,8 @@ export interface AdvStyle {
 export interface AdvancedBlock {
   es: { es_pct: number | null; es975_pct: number | null } | null;
   backtest: AdvBacktest | null;
+  sharpe_ci: AdvSharpeCI | null;
+  beat_deposit: AdvBeatDeposit | null;
   attribution: { components: AdvComponent[]; total_var_tl: number } | null;
   ewma: { ewma_vol_ann: number; var_ewma_pct: number; var_fhs_pct: number; lambda: number } | null;
   drawdown: {
@@ -158,13 +172,19 @@ export interface AdvancedBlock {
     tail_index: number; threshold_pct: number; exceedances: number;
     var995_pct: number; es995_pct: number;
   } | null;
-  tail_dependence: { pairs: { pair: string; lambda_lower: number; pearson: number }[]; q: number } | null;
+  tail_dependence: {
+    pairs: { pair: string; lambda_lower: number; co_exceedances: number; pearson: number }[];
+    q: number; tail_obs: number; expected_co: number;
+  } | null;
   hrp: { weights: Record<string, number>; excluded_cash_like?: string[] } | null;
   real: {
     inflation_12m: number; nominal_return_12m: number; real_return_12m: number;
     prob_real_loss_12m: number | null; cpi_as_of: string;
   } | null;
-  fx: { usd_exposure_share: number; local_share: number; fx_share: number; cov_share: number } | null;
+  fx: {
+    usd_exposure_share: number; fx_beta: number; local_share: number;
+    fx_share: number; cov_share: number; fx_vol_ann: number; fx_drift_ann: number;
+  } | null;
   liquidity: {
     positions: { name: string; days_to_exit: number; value_share: number }[];
     lvar_multiplier: number; lvar_value_tl: number;

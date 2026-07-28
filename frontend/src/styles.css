@@ -690,3 +690,5 @@ html { scroll-behavior: smooth; }
 .tile-link:hover { text-decoration: underline; }
 .riskseg.mini { gap: 3px; margin: 4px 0 6px; }
 .riskseg.mini .seg { width: 16px; height: 8px; border-radius: 3px; font-size: 0; }
+.bt-block { margin-top: 12px; }
+.bt-head { font-size: 12.5px; color: var(--muted); margin-bottom: 6px; }

@@ -204,11 +204,23 @@ def _advanced_block(req, positions, returns, port_rets, investments, valid,
             out[key] = None
 
     conf = req.confidence
+    # Mevduat/risksiz oran: belirsizlik metrikleri (PSR, mevduati yenme) icin
+    dep_annual = None
+    if req.risk_free is not None and req.risk_free.kind in ("rate", "deposit", "tlref"):
+        dep_annual = req.risk_free.annual_rate
+    else:
+        try:
+            dep_annual = dp.fetch_deposit_rate()["deposit_net"]
+        except Exception:
+            dep_annual = None
+
     _safe("es", lambda: {
         "es_pct": adv.expected_shortfall(port_rets, conf),
         "es975_pct": adv.expected_shortfall(port_rets, 0.975),
     })
     _safe("backtest", lambda: adv.var_backtest(port_rets, conf))
+    _safe("sharpe_ci", lambda: adv.sharpe_confidence(port_rets, dep_annual or 0.0))
+    _safe("beat_deposit", lambda: adv.beat_deposit_probability(port_rets, dep_annual))
     _safe("attribution", lambda: adv.risk_attribution(returns, investments, conf, var_pct))
     _safe("ewma", lambda: adv.ewma_fhs(port_rets, conf))
     _safe("drawdown", lambda: adv.drawdown_stats(port_rets))
@@ -384,6 +396,11 @@ def analyze(req: AnalyzeRequest):
                         "cumulative_return": sc["result"]["cumulative_return"] if sc["result"] else None,
                         "impact_try": market_value * sc["result"]["cumulative_return"] if sc["result"] else None,
                         "missing_assets": sc["result"]["missing_assets"] if sc["result"] else valid,
+                        # kapsam: portfoy degerinin ne kadari o pencerede gercek veriye
+                        # sahip (dususe fon 2008'de yoksa vekil/eksik oldugu anlasilir)
+                        "coverage": (1 - sum(investments[m] for m in
+                                     (sc["result"]["missing_assets"] if sc["result"] else valid)
+                                     if m in investments) / market_value) if market_value else None,
                     }
                     for name, sc in engine.run_stress_tests(prices_try[valid], investments,
                                                             regions=req.stress_regions).items()
