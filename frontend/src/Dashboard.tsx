@@ -112,11 +112,23 @@ function CustomSim({ positions }: { positions: PositionIn[] }) {
   );
 }
 
-export function Dashboard({ data, positions }: { data: AnalyzeResponse; positions: PositionIn[] }) {
-  const { t } = useT();
+export function Dashboard({ data, positions, nickname }:
+  { data: AnalyzeResponse; positions: PositionIn[]; nickname?: string | null }) {
+  const { t, lang } = useT();
   const tk = t as unknown as (key: string) => string;  // dinamik anahtarlar
   const risk = data.market_risk;
   const bond = data.bond_risk;
+  const [exporting, setExporting] = useState(false);
+
+  async function onExport() {
+    setExporting(true);
+    try {
+      const { exportReport } = await import("./report");
+      await exportReport(data, positions, lang, nickname);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   const alloc = [...data.valuation]
     .sort((a, b) => b.value_try - a.value_try)
@@ -174,6 +186,11 @@ export function Dashboard({ data, positions }: { data: AnalyzeResponse; position
 
   return (
     <div className="stack">
+      <div className="dash-toolbar">
+        <button className="ghost-btn" onClick={onExport} disabled={exporting}>
+          {exporting ? t("exportBusy") : t("exportPdf")}
+        </button>
+      </div>
       {data.failed_assets.length > 0 && (
         <div className="msg err">{t("failedAssets", { list: data.failed_assets.join(", ") })}</div>
       )}

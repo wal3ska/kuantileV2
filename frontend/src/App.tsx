@@ -329,7 +329,7 @@ export default function App() {
           </div>
 
           {result ? (
-            <Dashboard data={result} positions={analyzedPositions} />
+            <Dashboard data={result} positions={analyzedPositions} nickname={user?.nickname} />
           ) : (
             <div className="empty">
               <h2>{t("emptyTitle")}</h2>
