@@ -451,7 +451,8 @@ function buildHtml(data: AnalyzeResponse, L: L,
                   padding: 4px 6px; }
   table.grid td { padding: 4px 6px; border-bottom: 1px solid #f2f2f0; vertical-align: top;
                   font-variant-numeric: tabular-nums; }
-  .r { text-align: right; }
+  table.grid th.r, table.grid td.r, .r { text-align: right; }
+  table.grid td:first-child, table.grid th:first-child { padding-left: 0; }
   .up { color: #0a7a30; } .down { color: #c0392b; } .dim { color: #999; }
   .zone-green { color: #0a7a30; font-weight: 700; }
   .zone-yellow { color: #b8860b; font-weight: 700; }
