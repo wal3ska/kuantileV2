@@ -212,41 +212,58 @@ def _tefas_cache_load(code: str) -> pd.Series | None:
         return None
 
 
-def fetch_tefas_funds(fund_codes: tuple, years: int = TEFAS_MAX_YEARS) -> dict:
-    """Fon kodu -> gunluk fiyat serisi (TRY). Bulunamayan fon None doner.
-    YAT -> EMK -> BYF sirasiyla denenir. TEFAS gecici olarak cevap
-    vermezse birkac kez yeniden denenir; yine olmazsa son basarili
-    cekimin disk kopyasi kullanilir (raporlar 'veri yok' dusmesin)."""
-    from tefas import Crawler
+_TEFAS_TTL = 600  # 10 dk in-process: tekrar analizde TEFAS'a gitme
+_tefas_mem: dict = {}  # code -> {"t","series"}
 
+
+def _fetch_one_tefas(code: str, start: str, end: str) -> "pd.Series | None":
+    """Tek fon: YAT -> EMK -> BYF, gecici hatada yeniden dene."""
+    from tefas import Crawler
+    for attempt in range(TEFAS_RETRIES):
+        if attempt:
+            time.sleep(5 * attempt)
+        for kind in ["YAT", "EMK", "BYF"]:
+            try:
+                df = Crawler().fetch(start=start, end=end, name=code,
+                                     columns=["date", "price"], kind=kind)
+                if df is not None and not df.empty:
+                    s = df.set_index("date")["price"].astype(float)
+                    s.index = pd.to_datetime(s.index)
+                    s = s[s > 0]
+                    return s[~s.index.duplicated(keep="last")].sort_index()
+            except Exception:
+                continue
+    return None
+
+
+def fetch_tefas_funds(fund_codes: tuple, years: int = TEFAS_MAX_YEARS) -> dict:
+    """Fon kodu -> gunluk fiyat serisi (TRY). Fonlar ES ZAMANLI cekilir
+    (serial ~2s -> ~0.8s). 10 dk in-process onbellek tekrar analizi hizlandirir.
+    Cekilemezse son basarili cekimin disk kopyasi kullanilir."""
     end = pd.Timestamp.today().normalize()
     start = end - pd.DateOffset(years=years) + pd.DateOffset(days=1)
-    result = {}
+    s_str, e_str = start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d")
+
+    result, to_fetch = {}, []
     for code in fund_codes:
-        series = None
-        for attempt in range(TEFAS_RETRIES):
-            if attempt:
-                time.sleep(5 * attempt)
-            for kind in ["YAT", "EMK", "BYF"]:
-                try:
-                    df = Crawler().fetch(start=start.strftime("%Y-%m-%d"),
-                                         end=end.strftime("%Y-%m-%d"),
-                                         name=code, columns=["date", "price"], kind=kind)
-                    if df is not None and not df.empty:
-                        s = df.set_index("date")["price"].astype(float)
-                        s.index = pd.to_datetime(s.index)
-                        s = s[s > 0]
-                        series = s[~s.index.duplicated(keep="last")].sort_index()
-                        break
-                except Exception:
-                    continue
-            if series is not None:
-                break
-        if series is not None:
-            _tefas_cache_save(code, series)
+        c = _tefas_mem.get(code)
+        if c and time.time() - c["t"] < _TEFAS_TTL:
+            result[code] = c["series"]
         else:
-            series = _tefas_cache_load(code)
-        result[code] = series
+            to_fetch.append(code)
+
+    if to_fetch:
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=min(len(to_fetch), 6)) as ex:
+            fetched = dict(zip(to_fetch, ex.map(
+                lambda c: _fetch_one_tefas(c, s_str, e_str), to_fetch)))
+        for code, series in fetched.items():
+            if series is not None:
+                _tefas_cache_save(code, series)
+                _tefas_mem[code] = {"t": time.time(), "series": series}
+            else:
+                series = _tefas_cache_load(code)
+            result[code] = series
     return result
 
 
