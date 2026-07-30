@@ -615,7 +615,9 @@ def beat_deposit_probability(port_rets: pd.Series, deposit_annual: float | None,
     belirsizlik birlikte: gerceklesme (12 ay sonucu rastgele) + PARAMETRE
     (Sharpe'in kendi SE'si). Nokta tahminden Phi(-z) yerine, Lo SE ile
     genisletilmis Phi(-z/sqrt(1+se^2)) - skordaki dürüstlestirmenin aynisi."""
-    r = port_rets.dropna().tail(252)     # PSR/CI ile ayni pencere
+    # ILERIYE DONUK tahmin: TUM gecmis (kararli ort/oynaklik). Trailing 1Y
+    # Sharpe kartindan farkli sorudur; son 252 gune sikismaz.
+    r = port_rets.dropna()
     n = len(r)
     if n < 120 or deposit_annual is None:
         return None

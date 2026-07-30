@@ -367,7 +367,7 @@ export function AdvancedSection({ adv, varPct }: {
             </tbody>
           </table></div>
           <p className="section-note">{t("advFactorShockNote", { pt: ((adv.factor_shock.passthrough ?? 0.4) * 100).toFixed(0) })}</p>
-          <p className="section-note">{t("advFactorRealNote")}</p>
+          <p className="section-note">{t("advFactorRealNote", { pt: ((adv.factor_shock.passthrough ?? 0.4) * 100).toFixed(0) })}</p>
           <GuideLink slug={REALFX} />
         </div>
       )}

@@ -238,10 +238,12 @@ export function Dashboard({ data, positions, nickname }:
               a: risk.sharpe["3y"] ? fmtNum(risk.sharpe["3y"].sharpe) : "—",
               b: risk.sharpe["5y"] ? fmtNum(risk.sharpe["5y"].sharpe) : "—",
             })}</div>
+            {/* ann_return/ann_rf motorda log; kullaniciya basit oran goster
+                (kiyas kutuya girdigi %39,5 olsun, log'un %33,3'u degil) */}
             <div className="sub">{t("sharpeSub", {
-              r: fmtPct(risk.sharpe["1y"].ann_return),
+              r: fmtPct(Math.exp(risk.sharpe["1y"].ann_return) - 1),
               v: fmtPct(risk.sharpe["1y"].ann_vol).replace("+", ""),
-              rf: fmtPct(risk.sharpe["1y"].ann_rf),
+              rf: fmtPct(Math.exp(risk.sharpe["1y"].ann_rf) - 1),
             })}</div>
           </div>
         )}
