@@ -573,7 +573,8 @@ def sharpe_confidence(port_rets: pd.Series, rf, benchmark_sr: float = 0.0,
                       window_days: int = 252) -> dict | None:
     """Sharpe nokta tahmininin belirsizligi. AYNI pencere (window_days) ve AYNI
     kiyas (rf) ile hesaplanir ki manset Sharpe kartiyla birebir tutsun.
-    rf: skaler yillik oran VEYA gunluk oran serisi (mevduat/tlref tarihsel).
+    rf: GUNLUK log oran (skaler rf_daily) VEYA gunluk oran serisi. sharpe_multi
+    ile AYNI birimi kullanir ki manset Sharpe kartiyla birebir tutsun.
     Lo (2002) SE ile %95 GA + Probabilistic Sharpe (Bailey & Lopez de Prado):
     carpiklik/basiklik duzeltmeli, Sharpe'in benchmark_sr esigini gercekten
     astigina dair olasilik. benchmark_sr=0 -> mevduati risk-ayarli yeniyor mu."""
@@ -584,7 +585,7 @@ def sharpe_confidence(port_rets: pd.Series, rf, benchmark_sr: float = 0.0,
         rf_al = rf.reindex(r.index).ffill()
         ex = (r - rf_al).dropna().values
     else:
-        ex = (r - math.log(1 + max(rf, -0.99)) / 252).values
+        ex = (r - rf).values          # rf zaten gunluk (rf_daily), tekrar donusturme
     mo = _moments(ex)
     if mo is None:
         return None
