@@ -143,6 +143,9 @@ export function AdvancedSection({ adv, varPct }: {
                   <>
                     <tr><td className="name">{t("advEwmaVar")}</td><td className="down">{fmtPct(adv.ewma.var_ewma_pct)}</td></tr>
                     <tr><td className="name">{t("advFhsVar")}</td><td className="down">{fmtPct(adv.ewma.var_fhs_pct)}</td></tr>
+                    {adv.ewma.es_fhs_pct != null && (
+                      <tr><td className="name">{t("advEsFhs")}</td><td className="down">{fmtPct(adv.ewma.es_fhs_pct)}</td></tr>
+                    )}
                   </>
                 )}
                 {adv.evt && (
@@ -363,7 +366,7 @@ export function AdvancedSection({ adv, varPct }: {
               ))}
             </tbody>
           </table></div>
-          <p className="section-note">{t("advFactorShockNote")}</p>
+          <p className="section-note">{t("advFactorShockNote", { pt: ((adv.factor_shock.passthrough ?? 0.4) * 100).toFixed(0) })}</p>
           <p className="section-note">{t("advFactorRealNote")}</p>
           <GuideLink slug={REALFX} />
         </div>

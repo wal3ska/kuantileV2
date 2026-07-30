@@ -160,7 +160,10 @@ export interface AdvancedBlock {
   sharpe_ci: AdvSharpeCI | null;
   beat_deposit: AdvBeatDeposit | null;
   attribution: { components: AdvComponent[]; total_var_tl: number } | null;
-  ewma: { ewma_vol_ann: number; var_ewma_pct: number; var_fhs_pct: number; lambda: number } | null;
+  ewma: {
+    ewma_vol_ann: number; var_ewma_pct: number; var_fhs_pct: number;
+    es_fhs_pct?: number; es_ewma_pct?: number; lambda: number;
+  } | null;
   drawdown: {
     max_drawdown: number; calmar: number | null; ulcer_index: number;
     underwater_days_now: number; longest_underwater_days: number; ann_return: number | null;
@@ -196,6 +199,7 @@ export interface AdvancedBlock {
   factor_shock: {
     scenarios: { name: string; impact_pct: number; impact_tl: number; impact_real_pct: number; shocks: Record<string, number> }[];
     betas: Record<string, number>;
+    passthrough?: number;
   } | null;
   expected_mdd?: number | null;
   headline_var?: {

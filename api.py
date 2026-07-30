@@ -362,9 +362,7 @@ def _prefetch(req: "AnalyzeRequest") -> dict:
         }
         if eq:
             futs["volumes"] = ex.submit(_try, dp.fetch_yahoo_volumes, eq)
-        if kind == "deposit":
-            futs["rf_bench"] = ex.submit(_try, dp.fetch_rf_history, "deposit")
-        elif kind in ("usd", "eur"):
+        if kind in ("usd", "eur"):            # kur kiyasi getiri serisi
             fx_t = ("TRY=X",) if kind == "usd" else ("EURTRY=X",)
             futs["fx_bench"] = ex.submit(_try, dp.fetch_yahoo_prices, fx_t)
         prices_fut = ex.submit(dp.build_try_prices, [p.model_dump() for p in req.positions])
@@ -373,8 +371,6 @@ def _prefetch(req: "AnalyzeRequest") -> dict:
             pre["prices"] = prices_fut.result()
         except RuntimeError as exc:
             pre["prices_error"] = str(exc)
-    if kind == "tlref":                       # ayni seriyi iki kez cekme
-        pre["rf_bench"] = pre.get("tlref")
     return pre
 
 
@@ -433,14 +429,11 @@ def analyze(req: AnalyzeRequest):
 
             sharpe = None
             if req.risk_free is not None:
-                if req.risk_free.kind == "rate":
+                if req.risk_free.kind in ("rate", "deposit", "tlref"):
+                    # TEK KIYAS: kullanicinin girdigi/secili sabit oran. Boylece
+                    # manset Sharpe, CI, PSR ve 'mevduati yenme' ayni tabani
+                    # kullanir (kullanicinin kutuda gordugu oran).
                     rf_daily = np.log(1 + req.risk_free.annual_rate) / 252
-                elif req.risk_free.kind in ("deposit", "tlref"):
-                    # Tarihsel faiz serisi (prefetch): 3-5 yillik Sharpe o gunun
-                    # faiziyle. EVDS yoksa sabit orana dus.
-                    hist = pre.get("rf_bench")
-                    rf_daily = (np.log(1 + hist) / 252 if hist is not None
-                                else np.log(1 + req.risk_free.annual_rate) / 252)
                 else:
                     fx_t = "TRY=X" if req.risk_free.kind == "usd" else "EURTRY=X"
                     raw_fx = pre.get("fx_bench")
@@ -488,7 +481,12 @@ def analyze(req: AnalyzeRequest):
                     name: {
                         "region": sc["region"], "start": sc["start"], "end": sc["end"],
                         "cumulative_return": sc["result"]["cumulative_return"] if sc["result"] else None,
-                        "impact_try": market_value * sc["result"]["cumulative_return"] if sc["result"] else None,
+                        # Etki YALNIZCA kapsanan varliklarin degerine uygulanir
+                        # (2018'de fon yoktu; getiriyi tum portfoye uygulamak
+                        # kapsanmayan %62'yi altinmis gibi sayardi).
+                        "impact_try": (
+                            sum(investments[a] for a in sc["result"]["active_assets"])
+                            * sc["result"]["cumulative_return"]) if sc["result"] else None,
                         "missing_assets": sc["result"]["missing_assets"] if sc["result"] else valid,
                         # kapsam: portfoy degerinin ne kadari o pencerede gercek veriye
                         # sahip (dususe fon 2008'de yoksa vekil/eksik oldugu anlasilir)
@@ -511,7 +509,8 @@ def analyze(req: AnalyzeRequest):
                 sh1 = sci["sharpe_ann"] if sci else (
                     sharpe.get("1y", {}).get("sharpe") if isinstance(sharpe, dict) and sharpe.get("1y") else None)
                 risk["advanced"]["score"] = adv.kuantile_score(
-                    sh1, {**risk["advanced"], "_var_pct": hv_pct})
+                    sh1, {**risk["advanced"], "_var_pct": hv_pct,
+                          "_var_pct_historical": var_pct})
             except Exception:
                 risk["advanced"]["risk_class"] = None
                 risk["advanced"]["score"] = None

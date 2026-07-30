@@ -23,7 +23,8 @@ const LABELS = {
     colPnl: "K/Z (TL)", colPnlPct: "K/Z %", colWeight: "Ağırlık",
     marketRisk: "Piyasa Riski",
     varHeadline: "VaR (manşet, FHS)", varHist: "VaR (tarihsel, karşılaştırma)",
-    es: "Expected Shortfall", es975: "ES (%97,5, Basel)",
+    es: "Expected Shortfall (tarihsel)", es975: "ES (%97,5, Basel, tarihsel)",
+    esFhs: "Expected Shortfall (FHS, manşet)",
     obs: "gözlem", conf: "güven",
     sharpe: "Sharpe & Belirsizlik",
     sharpe1y: "Sharpe (1Y)", sharpe3y: "Sharpe (3Y)", sharpe5y: "Sharpe (5Y)",
@@ -83,7 +84,8 @@ const LABELS = {
     colPnl: "P/L (TRY)", colPnlPct: "P/L %", colWeight: "Weight",
     marketRisk: "Market Risk",
     varHeadline: "VaR (headline, FHS)", varHist: "VaR (historical, comparison)",
-    es: "Expected Shortfall", es975: "ES (97.5%, Basel)",
+    es: "Expected Shortfall (historical)", es975: "ES (97.5%, Basel, historical)",
+    esFhs: "Expected Shortfall (FHS, headline)",
     obs: "obs", conf: "confidence",
     sharpe: "Sharpe & Uncertainty",
     sharpe1y: "Sharpe (1Y)", sharpe3y: "Sharpe (3Y)", sharpe5y: "Sharpe (5Y)",
@@ -213,6 +215,7 @@ function buildBody(data: AnalyzeResponse, L: L, lang: Lang): string {
     mrRows.push([L.varHist, `<span class="dim">${fmtPct(r.var_pct_historical)}</span>`]);
   if (adv?.es?.es_pct != null) mrRows.push([L.es, dc(-1, fmtPct(adv.es.es_pct))]);
   if (adv?.es?.es975_pct != null) mrRows.push([L.es975, dc(-1, fmtPct(adv.es.es975_pct))]);
+  if (adv?.ewma?.es_fhs_pct != null) mrRows.push([L.esFhs, dc(-1, fmtPct(adv.ewma.es_fhs_pct))]);
   mrRows.push([L.obs, `${r.observations.toLocaleString()} · %${(r.confidence * 100).toFixed(0)} ${L.conf}`]);
   parts.push(section(L.marketRisk, kv(mrRows)));
 

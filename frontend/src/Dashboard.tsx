@@ -162,7 +162,8 @@ export function Dashboard({ data, positions, nickname }:
         .filter(([, s]) => s.impact_try !== null)
         .sort(([, a], [, b]) => (a.impact_try ?? 0) - (b.impact_try ?? 0))
         .map(([name, s]) => ({
-          label: name + (s.coverage !== null && s.coverage < 0.8 ? " *" : ""),
+          label: name + (s.coverage !== null && s.coverage < 0.999
+            ? ` · ${t("stressCovShort", { c: (s.coverage * 100).toFixed(0) })}` : ""),
           value: s.impact_try as number,
           tip: (
             <>

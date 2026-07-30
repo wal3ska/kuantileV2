@@ -7,6 +7,7 @@ firlatmaz (analiz asla gelismis metrik yuzunden bloklanmaz).
 """
 
 import math
+import os
 from statistics import NormalDist
 
 import numpy as np
@@ -323,12 +324,21 @@ def ewma_fhs(port_rets: pd.Series, confidence: float, lam: float = 0.94) -> dict
     sig_today = math.sqrt(lam * sig2[-1] + (1 - lam) * vals[-1] ** 2)
     z = vals / sig
     q = 1 - confidence
+    zt = z[30:]
+    zq = float(np.quantile(zt, q))
     var_ewma = _N.inv_cdf(q) * sig_today            # parametrik normal
-    var_fhs = float(np.quantile(z[30:], q)) * sig_today  # dagilim-serbest
+    var_fhs = zq * sig_today                          # dagilim-serbest
+    # ES AYNI modelden: kuantilin otesindeki standardize kuyrugun ortalamasi
+    # bugunku vol'le olceklenir (tarihsel ES/FHS VaR bolme hatasini onler)
+    tail = zt[zt <= zq]
+    es_fhs = (float(tail.mean()) * sig_today) if len(tail) else var_fhs
+    es_ewma = -_N.pdf(_N.inv_cdf(q)) / q * sig_today  # normal ES (parametrik)
     return {
         "ewma_vol_ann": sig_today * math.sqrt(252),
         "var_ewma_pct": var_ewma,
         "var_fhs_pct": var_fhs,
+        "es_fhs_pct": es_fhs,
+        "es_ewma_pct": es_ewma,
         "lambda": lam,
     }
 
@@ -604,7 +614,7 @@ def beat_deposit_probability(port_rets: pd.Series, deposit_annual: float | None,
     belirsizlik birlikte: gerceklesme (12 ay sonucu rastgele) + PARAMETRE
     (Sharpe'in kendi SE'si). Nokta tahminden Phi(-z) yerine, Lo SE ile
     genisletilmis Phi(-z/sqrt(1+se^2)) - skordaki dürüstlestirmenin aynisi."""
-    r = port_rets.dropna()
+    r = port_rets.dropna().tail(252)     # PSR/CI ile ayni pencere
     n = len(r)
     if n < 120 or deposit_annual is None:
         return None
@@ -710,23 +720,30 @@ def factor_betas(asset_rets: pd.Series, factors: pd.DataFrame,
     return best
 
 
+# Kurdan tuketici enflasyonuna 12 aylik gecişkenlik. TR literaturunde ~0.2-0.5;
+# kriz doneminde ust banda yaklasir ama 1.0 degildir. Varsayilan 0.4.
+FX_PASSTHROUGH = float(os.getenv("FX_PASSTHROUGH", "0.4"))
+
+
 def factor_shock_grid(port_betas: dict, market_value: float,
-                      scenarios: list = FACTOR_SHOCKS) -> dict:
+                      scenarios: list = FACTOR_SHOCKS,
+                      passthrough: float = FX_PASSTHROUGH) -> dict:
     """Portfoy faktor betalarina hipotetik soklar uygulanir. Tarihsel pencereye
     sormaz ('peg kopsa ne olur'), fonlarin gecmiste var olmamasindan etkilenmez.
-    Soklar faktorun kendi getiri uzayindadir; korele faktorler icin yaklasiktir."""
+    Soklar faktorun kendi getiri uzayindadir; korele faktorler icin yaklasiktir.
+    Reel etki: nominal - passthrough * kur_soku (kurun tamami degil, ~%40'i
+    12 ayda tuketici fiyatlarina gecer)."""
     out = []
     for sc in scenarios:
         imp = sum(port_betas.get(f, 0.0) * s for f, s in sc["shocks"].items())
-        # Reel (satin alma gucu) etki: kur soku ~ enflasyon gecisi kabul edilir,
-        # nominal etkiden kur sokunu dus. USD/TRY +%15 -> nominal +%5 ama reel ~ −%9.
         fx_shock = sc["shocks"].get("USD/TRY", 0.0)
-        imp_real = imp - fx_shock
+        imp_real = imp - passthrough * fx_shock
         out.append({"name": sc["name"], "impact_pct": imp,
                     "impact_tl": market_value * imp,
                     "impact_real_pct": imp_real, "shocks": sc["shocks"]})
     out.sort(key=lambda d: d["impact_tl"])
-    return {"scenarios": out, "betas": {k: round(v, 3) for k, v in port_betas.items()}}
+    return {"scenarios": out, "passthrough": passthrough,
+            "betas": {k: round(v, 3) for k, v in port_betas.items()}}
 
 
 # ---------- Risk sinifi (SRRI/TEFAS 1-7) + Kuantile Skoru ----------
@@ -780,13 +797,20 @@ def kuantile_score(sharpe_1y: float | None, blocks: dict) -> dict | None:
             comps["diversification"] = _clamp(
                 (conc["effective_bets"] - 1) / (n - 1) * 100)
 
-    es_b, evt_b = blocks.get("es"), blocks.get("evt")
-    var_ref = blocks.get("_var_pct")
-    if es_b and es_b.get("es_pct") and var_ref:
-        # ES/VaR orani kuyruk kalinligi: 1.0 -> 100p, 1.8+ -> 0p
-        ratio = es_b["es_pct"] / var_ref if var_ref else None
-        if ratio and ratio > 0:
-            comps["tail"] = _clamp((1.8 - ratio) / 0.8 * 100)
+    # Kuyruk sagligi: ES/VaR AYNI modelden (FHS). Farkli model bolununce
+    # (tarihsel ES / FHS VaR) sahte kalin-kuyruk cikiyordu.
+    ewma_b = blocks.get("ewma")
+    ratio = None
+    if ewma_b and ewma_b.get("es_fhs_pct") and ewma_b.get("var_fhs_pct"):
+        ratio = ewma_b["es_fhs_pct"] / ewma_b["var_fhs_pct"]     # ikisi de FHS
+    else:
+        es_b = blocks.get("es")                                   # yedek: ikisi tarihsel
+        var_h = blocks.get("_var_pct_historical")
+        if es_b and es_b.get("es_pct") and var_h:
+            ratio = es_b["es_pct"] / var_h
+    if ratio and ratio > 0:
+        # ES/VaR kuyruk kalinligi: 1.0 -> 100p, 1.8+ -> 0p
+        comps["tail"] = _clamp((1.8 - ratio) / 0.8 * 100)
 
     bt = blocks.get("backtest")
     hv = blocks.get("headline_var")

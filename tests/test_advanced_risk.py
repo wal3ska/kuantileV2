@@ -223,6 +223,9 @@ def test_ewma_fhs():
     assert res is not None
     assert res["var_ewma_pct"] < 0 and res["var_fhs_pct"] < 0
     assert res["ewma_vol_ann"] > 0
+    # FHS ES ayni modelden ve VaR'dan daha derin (kuyruk ortalamasi)
+    assert res["es_fhs_pct"] <= res["var_fhs_pct"] < 0
+    assert res["es_ewma_pct"] < 0
 
 
 def test_drawdown_known_series():
@@ -314,8 +317,9 @@ def test_srri_class_bands():
 def test_kuantile_score():
     blocks = {
         "concentration": {"n_assets": 4, "effective_bets": 4.0},
-        "es": {"es_pct": -0.036},
-        "_var_pct": -0.030,                      # ES/VaR = 1.2
+        # kuyruk: ES/VaR AYNI modelden (FHS) = 1.2 -> 75p
+        "ewma": {"es_fhs_pct": -0.036, "var_fhs_pct": -0.030},
+        "_var_pct": -0.017, "_var_pct_historical": -0.023,
         "backtest": {"models": {"historical": {"basel_zone": "yellow"},
                                 "fhs": {"basel_zone": "green"}}},
         "real": {"prob_real_loss_12m": 0.0},
