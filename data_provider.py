@@ -151,9 +151,16 @@ def fetch_yahoo_volumes(tickers: tuple, lookback_days: int = 90) -> dict:
         return {}
 
 
-def fetch_yahoo_prices(tickers: tuple, start: str = YAHOO_START, retries: int = 3) -> pd.DataFrame:
-    """Kapanis fiyatlari (auto-adjusted). Bos sonucta RuntimeError firlatir ki
-    cagiran taraf bos veriyi cache'lemesin."""
+_YPRICE_TTL = 600  # 10 dk: gun ici fiyatlar analiz icin yeterince taze; tekrar
+_yprice_cache: dict = {}  # (sorted tickers, start) -> {"t","close","volume"}
+
+
+def _yahoo_download(tickers: tuple, start: str, retries: int) -> dict:
+    """Kapanis + hacim; kisa sureli onbellekli. Bos sonucta RuntimeError."""
+    key = (tuple(sorted(tickers)), start)
+    c = _yprice_cache.get(key)
+    if c and time.time() - c["t"] < _YPRICE_TTL:
+        return c
     data = None
     for attempt in range(retries):
         data = yf.download(list(tickers), start=start, progress=False, auto_adjust=True)
@@ -166,7 +173,18 @@ def fetch_yahoo_prices(tickers: tuple, start: str = YAHOO_START, retries: int = 
     if isinstance(close, pd.Series):
         close = close.to_frame(name=tickers[0])
     close.index = pd.to_datetime(close.index)
-    return close
+    vol = data["Volume"] if "Volume" in data else None
+    if isinstance(vol, pd.Series):
+        vol = vol.to_frame(name=tickers[0])
+    entry = {"t": time.time(), "close": close, "volume": vol}
+    _yprice_cache[key] = entry
+    return entry
+
+
+def fetch_yahoo_prices(tickers: tuple, start: str = YAHOO_START, retries: int = 3) -> pd.DataFrame:
+    """Kapanis fiyatlari (auto-adjusted). Bos sonucta RuntimeError firlatir ki
+    cagiran taraf bos veriyi cache'lemesin."""
+    return _yahoo_download(tickers, start, retries)["close"]
 
 
 TEFAS_RETRIES = 3

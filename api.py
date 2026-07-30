@@ -3,6 +3,7 @@ Dokumantasyon otomatik: http://localhost:8000/docs"""
 
 import math
 import os
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from typing import Literal, Optional
 
@@ -193,7 +194,7 @@ FACTOR_LABELS = {"XU100.IS": "BIST 100", "GOLDTL": "Altın (TL)",
 
 def _advanced_block(req, positions, returns, port_rets, investments, valid,
                     market_value, hv_pct, prices_try, last_native, fx_now,
-                    rf_daily, backtest, ewma, headline_var, dep_annual):
+                    rf_daily, backtest, ewma, headline_var, dep_annual, pre):
     """Gelismis metrikler. TEK BAGLAM: hv_pct = manset (FHS) VaR yuzdesi,
     tum turev VaR metrikleri (component, likidite) bu bazi kullanir;
     rf_daily = manset Sharpe ile ayni kiyas (CI/PSR onunla tutar)."""
@@ -228,16 +229,12 @@ def _advanced_block(req, positions, returns, port_rets, investments, valid,
     _safe("hrp", lambda: adv.hrp_weights(returns[valid]))
 
     def _real():
-        cpi = dp.fetch_cpi()  # EVDS anahtari yoksa RuntimeError -> None
-        return adv.real_metrics(port_rets, cpi)
+        cpi = pre.get("cpi")            # prefetch (EVDS)
+        return adv.real_metrics(port_rets, cpi) if cpi is not None else None
     _safe("real", _real)
 
-    # Fakat serileri: kur ayristirmasi + stil analizi ayni cekimi paylasir
-    factors_raw = None
-    try:
-        factors_raw = dp.fetch_yahoo_prices(FACTOR_TICKERS)
-    except RuntimeError:
-        pass
+    # Faktor serileri (prefetch): kur ayristirmasi + stil analizi paylasir
+    factors_raw = pre.get("factors")
 
     def _style():
         funds = [p for p in positions if p.source == "tefas"
@@ -254,11 +251,12 @@ def _advanced_block(req, positions, returns, port_rets, investments, valid,
         if "^GSPC" in factors_raw:
             f["S&P 500 (TL)"] = factors_raw["^GSPC"] * fx_s
         f_rets = np.log(f / f.shift(1)).replace([np.inf, -np.inf], np.nan)
-        # nakit faktoru: TLREF gunluk getirisi (yoksa sabit yaklasik)
-        try:
-            cash = np.log(1 + dp.fetch_rf_history("tlref")) / 252
+        # nakit faktoru: TLREF gunluk getirisi (prefetch; yoksa sabit yaklasik)
+        tlref_hist = pre.get("tlref")
+        if tlref_hist is not None:
+            cash = np.log(1 + tlref_hist) / 252
             f_rets["Nakit/Mevduat"] = cash.reindex(f_rets.index).ffill()
-        except RuntimeError:
+        else:
             f_rets["Nakit/Mevduat"] = math.log(1.40) / 252
         result = {}
         for p in funds:
@@ -289,10 +287,7 @@ def _advanced_block(req, positions, returns, port_rets, investments, valid,
     _safe("fx", _fx)
 
     def _liquidity():
-        eq = [p for p in positions if p.name in investments and p.source == "yahoo"
-              and p.ticker != dp.GRAM_GOLD_TICKER
-              and "=" not in p.ticker and "-" not in p.ticker]
-        vols = dp.fetch_yahoo_volumes(tuple(sorted({p.ticker for p in eq}))) if eq else {}
+        vols = pre.get("volumes") or {}     # prefetch
         info = []
         for p in positions:
             if p.name not in investments:
@@ -344,6 +339,45 @@ def _advanced_block(req, positions, returns, port_rets, investments, valid,
     return out
 
 
+def _try(fn, *a):
+    try:
+        return fn(*a)
+    except Exception:
+        return None
+
+
+def _prefetch(req: "AnalyzeRequest") -> dict:
+    """Birbirinden bagimsiz dis veri cekimlerini ES ZAMANLI baslat (I/O-bound,
+    GIL cekimde birakilir). Serial ~7s -> paralel ~en yavas cekim (~2.5s)."""
+    eq = tuple(sorted({p.ticker for p in req.positions
+                       if p.source == "yahoo" and p.ticker != dp.GRAM_GOLD_TICKER
+                       and "=" not in p.ticker and "-" not in p.ticker}))
+    kind = req.risk_free.kind if req.risk_free else None
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        futs = {
+            "factors": ex.submit(_try, dp.fetch_yahoo_prices, FACTOR_TICKERS),
+            "tlref": ex.submit(_try, dp.fetch_rf_history, "tlref"),
+            "cpi": ex.submit(_try, dp.fetch_cpi),
+            "dep_rate": ex.submit(_try, dp.fetch_deposit_rate),
+        }
+        if eq:
+            futs["volumes"] = ex.submit(_try, dp.fetch_yahoo_volumes, eq)
+        if kind == "deposit":
+            futs["rf_bench"] = ex.submit(_try, dp.fetch_rf_history, "deposit")
+        elif kind in ("usd", "eur"):
+            fx_t = ("TRY=X",) if kind == "usd" else ("EURTRY=X",)
+            futs["fx_bench"] = ex.submit(_try, dp.fetch_yahoo_prices, fx_t)
+        prices_fut = ex.submit(dp.build_try_prices, [p.model_dump() for p in req.positions])
+        pre = {k: f.result() for k, f in futs.items()}
+        try:
+            pre["prices"] = prices_fut.result()
+        except RuntimeError as exc:
+            pre["prices_error"] = str(exc)
+    if kind == "tlref":                       # ayni seriyi iki kez cekme
+        pre["rf_bench"] = pre.get("tlref")
+    return pre
+
+
 @app.post("/portfolio/analyze")
 def analyze(req: AnalyzeRequest):
     if not req.positions and not req.bonds:
@@ -351,14 +385,13 @@ def analyze(req: AnalyzeRequest):
 
     fx_now, valuation, failed = 0.0, [], []
     prices_try, last_native = None, {}
+    pre: dict = {}
 
     if req.positions:
-        try:
-            prices_try, fx_now, last_native, failed = dp.build_try_prices(
-                [p.model_dump() for p in req.positions]
-            )
-        except RuntimeError as exc:
-            raise HTTPException(503, f"Veri kaynağı hatası: {exc}")
+        pre = _prefetch(req)                  # tum bagimsiz cekimler paralel
+        if "prices_error" in pre:
+            raise HTTPException(503, f"Veri kaynağı hatası: {pre['prices_error']}")
+        prices_try, fx_now, last_native, failed = pre["prices"]
     else:
         try:
             raw = dp.fetch_yahoo_prices(("TRY=X",))
@@ -403,20 +436,18 @@ def analyze(req: AnalyzeRequest):
                 if req.risk_free.kind == "rate":
                     rf_daily = np.log(1 + req.risk_free.annual_rate) / 252
                 elif req.risk_free.kind in ("deposit", "tlref"):
-                    # Tarihsel faiz serisi: 3-5 yillik Sharpe bugunun degil
-                    # o gunun faiziyle hesaplanir. EVDS yoksa sabit orana dus.
-                    try:
-                        hist = dp.fetch_rf_history(req.risk_free.kind)
-                        rf_daily = np.log(1 + hist) / 252
-                    except RuntimeError:
-                        rf_daily = np.log(1 + req.risk_free.annual_rate) / 252
+                    # Tarihsel faiz serisi (prefetch): 3-5 yillik Sharpe o gunun
+                    # faiziyle. EVDS yoksa sabit orana dus.
+                    hist = pre.get("rf_bench")
+                    rf_daily = (np.log(1 + hist) / 252 if hist is not None
+                                else np.log(1 + req.risk_free.annual_rate) / 252)
                 else:
                     fx_t = "TRY=X" if req.risk_free.kind == "usd" else "EURTRY=X"
-                    try:
-                        raw_fx = dp.fetch_yahoo_prices((fx_t,))
+                    raw_fx = pre.get("fx_bench")
+                    if raw_fx is not None and fx_t in raw_fx.columns:
                         fx_series = raw_fx[fx_t].dropna()
                         rf_daily = np.log(fx_series / fx_series.shift(1)).dropna()
-                    except (RuntimeError, KeyError):
+                    else:
                         rf_daily = None
                 if rf_daily is not None:
                     sharpe = engine.sharpe_multi(port_rets, rf_daily)
@@ -436,11 +467,8 @@ def analyze(req: AnalyzeRequest):
             dep_annual = None
             if req.risk_free is not None and req.risk_free.kind in ("rate", "deposit", "tlref"):
                 dep_annual = req.risk_free.annual_rate
-            else:
-                try:
-                    dep_annual = dp.fetch_deposit_rate()["deposit_net"]
-                except Exception:
-                    dep_annual = None
+            elif pre.get("dep_rate"):
+                dep_annual = pre["dep_rate"]["deposit_net"]
 
             _div = engine.diversification(returns, investments, req.confidence)
             if isinstance(_div, dict):                    # tum bilesenleri FHS bazina olcekle
@@ -475,7 +503,7 @@ def analyze(req: AnalyzeRequest):
             risk["advanced"] = _advanced_block(
                 req, req.positions, returns, port_rets, investments, valid,
                 market_value, hv_pct, prices_try, last_native, fx_now,
-                rf_daily, _bt, _ewma, _headline, dep_annual)
+                rf_daily, _bt, _ewma, _headline, dep_annual, pre)
             try:
                 risk["advanced"]["risk_class"] = adv.srri_class(port_rets)
                 # Skor Sharpe'i CI ile AYNI kaynaktan (tutarlilik): sharpe_ci.sharpe_ann
