@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>if(localStorage.getItem("kt_theme")==="dark")document.documentElement.dataset.theme="dark";</script>
+<title>Sharpe Oranı Nedir? Risk-Ayarlı Getiriyi Anlamak | Kuantile</title>
+<meta name="description" content="Sharpe oranı nedir, nasıl hesaplanır, kaç iyi bir değerdir? Risksiz getiri, risk-ayarlı performans, Sharpe'ın güven aralığı ve Türk yatırımcı için doğru kıyas oranı.">
+<link rel="canonical" href="https://kuantile.com/rehber/sharpe-orani-nedir/">
+<link rel="alternate" hreflang="tr" href="https://kuantile.com/rehber/sharpe-orani-nedir/">
+<link rel="alternate" hreflang="en" href="https://kuantile.com/en/guides/what-is-sharpe-ratio/">
+<link rel="alternate" hreflang="x-default" href="https://kuantile.com/rehber/sharpe-orani-nedir/">
+<link rel="icon" type="image/png" href="/logo.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#ffffff">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8772857624852631" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KJKC9X4CBX"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","G-KJKC9X4CBX");</script>
+<style>
+:root{--ink:#0b0b0b;--ink2:#52514e;--body:#2c2b28;--muted:#898781;--accent:#2a78d6;--accent2:#256abf;--border:#e4e3dd;--border2:#d7d6cf;--page:#f5f5f2;--surface:#fff;--soft:#eaf2fc;--okbg:#e8f4e8;--okink:#006300;--errbg:#fbebeb;--errink:#d03b3b;--shadow:0 1px 6px rgba(25,25,15,.05)}
+:root[data-theme="dark"]{--ink:#fff;--ink2:#c3c2b7;--body:#d6d5cc;--muted:#898781;--accent:#3987e5;--accent2:#5598e7;--border:rgba(255,255,255,.1);--border2:#3d3d39;--page:#0d0d0d;--surface:#1a1a19;--soft:rgba(57,135,229,.16);--okbg:rgba(12,163,12,.14);--okink:#0ca30c;--errbg:rgba(208,59,59,.14);--errink:#e66767;--shadow:0 1px 6px rgba(0,0,0,.4)}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--page);color:var(--ink);font-size:16px;line-height:1.7}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;color:var(--ink);text-decoration:none}
+header nav{margin-left:auto;display:flex;gap:18px;flex-wrap:wrap}
+header nav a{color:var(--ink2);text-decoration:none;font-size:14.5px}
+header nav a:hover{color:var(--accent2)}
+#th{background:none;border:1px solid var(--border2);border-radius:7px;color:var(--ink2);cursor:pointer;padding:5px 9px;line-height:1;margin:0}
+#th:hover{color:var(--accent2);border-color:var(--accent)}
+main{max-width:760px;margin:0 auto;padding:36px 20px 60px}
+article{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px;box-shadow:var(--shadow)}
+h1{font-size:28px;line-height:1.3;margin:0 0 6px;letter-spacing:-.3px}
+h2{font-size:20px;margin:28px 0 8px}
+.meta{color:var(--muted);font-size:13.5px;margin-bottom:20px}
+p{margin:0 0 14px;color:var(--body)}
+ul,ol{color:var(--body)}
+li{margin-bottom:6px}
+a{color:var(--accent2)}
+.cta{display:inline-block;background:var(--accent);color:#fff;padding:11px 20px;border-radius:9px;text-decoration:none;font-weight:600;margin-top:10px}
+.cta:hover{background:var(--accent2)}
+footer{max-width:760px;margin:0 auto;padding:0 20px 40px;color:var(--muted);font-size:13px}
+footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="/"><img src="/logo.png" width="26" height="26" alt="Kuantile logosu">Kuantile</a>
+  <nav><a href="/">Uygulama</a><a href="/rehber/">Rehber</a><a href="/hakkimizda/">Hakkımızda</a><a href="/iletisim/">İletişim</a><a href="/en/guides/what-is-sharpe-ratio/" style="font-weight:700;color:var(--accent2)">EN</a><button id="th" aria-label="Tema">◐</button></nav>
+</header>
+<main>
+<article>
+<h1>Sharpe Oranı Nedir? Risk Başına Getiriyi Ölçmek</h1>
+<p class="meta">Kuantile Rehber · 04.08.2026</p>
+
+<p>İki portföy düşünün: biri yılda %60 kazanmış ama yol boyunca sizi kalp krizinin eşiğine getirmiş; diğeri %45 kazanmış ama neredeyse sarsıntısız. Hangisi daha iyi? Sadece getiriye bakan biri ilkini seçer. Oysa profesyonel yatırımcı asıl soruyu sorar: <b>aldığım risk karşılığında ne kazandım?</b> İşte bu sorunun en yaygın cevabı Sharpe oranıdır.</p>
+
+<h2>Formül ne söyler?</h2>
+<p>Sharpe oranı üç parçadan oluşur: portföyünüzün getirisi, <b>risksiz getiri</b> ve oynaklık. Formül sözle şöyledir: <i>(portföy getirisi − risksiz getiri) ÷ getirinin standart sapması.</i> Pay, riske girerek risksiz alternatifin ne kadar üstüne çıktığınızı — yani "fazladan getiriyi" — ölçer. Payda ise bu getiriyi elde ederken yaşadığınız dalgalanmadır. Sonuç, "her bir birim risk için ne kadar fazladan getiri aldım?" sorusunun sayısal cevabıdır.</p>
+
+<h2>Risksiz getiri neden önemli?</h2>
+<p>Türkiye gibi yüksek faizli bir ortamda bu detay her şeyi değiştirir. Mevduat size risksiz olarak yıllık %45 veriyorsa, %50 kazanan bir portföy aslında riske girerek sadece 5 puan fazla kazanmıştır — üstelik oynaklığıyla birlikte. Sharpe oranı bu kıyası otomatik yapar: risksiz getiriyi çıkardığı için, "bankada dursaydı ne olurdu?" sorusunu her zaman hesaba katar. Kuantile'de bu kıyas oranını mevduat faizi, TLREF ya da kendi girdiğiniz bir oran olarak seçebilirsiniz.</p>
+
+<h2>Kaç iyi bir Sharpe'tır?</h2>
+<p>Kaba bir okuma: 1'in altı zayıf, 1 civarı makul, 2 iyi, 3 ve üzeri mükemmeldir. Ama bu rakamlar bağlamdan kopuk okunmamalıdır. Kısa bir dönemde yüksek Sharpe kolayca yakalanır ve yanıltıcıdır; uzun ve çalkantılı bir dönemde 1'i korumak bile başarıdır. Ayrıca farklı varlık sınıflarının "normal" Sharpe'ı farklıdır. Önemli olan tek bir rakama tapmak değil, onu zaman içinde ve doğru kıyasla izlemektir.</p>
+
+<h2>Sharpe'ın gizli zayıflığı</h2>
+<p>Sharpe oranı tüm oynaklığı ceza olarak sayar — oysa yukarı yönlü dalgalanma istenen bir şeydir. Sürekli küçük kazandıran ama nadiren sert çöken bir strateji (örneğin opsiyon satışı) aldatıcı derecede yüksek Sharpe verebilir; çünkü kuyruk riski günlük oynaklıkta görünmez. Bu yüzden Sharpe'ı tek başına değil, <a href="/rehber/var-nedir/">VaR</a> ve <a href="/rehber/beklenen-kuyruk-kaybi/">Expected Shortfall</a> gibi kuyruk ölçütleriyle birlikte okumak gerekir.</p>
+
+<h2>Sharpe da bir tahmindir</h2>
+<p>Az sayıda gözlemle hesaplanan Sharpe oranının etrafında geniş bir belirsizlik vardır. "Sharpe = 1,8" demek yerine "%95 olasılıkla 0,9 ile 2,7 arasında" demek çok daha dürüsttür. Kuantile bu yüzden Sharpe'ı Lo (2002) standart hatasıyla birlikte sunar ve olasılıksal Sharpe (Probabilistic Sharpe Ratio) ile "bu portföyün gerçek Sharpe'ı sıfırdan büyük müdür?" sorusunu istatistiksel olarak yanıtlar. Ayrıca portföyünüzü 1, 3 ve 5 yıllık pencerelerde ölçerek tek bir dönemin şansına aldanmamanızı sağlar.</p>
+
+<a class="cta" href="/">Portföyünüzün Sharpe oranını görün →</a>
+
+<h2>İlgili yazılar</h2>
+<ul><li><a href="/rehber/var-nedir/">Riske Maruz Değer (VaR) Nedir?</a></li><li><a href="/rehber/beklenen-kuyruk-kaybi/">Beklenen Kuyruk Kaybı (Expected Shortfall) Nedir?</a></li><li><a href="/rehber/gelismis-risk-metrikleri/">Gelişmiş Risk Metrikleri</a></li></ul>
+</article>
+</main>
+<footer>© 2026 Kuantile — Bu sitedeki hiçbir içerik yatırım danışmanlığı değildir.<br><a href="/gizlilik/">Gizlilik Politikası</a> · <a href="/kullanim-sartlari/">Kullanım Şartları</a> · <a href="/hakkimizda/">Hakkımızda</a> · <a href="/iletisim/">İletişim</a> · <a href="/rehber/">Rehber</a></footer>
+<script>
+document.getElementById("th").addEventListener("click", function () {
+  var d = document.documentElement.dataset.theme === "dark";
+  if (d) { delete document.documentElement.dataset.theme; localStorage.setItem("kt_theme", "light"); }
+  else { document.documentElement.dataset.theme = "dark"; localStorage.setItem("kt_theme", "dark"); }
+});
+</script>
+</body>
+</html>

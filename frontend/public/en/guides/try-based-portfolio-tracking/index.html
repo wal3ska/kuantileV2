@@ -76,6 +76,12 @@ button:hover{background:var(--accent2)}
 <p>A VaR computed in dollars misstates the real risk of an investor who lives in lira. Kuantile therefore converts everything — price series, correlations, VaR, stress tests — to TRY before computing anything.</p>
 <h2>How it works in practice</h2>
 <p>Doing this by hand means multiplying two series (price × rate) per asset and aligning lagged fund prices; the spreadsheet soon collapses. In Kuantile you enter your assets once: the current USD/TRY rate is shown on the dashboard, valuation is consolidated automatically, and the evening reports answer "what happened to the total today?" in a single line. The fastest way to break the currency illusion is to leave it no room.</p>
+<h2>Why a common base is essential</h2>
+<p>A local investor's portfolio usually lives in three or four currencies at once: local stocks in the local currency, US stocks and crypto in dollars, some funds in euros. Summing these in their own currencies is adding apples and oranges — it shows neither your true total wealth nor your real risk. For one meaningful question ("how rich am I today and how volatile is that?") all assets must be converted to a <b>single base</b>: the currency you spend, the local one. Kuantile converts every asset at the current rate and sums it there.</p>
+<h2>Folding the FX effect into returns</h2>
+<p>The most important consequence of a local-base view: the local-currency return of a dollar asset includes both the asset's own move and the move in the exchange rate. Even if Apple falls 2% in dollar terms, your position can be up in local terms if the currency lost 3% that day. Kuantile runs its return and risk calculations directly on this local-currency series; so FX is not a separate line item but an inseparable part of each asset's <a href="/en/guides/real-return-fx-liquidity/">real return</a>.</p>
+<h2>Multiple exchanges, different hours</h2>
+<p>Your assets trade in different time zones: the local exchange closes in the afternoon, US markets open in the evening, crypto never stops. This means an "instant" portfolio value is actually a mix of prices taken at different times. Kuantile aligns the data consistently and evaluates it on a common date axis; so correlation and VaR calculations are not distorted by the noise arising from different exchange closing times.</p>
 <a class="cta" href="/">See your portfolio in TRY terms →</a>
 
 <h2>Related articles</h2>

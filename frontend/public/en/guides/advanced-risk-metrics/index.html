@@ -88,6 +88,10 @@ button:hover{background:var(--accent2)}
 
 <h2>How to read the table</h2>
 <p>Five models look at the same portfolio from five angles. If they agree, the regime is calm. EWMA/FHS clearly above historical means the market is hardening; a wide ES-VaR gap means fat tails; a yellow or red backtest means treat all numbers with caution. Disagreement between models is not a flaw — it is a signal.</p>
+<h2>Reading the metrics together</h2>
+<p>No single metric fully describes your portfolio; the power is in reading them together. VaR gives the boundary, <a href="/en/guides/what-is-var/">Expected Shortfall</a> the average loss beyond it; their ratio tells you how fat your tail is. The Sharpe ratio divides return by risk to answer "am I being paid for the risk I take?"; but on its own it penalizes all volatility, even though upside volatility is desirable. Expected maximum drawdown answers "how much would I erode from peak to trough?" and tests your psychological resilience. Seeing this trio together reveals your portfolio's risk personality.</p>
+<h2>When does each metric mislead?</h2>
+<p>Advanced metrics are powerful but bounded. For an asset with a short history (a new crypto, a new fund), every statistic is computed from little data and confidence intervals are wide — which is why Kuantile hides metrics or adds a warning when data is insufficient. Extreme-value methods like EVT model rare events by definition; with only a few years of data the estimate is uncertain. And the Sharpe ratio comes out deceptively high for assets with low volatility but hidden tail risk (e.g. strategies that pay small gains steadily and rarely collapse). A good investor doesn't worship a number; they know which assumption it rests on and when it breaks.</p>
 <a class="cta" href="/">See your portfolio's risk models →</a>
 
 <h2>Related articles</h2>

@@ -3,11 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="description" content="Kuantile — çoklu varlık portföyleri için TL bazlı değerleme, VaR, durasyon ve stres testi terminali." />
+    <meta name="description" content="Kuantile — hisse, kripto, altın, TEFAS fonu ve tahvillerinizi tek ekranda TL bazlı değerleyen; VaR, stres testi, korelasyon, Sharpe ve Kuantile Skoru ile risk analizi yapan ücretsiz portföy terminali." />
+    <meta name="keywords" content="portföy risk analizi, VaR hesaplama, riske maruz değer, stres testi, TEFAS fon analizi, TL bazlı portföy, Sharpe oranı, portföy takip" />
     <link rel="canonical" href="https://kuantile.com/" />
-    <title>Kuantile | Portföy & Risk Terminali</title>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8772857624852631"
-      crossorigin="anonymous"></script>
+    <title>Kuantile | TL Bazlı Portföy & Risk Analizi Terminali</title>
+    <meta property="og:title" content="Kuantile | Portföy & Risk Terminali" />
+    <meta property="og:description" content="Portföyünüzün riske maruz değerini (VaR), kriz senaryolarındaki kaybını ve reel getirisini saniyeler içinde görün." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://kuantile.com/" />
+    <meta property="og:locale" content="tr_TR" />
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-KJKC9X4CBX"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -26,9 +30,149 @@
         window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js"));
       }
     </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Kuantile",
+      "url": "https://kuantile.com/",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Web",
+      "inLanguage": "tr-TR",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "TRY" },
+      "description": "Hisse, kripto, altın, TEFAS fonu ve tahvillerinizi TL bazlı değerleyen; VaR, stres testi ve Kuantile Skoru ile risk analizi yapan ücretsiz portföy terminali."
+    }
+    </script>
+    <style>
+      /* Ön-render (crawler + ilk boya) için kritik stil. React #root'u devralınca
+         bu içerik yerini uygulamaya bırakır; kurallar .ph- ile kapsüllenmiştir. */
+      .ph{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#2c2b28;line-height:1.7;background:#f5f5f2}
+      .ph *{box-sizing:border-box}
+      .ph-head{background:#fff;border-bottom:1px solid #e4e3dd;padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+      .ph-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;color:#0b0b0b;text-decoration:none}
+      .ph-nav{margin-left:auto;display:flex;gap:18px;flex-wrap:wrap}
+      .ph-nav a{color:#52514e;text-decoration:none;font-size:14.5px}
+      .ph-wrap{max-width:960px;margin:0 auto;padding:0 20px}
+      .ph-hero{text-align:center;padding:56px 20px 40px}
+      .ph-hero h1{font-size:34px;line-height:1.25;margin:0 0 14px;color:#0b0b0b;letter-spacing:-.4px}
+      .ph-hero p{font-size:18px;color:#52514e;max-width:680px;margin:0 auto 24px}
+      .ph-cta{display:inline-block;background:#2a78d6;color:#fff;padding:13px 28px;border-radius:10px;text-decoration:none;font-weight:600;font-size:16px}
+      .ph-sec{padding:28px 0}
+      .ph-sec h2{font-size:24px;margin:0 0 14px;color:#0b0b0b}
+      .ph-sec h3{font-size:18px;margin:0 0 6px;color:#0b0b0b}
+      .ph-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+      .ph-card{background:#fff;border:1px solid #e4e3dd;border-radius:12px;padding:20px 22px}
+      .ph-card p{margin:6px 0 0;font-size:14.5px;color:#52514e}
+      .ph-card a{color:#256abf;text-decoration:none;font-weight:600;font-size:16px}
+      .ph-faq{background:#fff;border:1px solid #e4e3dd;border-radius:12px;padding:6px 22px;margin-top:8px}
+      .ph-faq details{border-bottom:1px solid #eee;padding:14px 0}
+      .ph-faq details:last-child{border-bottom:none}
+      .ph-faq summary{font-weight:600;color:#0b0b0b;cursor:pointer;font-size:16px}
+      .ph-faq p{margin:10px 0 2px;color:#52514e;font-size:15px}
+      .ph-foot{max-width:960px;margin:0 auto;padding:30px 20px 50px;color:#898781;font-size:13px}
+      .ph-foot a{color:#898781}
+      @media(prefers-color-scheme:dark){
+        .ph{background:#0d0d0d;color:#d6d5cc}
+        .ph-head{background:#1a1a19;border-color:rgba(255,255,255,.1)}
+        .ph-logo,.ph-hero h1,.ph-sec h2,.ph-sec h3,.ph-faq summary{color:#fff}
+        .ph-card,.ph-faq{background:#1a1a19;border-color:rgba(255,255,255,.1)}
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Statik ön-render içerik: uygulama yüklenmeden önce arama motorları ve
+           JS çalıştırmayan istemciler bu tam sayfayı görür. -->
+      <div class="ph">
+        <header class="ph-head">
+          <a class="ph-logo" href="/"><img src="/logo.png" width="26" height="26" alt="Kuantile logosu" />Kuantile</a>
+          <nav class="ph-nav">
+            <a href="/rehber/">Rehber</a>
+            <a href="/hakkimizda/">Hakkımızda</a>
+            <a href="/iletisim/">İletişim</a>
+            <a href="/en/guides/">EN</a>
+          </nav>
+        </header>
+
+        <section class="ph-hero">
+          <h1>Portföyünüz ne kadar risk taşıyor?</h1>
+          <p>Kuantile; hisse, kripto, altın, TEFAS fonu ve tahvillerinizi tek ekranda <strong>TL bazlı</strong> değerler, riske maruz değerini (VaR) hesaplar, geçmiş kriz senaryolarında ne kadar kaybedeceğinizi gösterir ve portföyünüze 100 üzerinden bir <strong>Kuantile Skoru</strong> verir. Kayıt gerektirmez, ücretsizdir.</p>
+          <a class="ph-cta" href="/">Portföyünüzü analiz edin →</a>
+        </section>
+
+        <div class="ph-wrap">
+          <section class="ph-sec">
+            <h2>Kuantile nedir?</h2>
+            <p>Kuantile, Türkiye'deki bireysel yatırımcılar için tasarlanmış bir <strong>portföy ve risk terminalidir</strong>. Bir yatırımcının farklı borsalara, para birimlerine ve varlık sınıflarına dağılmış birikimini tek bir TL tabanında birleştirir; ardından kurumsal risk masalarında kullanılan ölçütleri — riske maruz değer, beklenen kuyruk kaybı (Expected Shortfall), stres testi, korelasyon ve Sharpe oranı — sizin portföyünüze uygular. Amaç, "bugün ne kadar kazandım?" sorusunun ötesine geçip <strong>"yarın en kötü ihtimalle ne kadar kaybedebilirim ve bu risk nereden geliyor?"</strong> sorusunu yanıtlamaktır.</p>
+          </section>
+
+          <section class="ph-sec">
+            <h2>Neler yapabilirsiniz?</h2>
+            <div class="ph-grid">
+              <div class="ph-card"><h3>TL bazlı değerleme</h3><p>Dolar hissesi, ons altın, kripto ve TEFAS fonunu güncel kurla ortak TL tabanında toplar; kur etkisini getirinin içine dahil eder.</p></div>
+              <div class="ph-card"><h3>Riske Maruz Değer (VaR)</h3><p>%95 ve %99 güven düzeyinde tarihsel ve filtrelenmiş tarihsel (FHS) VaR ile beklenen kuyruk kaybını hesaplar.</p></div>
+              <div class="ph-card"><h3>Kriz stres testleri</h3><p>2008 küresel kriz, 2018 kur şoku, 2020 Covid çöküşü gibi gerçek pencerelerde portföyünüzün ne yaşayacağını gösterir.</p></div>
+              <div class="ph-card"><h3>TEFAS fon analizi</h3><p>Fon kodunu girin; geçmiş fiyat serisini çekip fonun portföyünüze kattığı riski ve stil dağılımını çözümler.</p></div>
+              <div class="ph-card"><h3>Kuantile Skoru & risk sınıfı</h3><p>TEFAS'ın SRRI metodolojisine sadık kalarak portföyü 1–7 risk sınıfına yerleştirir ve 100 üzerinden puanlar.</p></div>
+              <div class="ph-card"><h3>PDF rapor & haftalık e-posta</h3><p>Tüm analizi logolu bir PDF olarak indirin; dilerseniz haftalık özet raporu e-posta ile alın.</p></div>
+            </div>
+          </section>
+
+          <section class="ph-sec">
+            <h2>Nasıl çalışır?</h2>
+            <div class="ph-grid">
+              <div class="ph-card"><h3>1. Varlıklarınızı ekleyin</h3><p>Arama kutusundan hisse, kripto, emtia veya TEFAS fonu seçin.</p></div>
+              <div class="ph-card"><h3>2. Adet ve maliyet girin</h3><p>Kaç adet tuttuğunuzu yazın; alış maliyetini bilmiyorsanız boş bırakın.</p></div>
+              <div class="ph-card"><h3>3. Analiz Et'e basın</h3><p>Değerleme, risk ve kriz senaryoları saniyeler içinde hazırlanır.</p></div>
+            </div>
+          </section>
+
+          <section class="ph-sec">
+            <h2>Metodoloji</h2>
+            <p>Kuantile'in risk motoru şeffaflık ilkesiyle kurulmuştur. VaR için <strong>tarihsel simülasyon</strong> ve oynaklığa duyarlı <strong>filtrelenmiş tarihsel simülasyon (FHS, EWMA λ=0,94)</strong> yöntemlerini; kuyruk riski için <strong>Expected Shortfall</strong> ve uç değer teorisini (GPD); risk dağılımı için <strong>bileşen VaR</strong> (Euler ayrıştırması, Ledoit-Wolf kovaryansı) kullanır. Getiriler TL bazında ve kur etkisi dahil hesaplanır; enflasyondan arındırılmış <strong>reel getiri</strong> TÜİK TÜFE serisiyle, risksiz getiri ise TCMB mevduat faizi ve TLREF ile beslenir. Tüm yöntemler <a href="/rehber/">Rehber</a> bölümünde ayrıntılı açıklanır.</p>
+          </section>
+
+          <section class="ph-sec">
+            <h2>Yatırımcı rehberi</h2>
+            <p>Risk kavramlarını sıfırdan, örneklerle anlatan ücretsiz yazılar:</p>
+            <div class="ph-grid">
+              <div class="ph-card"><a href="/rehber/var-nedir/">Riske Maruz Değer (VaR) Nedir?</a><p>%99 güven düzeyi ne demek, tarihsel simülasyon nasıl çalışır?</p></div>
+              <div class="ph-card"><a href="/rehber/stres-testi/">Portföy Stres Testi</a><p>2008'i bugünkü portföyünüzle yaşasaydınız ne olurdu?</p></div>
+              <div class="ph-card"><a href="/rehber/cesitlendirme-ve-korelasyon/">Çeşitlendirme ve Korelasyon</a><p>Yumurtalar gerçekten farklı sepetlerde mi?</p></div>
+              <div class="ph-card"><a href="/rehber/gelismis-risk-metrikleri/">Gelişmiş Risk Metrikleri</a><p>Expected Shortfall, EVT, bileşen VaR ve dahası.</p></div>
+              <div class="ph-card"><a href="/rehber/tefas-fon-analizi/">TEFAS Fon Analizi</a><p>Fonlarınızın gerçek riskini ve stilini görün.</p></div>
+              <div class="ph-card"><a href="/rehber/reel-getiri-kur-likidite/">Reel Getiri, Kur ve Likidite</a><p>Enflasyon düşüldüğünde portföyünüz gerçekten kazandı mı?</p></div>
+              <div class="ph-card"><a href="/rehber/tahvil-durasyonu-dv01/">Tahvil Durasyonu ve DV01</a><p>Faiz riskinizi tek sayıyla ölçün.</p></div>
+              <div class="ph-card"><a href="/rehber/gram-altin-mi-ons-mu/">Gram Altın mı, Ons Altın mı?</a><p>Kur ve ons ayrışması getirinizi nasıl etkiler?</p></div>
+              <div class="ph-card"><a href="/rehber/">Tüm rehber yazıları →</a><p>13+ ücretsiz yatırımcı rehberi.</p></div>
+            </div>
+          </section>
+
+          <section class="ph-sec">
+            <h2>Sık sorulan sorular</h2>
+            <div class="ph-faq">
+              <details><summary>Kuantile ücretsiz mi?</summary><p>Evet. Portföy analizi, VaR, stres testi, TEFAS fon çözümlemesi ve PDF rapor dahil tüm özellikler ücretsizdir. Hesap açmadan da demo portföyle deneyebilirsiniz.</p></details>
+              <details><summary>Verilerim güvende mi?</summary><p>Portföyünüzü kaydetmezseniz hiçbir veri sunucuda tutulmaz; analiz tarayıcınızdan gelen anlık istekle yapılır. Kayıtlı portföyler yalnızca hesabınıza bağlıdır ve üçüncü taraflarla paylaşılmaz. Ayrıntılar <a href="/gizlilik/">Gizlilik Politikası</a> sayfasındadır.</p></details>
+              <details><summary>Hangi varlıkları ekleyebilirim?</summary><p>BIST hisseleri, ABD hisseleri, kripto paralar, gram/ons altın ve diğer emtialar, TEFAS yatırım fonları ve elle girilen tahviller. Tümü ortak TL tabanında değerlenir.</p></details>
+              <details><summary>VaR ne işe yarar?</summary><p>VaR, "normal piyasa koşullarında belirli bir olasılıkla en fazla ne kadar kaybedebilirsiniz" sorusunu yanıtlar. Örneğin "%99 güven düzeyinde 1 günlük VaR = 12.000 TL", 100 günün 99'unda günlük kaybınızın 12.000 TL'yi aşmayacağı anlamına gelir. Ayrıntı için <a href="/rehber/var-nedir/">VaR nedir</a> yazısına bakın.</p></details>
+              <details><summary>Kuantile yatırım tavsiyesi verir mi?</summary><p>Hayır. Kuantile bir ölçüm ve analiz aracıdır; hiçbir içeriği yatırım danışmanlığı veya alım-satım tavsiyesi değildir. Kararlarınızı kendi araştırmanız ve gerekiyorsa lisanslı bir danışmanla verin.</p></details>
+              <details><summary>TEFAS fonlarını nasıl analiz ediyor?</summary><p>Fon kodunu girdiğinizde geçmiş fiyat serisi TEFAS'tan çekilir; fonun günlük getirileri portföyünüzün risk hesabına gerçek veriyle katılır ve fonun stil dağılımı çözümlenir.</p></details>
+            </div>
+          </section>
+        </div>
+
+        <footer class="ph-foot">
+          <nav>
+            <a href="/hakkimizda/">Hakkımızda</a> ·
+            <a href="/rehber/">Rehber</a> ·
+            <a href="/gizlilik/">Gizlilik</a> ·
+            <a href="/kullanim-sartlari/">Kullanım Şartları</a> ·
+            <a href="/iletisim/">İletişim</a>
+          </nav>
+          <p>© 2026 Kuantile — Bu sitedeki hiçbir içerik yatırım danışmanlığı değildir.</p>
+        </footer>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

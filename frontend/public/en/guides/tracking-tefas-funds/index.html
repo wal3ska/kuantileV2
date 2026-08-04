@@ -77,6 +77,12 @@ button:hover{background:var(--accent2)}
 <p>Type the fund code (e.g. AFT, TCD) into "Add TEFAS fund"; price history is pulled from TEFAS, the fund is valued on the same TRY basis as everything else, and it enters VaR and stress tests. Two caveats: TEFAS data reaches back at most ~5 years, so funds may appear "not covered" in older scenarios like 2008; and a young fund's short history makes historical percentile statistics less meaningful.</p>
 <h2>Don't dismiss the fees</h2>
 <p>Total expense ratios run between 2% and 3.5% a year; over a decade that difference hands a serious slice of your return to the manager. Between two similar funds, picking the cheaper one is usually the most reliable "alpha" available.</p>
+<h2>Fund price or fund return?</h2>
+<p>When measuring the risk of a fund, the critical point is to account for distributed returns too. A fund's unit price can look flat while the fund is actually gaining, or vice versa. Kuantile uses the fund's historical <b>total return</b> series — measuring the price change correctly so the fund's true daily return enters your portfolio's risk calculation. The fund is then valued in the same consistent framework as your other assets like stocks or gold.</p>
+<h2>How does style analysis work?</h2>
+<p>A fund's name doesn't fully tell you what it does. A "variable fund" may actually hold mostly equities; a "balanced fund" may sit largely in deposits. Kuantile's style analysis looks at the fund's <b>return behavior</b> to decompose it into core risk factors — equity, FX, gold and rates — answering "what does this fund's price movement resemble most?" statistically. This relies on the fund's real risk fingerprint, not the prospectus label.</p>
+<h2>Nested risk and hidden exposure</h2>
+<p>Funds can hold other funds, derivatives or FX positions. So "I bought three different funds, I'm diversified" can be misleading: all three may be exposed to the same local equities or the same currency bet. Kuantile combines funds not one by one but within the portfolio's <a href="/en/guides/risk-attribution-concentration/">component VaR</a>, revealing the true overlap — so you see the hidden concentration behind paper diversity.</p>
 <a class="cta" href="/">Add your funds to your portfolio →</a>
 
 <h2>Related articles</h2>

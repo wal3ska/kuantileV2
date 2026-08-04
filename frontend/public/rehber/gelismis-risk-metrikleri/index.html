@@ -89,6 +89,10 @@ button:hover{background:var(--accent2)}
 
 <h2>Tabloyu nasıl okumalı?</h2>
 <p>Beş model aynı portföye beş farklı açıdan bakar. Hepsi birbirine yakınsa rejim sakin demektir. EWMA/FHS tarihselin belirgin üzerindeyse piyasa sertleşiyor; ES ile VaR arası açıksa kuyruk kalın; backtest sarı-kırmızıysa rakamlara ihtiyatla yaklaşın. Modellerin uyuşmazlığı bir kusur değil, sinyaldir.</p>
+<h2>Metrikleri birlikte okumak</h2>
+<p>Hiçbir tek metrik portföyünüzü tam anlatmaz; güç, onları birlikte okumaktadır. VaR size sınırı, <a href="/rehber/var-nedir/">Expected Shortfall</a> sınırın ötesindeki ortalama kaybı verir; ikisinin oranı kuyruğunuzun ne kadar şişman olduğunu söyler. Sharpe oranı getiriyi riske bölerek "aldığım risk karşılığını alıyor muyum?" sorusunu yanıtlar; ama tek başına oynaklığı ceza olarak sayar, oysa yukarı yönlü oynaklık istenen bir şeydir. Beklenen maksimum düşüş (drawdown) ise "en tepeden en dibe ne kadar erirdim?" sorusunun cevabıdır ve psikolojik dayanıklılığınızı test eder. Bu üçlüyü birlikte gördüğünüzde portföyünüzün risk kişiliği ortaya çıkar.</p>
+<h2>Hangi metrik ne zaman yanıltır?</h2>
+<p>Gelişmiş metrikler güçlüdür ama sınırları vardır. Kısa geçmişi olan bir varlıkta (yeni bir kripto, yeni bir fon) tüm istatistikler az veriyle hesaplanır ve güven aralıkları geniştir — Kuantile bu yüzden yetersiz veride metrikleri gizler veya uyarı koyar. EVT gibi uç değer yöntemleri, tanımı gereği nadir olayları modeller; birkaç yıllık veride tahmin belirsizdir. Sharpe oranı ise düşük oynaklıklı ama gizli kuyruk riski taşıyan varlıklarda (örneğin sürekli küçük kazandıran ama nadiren çöken stratejiler) aldatıcı derecede yüksek çıkar. İyi yatırımcı bir rakama tapmaz; onun hangi varsayıma dayandığını ve ne zaman kırıldığını bilir.</p>
 <a class="cta" href="/">Portföyünüzün risk modellerini görün →</a>
 
 <h2>İlgili yazılar</h2>

@@ -85,6 +85,12 @@ button:hover{background:var(--accent2)}
 
 <h2>HRP: allocation without inverting the covariance matrix</h2>
 <p>Classical mean-variance optimization inverts the covariance matrix; when the matrix is noisy (and with 250 observations and 30 assets it always is), the output is extreme, fragile weights. López de Prado's <b>Hierarchical Risk Parity</b> never inverts: it clusters assets by correlation distance, then splits the risk budget recursively down the cluster tree. The HRP weights Kuantile shows are a <b>reference frame</b>: large gaps between them and your current weights reveal where you are taking deliberate bets — or concentrating without noticing. A suggestion, not advice.</p>
+<h2>Weight ≠ risk contribution</h2>
+<p>Your portfolio pie shows how many dollars you hold in an asset; it does not show how much that asset contributes to <b>risk</b>. A volatile asset can produce a large share of risk even at a small weight. Component VaR makes exactly this distinction: it measures each asset's contribution to total portfolio VaR, accounting for correlations. Summed together it equals the entire portfolio VaR — a true breakdown of your risk budget.</p>
+<h2>How to read component VaR</h2>
+<p>Kuantile computes this with an Euler decomposition and a noise-reducing Ledoit-Wolf covariance estimate. If an asset's risk contribution is markedly larger than its weight, that position is your portfolio's "risk engine"; if smaller, it is providing diversification; it can even be negative — a buffer that lowers overall risk (often gold or negatively correlated assets). This table is a direct answer to "where do I cut to reduce my risk the most?"</p>
+<h2>Measuring concentration</h2>
+<p>Concentration is risk piling into a few positions, and it is the hidden enemy of diversification. Even a 20-asset portfolio is concentrated if 70% of its risk comes from two positions. That means one asset's bad day can drag the whole portfolio down. Kuantile makes this concentration visible by looking at the distribution of risk contributions; experienced investors look not at the count but at how evenly the <a href="/en/guides/diversification-and-correlation/">risk is spread</a>.</p>
 <a class="cta" href="/">See where your risk comes from →</a>
 
 <h2>Related articles</h2>

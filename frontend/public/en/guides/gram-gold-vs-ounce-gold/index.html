@@ -77,6 +77,12 @@ button:hover{background:var(--accent2)}
 </ul>
 <h2>How Kuantile prices gram gold</h2>
 <p>Since no single long-history gram-gold series exists, Kuantile derives it transparently: global ounce price (GC=F) × USD/TRY ÷ 31.1035. That yields not just a current price but a consistent <b>full historical series</b> feeding VaR and stress tests. Your jeweller's quote may differ by a few lira due to workmanship and spread; what matters for analysis is the series' dynamics, not the shop margin.</p>
+<h2>Gram gold = ounce × USD/local rate</h2>
+<p>The local-currency price of gram gold is driven by two independent engines: the <b>dollar price of an ounce of gold</b> and the <b>USD/local exchange rate</b>. The formula is simple: gram price ≈ (ounce price × USD/local) ÷ 31.1035. This means gram gold is two separate bets at once. If the local currency weakens, gram gold rises even if the ounce is flat; even if the ounce falls, gram gold can still gain if the rate climbs enough. This dual structure makes gram gold both a commodity and an implicit <b>currency position</b> for the local investor.</p>
+<h2>How much of your return is FX, how much is gold?</h2>
+<p>This distinction is critical because most investors say "gold paid off" when they are really measuring the local currency's depreciation. Did you actually grow richer, or just chase a melting currency? Kuantile decomposes your return into ounce and FX components and separately shows the inflation-adjusted <a href="/en/guides/real-return-fx-liquidity/">real return</a>. So you can see whether the protection gram gold adds is genuine or a nominal illusion.</p>
+<h2>Physical, fund, or gram account?</h2>
+<p>The cost of reaching the same gold exposure varies widely. Physical gold and jewelry carry a wide bid-ask <b>spread</b> and craftsmanship markup; on small amounts this spread can eat a large part of your return. Bank gram accounts are liquid but depend on the bank. Gold funds are a low-cost, divisible alternative. In Kuantile you can enter your gold exposure either as gram gold or a <a href="/en/guides/tracking-tefas-funds/">gold fund</a> and compare its risk contribution in the same framework.</p>
 <a class="cta" href="/">Add gram gold to your portfolio →</a>
 
 <h2>Related articles</h2>

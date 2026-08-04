@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>if(localStorage.getItem("kt_theme")==="dark")document.documentElement.dataset.theme="dark";</script>
+<title>What Is Expected Shortfall (ES / CVaR)? Beyond VaR | Kuantile</title>
+<meta name="description" content="What is Expected Shortfall (ES / CVaR) and how does it differ from VaR? The average loss in the worst scenarios, Basel's shift from VaR to ES, and what the ES/VaR ratio means.">
+<link rel="canonical" href="https://kuantile.com/en/guides/expected-shortfall-cvar/">
+<link rel="alternate" hreflang="en" href="https://kuantile.com/en/guides/expected-shortfall-cvar/">
+<link rel="alternate" hreflang="tr" href="https://kuantile.com/rehber/beklenen-kuyruk-kaybi/">
+<link rel="alternate" hreflang="x-default" href="https://kuantile.com/en/guides/expected-shortfall-cvar/">
+<link rel="icon" type="image/png" href="/logo.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#ffffff">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8772857624852631" crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KJKC9X4CBX"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","G-KJKC9X4CBX");</script>
+<style>
+:root{--ink:#0b0b0b;--ink2:#52514e;--body:#2c2b28;--muted:#898781;--accent:#2a78d6;--accent2:#256abf;--border:#e4e3dd;--border2:#d7d6cf;--page:#f5f5f2;--surface:#fff;--soft:#eaf2fc;--okbg:#e8f4e8;--okink:#006300;--errbg:#fbebeb;--errink:#d03b3b;--shadow:0 1px 6px rgba(25,25,15,.05)}
+:root[data-theme="dark"]{--ink:#fff;--ink2:#c3c2b7;--body:#d6d5cc;--muted:#898781;--accent:#3987e5;--accent2:#5598e7;--border:rgba(255,255,255,.1);--border2:#3d3d39;--page:#0d0d0d;--surface:#1a1a19;--soft:rgba(57,135,229,.16);--okbg:rgba(12,163,12,.14);--okink:#0ca30c;--errbg:rgba(208,59,59,.14);--errink:#e66767;--shadow:0 1px 6px rgba(0,0,0,.4)}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--page);color:var(--ink);font-size:16px;line-height:1.7}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;color:var(--ink);text-decoration:none}
+header nav{margin-left:auto;display:flex;gap:18px;flex-wrap:wrap}
+header nav a{color:var(--ink2);text-decoration:none;font-size:14.5px}
+header nav a:hover{color:var(--accent2)}
+#th{background:none;border:1px solid var(--border2);border-radius:7px;color:var(--ink2);cursor:pointer;padding:5px 9px;line-height:1;margin:0}
+#th:hover{color:var(--accent2);border-color:var(--accent)}
+main{max-width:760px;margin:0 auto;padding:36px 20px 60px}
+article{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px;box-shadow:var(--shadow)}
+h1{font-size:28px;line-height:1.3;margin:0 0 6px;letter-spacing:-.3px}
+h2{font-size:20px;margin:28px 0 8px}
+.meta{color:var(--muted);font-size:13.5px;margin-bottom:20px}
+p{margin:0 0 14px;color:var(--body)}
+ul,ol{color:var(--body)}
+li{margin-bottom:6px}
+a{color:var(--accent2)}
+.cta{display:inline-block;background:var(--accent);color:#fff;padding:11px 20px;border-radius:9px;text-decoration:none;font-weight:600;margin-top:10px}
+.cta:hover{background:var(--accent2)}
+footer{max-width:760px;margin:0 auto;padding:0 20px 40px;color:var(--muted);font-size:13px}
+footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="/"><img src="/logo.png" width="26" height="26" alt="Kuantile logo">Kuantile</a>
+  <nav><a href="/">App</a><a href="/en/guides/">Guides</a><a href="/en/about/">About</a><a href="/en/contact/">Contact</a><a href="/rehber/beklenen-kuyruk-kaybi/" style="font-weight:700;color:var(--accent2)">TR</a><button id="th" aria-label="Theme">◐</button></nav>
+</header>
+<main>
+<article>
+<h1>What Is Expected Shortfall (Beyond VaR)?</h1>
+<p class="meta">Kuantile Guide · 2026-08-04</p>
+
+<p><a href="/en/guides/what-is-var/">VaR</a> draws you a line: "with 99% confidence your daily loss won't exceed 12,000." But what happens when that bad 1% day arrives? VaR says nothing about what lies beyond the line. The loss could be 12,100 or 90,000. The measure that fills this blind spot is <b>Expected Shortfall (ES)</b> — also known in the literature as CVaR (Conditional VaR).</p>
+
+<h2>What ES says in one sentence</h2>
+<p>Expected Shortfall answers: <b>"In the worst 1% of days, how much do I lose on average?"</b> While VaR only shows where the tail begins, ES averages the entire tail. That is why ES is always equal to or greater than VaR. For example, if your VaR is 12,000 and your ES is 20,000: on bad days you typically lose far beyond the line, an average of 20,000.</p>
+
+<h2>Why VaR isn't enough</h2>
+<p>VaR has two major flaws. First, it hides the magnitude of disaster — it gives only the "threshold." Second, it is not a mathematically "coherent" risk measure: in some cases combining two portfolios can increase VaR, even though diversification should reduce risk. ES solves both: it measures the depth of the tail, and it satisfies <b>subadditivity</b> — it always rewards diversification. That is why ES is considered theoretically more robust.</p>
+
+<h2>Why did Basel switch to ES?</h2>
+<p>The lesson from the 2008 crisis was clear: banks were meeting their VaR limits, yet losses beyond the limit led to systemic disaster. So the Basel Committee (through the FRTB rules) required banks to compute market-risk capital using <b>97.5% Expected Shortfall</b> instead of 99% VaR. In short, the world's largest risk regulator said, "you cannot ignore what lies beyond the tail." Kuantile brings this modern standard to the individual investor's portfolio.</p>
+
+<h2>The ES/VaR ratio: how fat is your tail?</h2>
+<p>Dividing ES by VaR tells you something valuable about your portfolio. A ratio near 1 means your tail is "thin" — bad days cluster just beyond the line. A large ratio (say 1.7) means your tail is "fat" — you are exposed to rare but very severe losses. High-kurtosis assets like crypto raise this ratio. Kuantile shows both figures side by side; this ratio is the intuitive answer to "how far beyond the line is my worst case?"</p>
+
+<h2>How Kuantile computes ES</h2>
+<p>Kuantile computes ES via volatility-aware <b>filtered historical simulation (FHS)</b>: past returns are scaled to today's volatility, and the average of the worst slice is multiplied by current market stress. So the ES figure, like VaR, is tuned to "today's temperature" — it rises when markets are tense and falls when they calm. The deepest part of the tail is also modeled separately with extreme value theory (GPD), because historical data may not adequately represent the rarest events.</p>
+
+<a class="cta" href="/">See your portfolio's Expected Shortfall →</a>
+
+<h2>Related guides</h2>
+<ul><li><a href="/en/guides/what-is-var/">What Is Value at Risk (VaR)?</a></li><li><a href="/en/guides/advanced-risk-metrics/">Advanced Risk Metrics</a></li><li><a href="/en/guides/portfolio-stress-testing/">Portfolio Stress Testing</a></li></ul>
+</article>
+</main>
+<footer>© 2026 Kuantile — None of the content on this site is investment advice.<br><a href="/en/privacy/">Privacy</a> · <a href="/en/terms/">Terms</a> · <a href="/en/about/">About</a> · <a href="/en/contact/">Contact</a> · <a href="/en/guides/">Guides</a></footer>
+<script>
+document.getElementById("th").addEventListener("click", function () {
+  var d = document.documentElement.dataset.theme === "dark";
+  if (d) { delete document.documentElement.dataset.theme; localStorage.setItem("kt_theme", "light"); }
+  else { document.documentElement.dataset.theme = "dark"; localStorage.setItem("kt_theme", "dark"); }
+});
+</script>
+</body>
+</html>

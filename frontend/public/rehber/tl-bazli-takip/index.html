@@ -76,6 +76,12 @@ button:hover{background:var(--accent2)}
 <p>Dolar bazlı hesaplanmış bir VaR, TL bazlı yaşayan bir yatırımcının gerçek riskini olduğundan farklı gösterir. Kuantile bu yüzden her şeyi — fiyat serilerini, korelasyonları, VaR'ı, stres testlerini — baştan TL'ye çevirip öyle hesaplar.</p>
 <h2>Pratikte nasıl yapılır?</h2>
 <p>Elle yapmaya kalkarsanız her varlık için iki seri (fiyat + kur) çarpmanız, fonlarda gecikmeli fiyatları hizalamanız gerekir; hesap tablosu kısa sürede çığırından çıkar. Kuantile'de varlıklarınızı bir kez girersiniz; USD/TRY güncel kuru panoda ayrıca gösterilir, tüm değerleme otomatik TL'ye konsolide edilir ve akşam raporları "bugün toplamda ne oldu?" sorusunu tek satırda cevaplar. Kur illüzyonunu kırmanın en kestirme yolu, ona hiç yer bırakmamaktır.</p>
+<h2>Neden ortak bir taban şart?</h2>
+<p>Bir Türk yatırımcının portföyü genellikle üç-dört para biriminde birden yaşar: BIST hisseleri TL, ABD hisseleri ve kripto dolar, bazı fonlar euro cinsinden. Bunları kendi para birimlerinde toplamak elmayla armudu toplamaktır — ne toplam servetinizi ne de gerçek riskinizi doğru gösterir. Anlamlı tek bir soru için ("bugün ne kadar zenginim ve bu ne kadar oynak?") tüm varlıkların <b>tek bir tabana</b>, yani harcadığınız para birimi olan TL'ye çevrilmesi gerekir. Kuantile her varlığı güncel kurla TL'ye çevirir ve öyle toplar.</p>
+<h2>Kur etkisini getiriye katmak</h2>
+<p>TL bazında bakmanın en önemli sonucu şudur: bir dolar varlığının TL getirisi, hem varlığın kendi hareketini hem de USD/TRY kurunun hareketini içerir. Apple hissesi dolar bazında %2 düşse bile, TL o gün %3 değer kaybettiyse pozisyonunuz TL olarak kazançta olabilir. Kuantile getiri ve risk hesaplarını doğrudan bu TL serisi üzerinde yapar; böylece kur, ayrı bir kalem değil, her varlığın <a href="/rehber/reel-getiri-kur-likidite/">gerçek getirisinin</a> ayrılmaz parçası olarak hesaba girer.</p>
+<h2>Çoklu borsa, farklı saatler</h2>
+<p>Varlıklarınız farklı saat dilimlerinde işlem görür: BIST öğleden sonra kapanır, ABD borsaları akşam açılır, kripto hiç durmaz. Bu, "anlık" bir portföy değerinin aslında farklı zamanlardan alınmış fiyatların bir karışımı olduğu anlamına gelir. Kuantile veriyi tutarlı biçimde hizalayıp ortak bir tarih ekseninde değerlendirir; böylece korelasyon ve VaR hesapları, farklı borsaların kapanış zamanlarından doğan gürültüyle bozulmaz.</p>
 <a class="cta" href="/">Portföyünüzü TL bazında görün →</a>
 
 <h2>İlgili yazılar</h2>

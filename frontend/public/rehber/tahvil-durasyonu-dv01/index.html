@@ -76,6 +76,12 @@ button:hover{background:var(--accent2)}
 </ul>
 <h2>Türkiye pratiği: yüksek faizin gizli konforu</h2>
 <p>Faizlerin %40'lar civarında olduğu bir ortamda aynı vadenin durasyonu, faizin %4 olduğu ortamdakinden belirgin kısadır (iskonto etkisi). Yani yüksek faiz ortamı, tahvil fiyatının faize duyarlılığını bir miktar yumuşatır — ama 500 baz puanlık şokların da o ortamda daha olası olduğunu unutmayın. Kuantile'e tahvilinizin fiyatını, kuponunu ve YTM'sini girin; makul fiyatı, durasyonu ve şok tablosunu birlikte görün. Girdiğiniz YTM ile hesaplanan "makul fiyat" piyasa fiyatından belirgin sapıyorsa, ya YTM'yi yanlış girmişsinizdir ya da piyasa size bir şey söylüyordur.</p>
+<h2>Durasyon ile vade aynı şey değil</h2>
+<p>Sık karıştırılır ama fark önemlidir. <b>Vade</b>, tahvilin ne zaman biteceğidir; <b>durasyon</b> ise nakit akışlarının ağırlıklı ortalama geri dönüş süresidir ve aynı zamanda faize duyarlılığın ölçüsüdür. Kuponlu bir tahvilin durasyonu vadesinden her zaman kısadır, çünkü ara kupon ödemeleri paranızın bir kısmını erken geri verir. Kupon ne kadar yüksekse durasyon o kadar kısalır — yani yüksek kuponlu tahvil, aynı vadeli sıfır kuponluya göre faiz değişimine daha az duyarlıdır.</p>
+<h2>DV01: bir örnek</h2>
+<p>DV01 (dollar value of a basis point), faizin 1 baz puan (%0,01) değişmesinin tahvil fiyatına TL cinsinden etkisidir. Diyelim durasyonu 4 olan, 100.000 TL nominal bir tahviliniz var. Faizler 1 puan (100 baz puan) yükselirse fiyat yaklaşık %4, yani ~4.000 TL düşer; DV01 ise bunun 1 baz puanlık karşılığı, ~40 TL'dir. Bu tek sayı, "faiz çeyrek puan artarsa cebimden ne çıkar?" sorusunu anında yanıtlar ve farklı tahvilleri ortak bir risk diliyle karşılaştırmanızı sağlar.</p>
+<h2>Konveksite: durasyonun kör noktası</h2>
+<p>Durasyon, fiyat-faiz ilişkisini bir doğru gibi varsayar; oysa ilişki eğridir. Büyük faiz hareketlerinde durasyon tahmini sapar — işte bu eğriliği <b>konveksite</b> ölçer. Konveksite yatırımcının lehinedir: faiz düşerse fiyat, durasyonun öngördüğünden biraz fazla artar; yükselirse öngörülenden biraz az düşer. Küçük hareketlerde durasyon yeterlidir; ama sert faiz şoklarını değerlendirirken konveksiteyi de hesaba katmak gerekir. Portföyünüzün faiz riskini <a href="/rehber/stres-testi/">stres testinde</a> gerçek kriz pencereleriyle görebilirsiniz.</p>
 <a class="cta" href="/">Tahvilinizin durasyonunu hesaplayın →</a>
 
 <h2>İlgili yazılar</h2>

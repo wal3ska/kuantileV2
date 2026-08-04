@@ -76,6 +76,12 @@ button:hover{background:var(--accent2)}
 </ul>
 <h2>The Turkish context: high yields' hidden comfort</h2>
 <p>When yields sit around 40%, a given maturity has noticeably shorter duration than in a 4% world (the discounting effect). High-rate environments thus soften price sensitivity somewhat — but remember that 500 bp shocks are also far more likely in such environments. Enter your bond's price, coupon and YTM in Kuantile to see its fair price, duration and shock table together. If the computed fair price deviates sharply from the market price, either your YTM input is off — or the market is telling you something.</p>
+<h2>Duration is not maturity</h2>
+<p>They are often confused, but the difference matters. <b>Maturity</b> is when the bond ends; <b>duration</b> is the weighted-average time to receive the cash flows, and it is also the measure of sensitivity to interest rates. A coupon bond's duration is always shorter than its maturity, because the interim coupon payments return part of your money early. The higher the coupon, the shorter the duration — so a high-coupon bond is less sensitive to a rate change than a zero-coupon bond of the same maturity.</p>
+<h2>DV01: an example</h2>
+<p>DV01 (dollar value of a basis point) is the effect on a bond's price, in currency terms, of a 1 basis point (0.01%) change in yield. Say you hold a bond with duration 4 and a nominal of 100,000. If rates rise 1 point (100 basis points), the price falls roughly 4%, i.e. ~4,000; DV01 is the 1-basis-point equivalent of that, ~40. This single number instantly answers "if the rate rises a quarter point, what comes out of my pocket?" and lets you compare different bonds in a common risk language.</p>
+<h2>Convexity: duration's blind spot</h2>
+<p>Duration assumes the price-yield relationship is a straight line; in reality the relationship is curved. <b>Convexity</b> measures this curvature — and it works in the investor's favor: if rates fall, the price rises a bit more than duration predicts; if they rise, it falls a bit less. For small moves, duration is enough; but when assessing sharp rate shocks you should account for convexity too. You can see your portfolio's interest-rate risk with real crisis windows in the <a href="/en/guides/portfolio-stress-testing/">stress test</a>.</p>
 <a class="cta" href="/">Compute your bond's duration →</a>
 
 <h2>Related articles</h2>

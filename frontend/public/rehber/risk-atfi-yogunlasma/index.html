@@ -85,6 +85,12 @@ button:hover{background:var(--accent2)}
 
 <h2>HRP: kovaryansı tersine çevirmeden dağılım</h2>
 <p>Klasik ortalama-varyans optimizasyonu kovaryans matrisinin tersini alır; matris gürültülüyse (ki 250 gözlemle 30 varlıkta hep öyledir) çıktı uç ve kırılgan ağırlıklardır. López de Prado'nun <b>Hierarchical Risk Parity</b> yöntemi tersini almaz: varlıkları korelasyon uzaklığına göre kümeler, sonra risk bütçesini küme ağacı üzerinden ikiye böle böle dağıtır. Kuantile'in gösterdiği HRP ağırlıkları bir <b>kıyas çerçevesidir</b>: mevcut ağırlıklarınızla arasındaki büyük farklar, nerede bilinçli bahis aldığınızı (veya farkında olmadan yoğunlaştığınızı) gösterir. Öneridir, tavsiye değildir.</p>
+<h2>Ağırlık ≠ risk katkısı</h2>
+<p>Portföy pastanız bir varlığın parada kaç TL tuttuğunuzu gösterir; ama o varlığın <b>riske</b> ne kadar katkı yaptığını göstermez. Oynak bir varlık, küçük bir ağırlıkla bile riskin büyük kısmını üretebilir. Bileşen VaR (component VaR) tam da bu ayrımı yapar: her varlığın portföyün toplam VaR'ına kattığı payı, korelasyonları da hesaba katarak ölçer. Toplandığında portföy VaR'ının tamamını verir — yani risk bütçenizin gerçek dökümüdür.</p>
+<h2>Bileşen VaR nasıl okunur?</h2>
+<p>Kuantile bunu Euler ayrıştırmasıyla ve gürültüyü azaltan Ledoit-Wolf kovaryans tahminiyle hesaplar. Bir varlığın risk katkısı ağırlığından belirgin biçimde büyükse, o pozisyon portföyünüzün "risk motorudur"; küçükse çeşitlendirme sağlıyordur; hatta negatif olabilir — yani portföyün genel riskini düşüren bir tampon görevi görüyordur (çoğu zaman altın veya ters korelasyonlu varlıklar). Bu tablo, "nereyi kısarsam riskim en çok azalır?" sorusunun doğrudan cevabıdır.</p>
+<h2>Yoğunlaşmayı ölçmek</h2>
+<p>Yoğunlaşma, riskin birkaç pozisyonda toplanmasıdır ve çeşitlendirmenin gizli düşmanıdır. Bir portföy 20 varlık içerse bile, riskin %70'i iki pozisyondan geliyorsa aslında yoğunlaşmıştır. Bu, tek bir varlığın kötü günü tüm portföyü aşağı çekebilir demektir. Kuantile risk katkılarının dağılımına bakarak bu yoğunlaşmayı görünür kılar; deneyimli yatırımcı sayıya değil, riskin <a href="/rehber/cesitlendirme-ve-korelasyon/">ne kadar dengeli dağıldığına</a> bakar.</p>
 <a class="cta" href="/">Riskinizin kaynağını görün →</a>
 
 <h2>İlgili yazılar</h2>
