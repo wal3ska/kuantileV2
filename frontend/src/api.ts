@@ -319,7 +319,57 @@ export const api = {
 
   adminRisk: (body: PortfolioRequest) =>
     req<RiskResponse>("POST", "/admin/risk", body, true),
+
+  adminExperiment: (body: ExperimentRequest) =>
+    req<ExperimentResponse>("POST", "/admin/experiment", body, true),
 };
+
+/* ---------- Quant Lab: Deney (kısıt taraması) ---------- */
+
+export interface ExperimentRequest {
+  universe: UniverseRequest;
+  rf_annual: number;
+  var_limit: number;
+  window_years: number;
+  train_years: number;
+  test_months: number;
+  horizon_months: number;
+}
+
+export interface ExperimentCombo {
+  method: string;
+  max_assets: number;
+  max_weight: number;
+  sector_cap: number | null;
+  in_sample_sharpe: number;
+  var99: number;
+  oos_sharpe: number | null;
+  oos_cagr: number | null;
+}
+
+export interface ExperimentResponse {
+  rf_annual: number;
+  var_limit: number;
+  total: number;
+  var_eliminated: number;
+  survivors: number;
+  eligible_count: number;
+  grid: { assets: number[]; weights: number[]; sectors: number[]; methods: string[] };
+  best: {
+    method: string; max_assets: number; max_weight: number; sector_cap: number | null;
+    in_sample_sharpe: number; var99: number; oos_sharpe: number | null; oos_cagr: number | null;
+    oos_max_drawdown: number | null; real_cagr: number | null;
+    weights: { ticker: string; sector: string; weight: number }[];
+    backtest: {
+      start: string; end: string; rebalances: number;
+      benchmark: { cagr: number; sharpe: number; max_drawdown: number };
+      curve: { date: string; port: number; bench: number }[];
+    };
+    mc: { exp_return_ann: number; exp_vol_ann: number; horizon_months: number;
+          p5_end: number; p50_end: number; p95_end: number } | null;
+  };
+  top: ExperimentCombo[];
+}
 
 /* ---------- Quant Lab: Optimizasyon (yöntem kıyas + Kelly) ---------- */
 

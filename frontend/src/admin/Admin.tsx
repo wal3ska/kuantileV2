@@ -4,6 +4,7 @@ import { Universe } from "./Universe";
 import { Portfolio } from "./Portfolio";
 import { Optimize } from "./Optimize";
 import { Risk } from "./Risk";
+import { Deney } from "./Deney";
 
 interface AdminUser {
   email: string;
@@ -39,6 +40,13 @@ const TOOLS: { id: string; icon: string; title: string; desc: string; ready: boo
     icon: "△",
     title: "Risk Ayrıştırma",
     desc: "Bileşen VaR/CVaR, yoğunlaşma ve faktör (sistematik/altın) maruziyeti.",
+    ready: true,
+  },
+  {
+    id: "experiment",
+    icon: "⚗",
+    title: "Deney",
+    desc: "Tüm kısıt kombinasyonlarını tara, VaR>%3 ele, en iyi OOS-Sharpe portföyü bul.",
     ready: true,
   },
 ];
@@ -150,6 +158,8 @@ function Panel({ user, onLogout }: { user: AdminUser; onLogout: () => void }) {
             <Optimize onAuthFail={onLogout} />
           ) : active === "risk" ? (
             <Risk onAuthFail={onLogout} />
+          ) : active === "experiment" ? (
+            <Deney onAuthFail={onLogout} />
           ) : (
             <div className="a-placeholder">
               <span className="a-ph-ic">{tool.icon}</span>

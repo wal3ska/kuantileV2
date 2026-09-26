@@ -314,3 +314,32 @@ def risk(req: PortfolioRequest, user: User = Depends(get_admin_user),
         raise HTTPException(400, result["error"])
     result["eligible_count"] = n_elig
     return result
+
+
+class ExperimentRequest(BaseModel):
+    universe: UniverseRequest = Field(default_factory=UniverseRequest)
+    rf_annual: float = Field(default=0.35, ge=0, le=3)
+    var_limit: float = Field(default=0.03, gt=0, le=0.5)   # gunluk VaR%99 ust siniri
+    window_years: int = Field(default=5, ge=1, le=5)
+    train_years: float = Field(default=2.0, ge=0.5, le=5)
+    test_months: int = Field(default=3, ge=1, le=12)
+    horizon_months: int = Field(default=9, ge=1, le=36)
+
+
+@router.post("/experiment")
+def experiment(req: ExperimentRequest, user: User = Depends(get_admin_user),
+               db: Session = Depends(get_db)):
+    """Deney: kisit izgarasini rf'de tarar, VaR%99>var_limit olani eler, en iyi
+    OOS-Sharpe portfoyu (tum agirliklariyla) + backtest + MC ile doner. Uzun surer."""
+    import bist_experiment as EX
+
+    tickers, sector_map, n_elig = _eligible_tickers(db, req.universe)
+    result = EX.run_experiment(
+        db, tickers, sector_map, rf_annual=req.rf_annual, var_limit=req.var_limit,
+        window_years=req.window_years, train_years=req.train_years,
+        test_months=req.test_months, horizon_months=req.horizon_months,
+    )
+    if "error" in result:
+        raise HTTPException(400, result["error"])
+    result["eligible_count"] = n_elig
+    return result

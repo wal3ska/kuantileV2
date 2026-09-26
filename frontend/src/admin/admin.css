@@ -404,6 +404,13 @@ a { color: var(--accent-strong); text-decoration: none; }
 .opt-best { font-size: 12px; color: var(--pos); font-weight: 600; margin-left: 8px; }
 .opt-row-best td { background: rgba(12, 163, 12, 0.08); }
 
+/* Deney */
+.dn-best { display: flex; flex-wrap: wrap; gap: 8px; }
+.dn-tag {
+  font-size: 12.5px; color: var(--ink); background: var(--accent-soft);
+  border: 1px solid var(--accent); border-radius: 999px; padding: 5px 12px;
+}
+
 /* Portföy hub aksiyon çubuğu */
 .pf-actions {
   display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
