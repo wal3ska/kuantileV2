@@ -73,7 +73,7 @@ def _fast_weights(method: str, mu_ann, cov_ann, rets, sec, mw: float,
 def run_experiment(db, tickers: list[str], sector_map: dict[str, str], *,
                    rf_annual: float = 0.35, var_limit: float = 0.03,
                    window_years: int = 5, train_years: float = 2.0, test_months: int = 3,
-                   horizon_months: int = 9, top_k: int = 4) -> dict:
+                   horizon_months: int = 9, top_k: int = 3) -> dict:
     kmax = max(ASSETS_GRID)
     rets_full = returns_matrix(db, tickers[: kmax * 2], window_years)
     if rets_full.shape[1] < 5 or len(rets_full) < 300:
@@ -87,6 +87,7 @@ def run_experiment(db, tickers: list[str], sector_map: dict[str, str], *,
     # --- Asama 1: ucuz eleme (in-sample) ---
     total = 0
     var_elim = 0
+    min_var = float("inf")
     survivors = []
     from advanced_risk import ledoit_wolf_cov
     for k in ASSETS_GRID:
@@ -111,6 +112,7 @@ def run_experiment(db, tickers: list[str], sector_map: dict[str, str], *,
                         continue
                     port = subvals @ w
                     var99 = M.var_historical(port, 0.99)
+                    min_var = min(min_var, var99)
                     if var99 > var_limit:
                         var_elim += 1
                         continue
@@ -125,8 +127,11 @@ def run_experiment(db, tickers: list[str], sector_map: dict[str, str], *,
                     })
 
     if not survivors:
-        return {"error": f"VaR%99 ≤ %{var_limit*100:.0f} koşulunu geçen kombinasyon yok. "
-                         f"VaR eşiğini yükseltin.", "total": total, "var_eliminated": var_elim}
+        mv = min_var * 100 if np.isfinite(min_var) else None
+        msg = f"VaR%99 ≤ %{var_limit*100:.1f} koşulunu geçen kombinasyon yok."
+        if mv is not None:
+            msg += f" Bu evrende en düşük VaR%99 ≈ %{mv:.1f}; eşiği en az oraya çekin."
+        return {"error": msg, "total": total, "var_eliminated": var_elim}
 
     survivors.sort(key=lambda s: s["in_sample_sharpe"], reverse=True)
 
