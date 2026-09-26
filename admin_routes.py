@@ -50,6 +50,7 @@ class UniverseRequest(BaseModel):
     filters: UniverseFilters = Field(default_factory=UniverseFilters)
     altman_min: float = 1.1                 # Z" bu esik altinda distress
     adv_min_tl: float = 5_000_000.0         # min ort. gunluk TL hacim
+    loss_years_min: int = 3                 # bu kadar YIL ust uste zarar edeni ele (kronik)
     vol_min: float | None = None            # opsiyonel yillik vol bandi
     vol_max: float | None = None
     geo_min: float | None = None            # opsiyonel min yillik geometrik getiri
@@ -77,7 +78,7 @@ def _eligible(rows, req: UniverseRequest):
             fails.append("watchlist")
         if f.neg_equity and m.neg_equity:
             fails.append("neg_equity")
-        if f.persistent_loss and m.persistent_loss:
+        if f.persistent_loss and m.loss_streak >= req.loss_years_min:
             fails.append("persistent_loss")
         if f.altman and m.altman_z is not None and m.altman_z < req.altman_min:
             fails.append("altman")

@@ -329,6 +329,7 @@ export interface UniverseRequest {
   filters: UniverseFilters;
   altman_min: number;
   adv_min_tl: number;
+  loss_years_min: number;
   vol_min: number | null;
   vol_max: number | null;
   geo_min: number | null;

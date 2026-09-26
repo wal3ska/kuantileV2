@@ -6,7 +6,8 @@ import {
 
 const DEFAULT_UNIVERSE: PortfolioRequest["universe"] = {
   filters: { watchlist: true, neg_equity: true, persistent_loss: true, altman: true, liquidity: true },
-  altman_min: 1.1, adv_min_tl: 5_000_000, vol_min: null, vol_max: null, geo_min: null,
+  altman_min: 1.1, adv_min_tl: 5_000_000, loss_years_min: 3,
+  vol_min: null, vol_max: null, geo_min: null,
 };
 
 const DEFAULTS: PortfolioRequest = {

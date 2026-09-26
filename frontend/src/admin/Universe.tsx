@@ -5,6 +5,7 @@ const DEFAULTS: UniverseRequest = {
   filters: { watchlist: true, neg_equity: true, persistent_loss: true, altman: true, liquidity: true },
   altman_min: 1.1,
   adv_min_tl: 5_000_000,
+  loss_years_min: 3,
   vol_min: null,
   vol_max: null,
   geo_min: null,
@@ -79,6 +80,10 @@ export function Universe({ onAuthFail }: { onAuthFail: () => void }) {
           <label>Likidite min (M₺)
             <input type="number" step="1" value={req.adv_min_tl / 1_000_000}
               onChange={(e) => setReq((r) => ({ ...r, adv_min_tl: +e.target.value * 1_000_000 }))} />
+          </label>
+          <label>Zarar yılı ≥
+            <input type="number" step="1" min="1" value={req.loss_years_min}
+              onChange={(e) => setReq((r) => ({ ...r, loss_years_min: +e.target.value }))} />
           </label>
           <label>Vol min (%)
             <input type="number" step="1" value={req.vol_min === null ? "" : req.vol_min * 100}

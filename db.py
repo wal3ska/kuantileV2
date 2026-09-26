@@ -155,7 +155,7 @@ class BistMetric(Base):
     adv_tl: Mapped[float | None] = mapped_column(Float, nullable=True)           # ort. gunluk TL hacim (medyan)
     altman_z: Mapped[float | None] = mapped_column(Float, nullable=True)         # Altman Z" (finansallarda None)
     neg_equity: Mapped[bool] = mapped_column(Boolean, default=False)
-    persistent_loss: Mapped[bool] = mapped_column(Boolean, default=False)        # son 4 donem net zarar
+    loss_streak: Mapped[int] = mapped_column(Integer, default=0)                 # ust uste net zarar yili sayisi
     is_watchlist: Mapped[bool] = mapped_column(Boolean, default=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc),
                                                 onupdate=lambda: datetime.now(timezone.utc))

@@ -95,21 +95,30 @@ def build_metrics(db, window_years: int = 5) -> int:
         eq = sym.equity if sym.equity is not None else (latest.equity if latest else None)
         neg_equity = eq is not None and eq < 0
 
-        # Surekli zarar: son 2 TAMAMLANMIS yilin ikisi de net zarar (cok-yilli, kronik).
-        # Tek donemlik zarar proxy'si KALDIRILDI (enflasyon muhasebesiyle cogu firma
-        # tek donem zarar yaziyor; bu asiri eliyordu). Yeterli yil yoksa elenmez.
-        annual = [f.net_income for f in flist if f.net_income is not None]
-        persistent_loss = len(annual) >= 2 and annual[0] < 0 and annual[1] < 0
+        # Zarar serisi: en yeni yildan geriye kac yil UST USTE net zarar (kronik olcut).
+        # Panel bunu esikle canli suzer (varsayilan 3 = kronik); enflasyon muhasebesiyle
+        # tek/iki yil zarar yaygin oldugundan tek-donem proxy'si kullanilmaz.
+        annual = [f.net_income for f in flist if f.net_income is not None]  # flist yeni->eski
+        loss_streak = 0
+        for ni in annual:
+            if ni < 0:
+                loss_streak += 1
+            else:
+                break
 
         out.append({
             "ticker": tk, **pm, "altman_z": altman,
             "neg_equity": bool(neg_equity),
-            "persistent_loss": bool(persistent_loss),
+            "loss_streak": int(loss_streak),
             "is_watchlist": bool(sym.is_watchlist),
         })
 
-    # Tam yenile: eski metrikleri temizleyip yeniden yaz
-    db.query(BistMetric).delete()
+    # Tam yenile. Tabloyu drop+recreate: turetilmis tablo oldugundan sema
+    # degisikliklerini (yeni kolonlar) otomatik alir; create_all mevcut tabloya
+    # kolon EKLEMEZ, bu yuzden drop sart.
+    from db import engine
+    BistMetric.__table__.drop(engine, checkfirst=True)
+    BistMetric.__table__.create(engine, checkfirst=True)
     if out:
         db.bulk_insert_mappings(BistMetric, out)
     db.commit()
