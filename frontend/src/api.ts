@@ -310,7 +310,27 @@ export const api = {
 
   adminBacktest: (body: BacktestRequest) =>
     req<BacktestResponse>("POST", "/admin/backtest", body, true),
+
+  adminProjection: (body: ProjectionRequest) =>
+    req<ProjectionResponse>("POST", "/admin/projection", body, true),
 };
+
+/* ---------- Quant Lab: Monte Carlo projeksiyon ---------- */
+
+export interface ProjectionRequest extends PortfolioRequest {
+  horizon_months: number;
+}
+
+export interface ProjectionResponse {
+  method: string;
+  n_assets: number;
+  horizon_months: number;
+  grid_days: number[];
+  assets: { ticker: string; weight: number; path: number[] }[];
+  portfolio: { p5: number[]; p50: number[]; p95: number[] };
+  exp_return_ann: number;
+  exp_vol_ann: number;
+}
 
 /* ---------- Quant Lab: Varlık Evreni ---------- */
 
@@ -326,6 +346,7 @@ export interface UniverseFilters {
   persistent_loss: boolean;
   altman: boolean;
   liquidity: boolean;
+  limit_down: boolean;
 }
 
 export interface UniverseRequest {
@@ -333,6 +354,7 @@ export interface UniverseRequest {
   altman_min: number;
   adv_min_tl: number;
   loss_years_min: number;
+  limit_down_days_min: number;
   vol_min: number | null;
   vol_max: number | null;
   geo_min: number | null;
@@ -380,7 +402,7 @@ export interface PortfolioResponse {
   as_of: string | null;
   eligible_count: number;
   effective_n: number;
-  weights: { ticker: string; sector: string; weight: number; risk_contrib: number }[];
+  weights: { ticker: string; sector: string; weight: number; risk_contrib: number; last_price: number | null }[];
   sectors: { sector: string; weight: number }[];
   metrics: {
     cagr: number; ann_vol: number; sharpe: number; sharpe_se: number; psr_vs_0: number;

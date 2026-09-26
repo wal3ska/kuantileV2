@@ -2,10 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 import { api, ApiError, setToken, type UniverseRequest, type UniverseResponse } from "../api";
 
 const DEFAULTS: UniverseRequest = {
-  filters: { watchlist: true, neg_equity: true, persistent_loss: true, altman: true, liquidity: true },
+  filters: { watchlist: true, neg_equity: true, persistent_loss: true, altman: true, liquidity: true, limit_down: true },
   altman_min: 1.1,
   adv_min_tl: 5_000_000,
   loss_years_min: 3,
+  limit_down_days_min: 2,
   vol_min: null,
   vol_max: null,
   geo_min: null,
@@ -17,6 +18,7 @@ const REASON_LABELS: Record<string, string> = {
   persistent_loss: "Sürekli zarar",
   altman: "Altman Z″ distress",
   liquidity: "Likidite altı",
+  limit_down: "Taban serisi",
   vol_band: "Vol bandı dışı",
   geo_min: "Geo getiri altı",
 };
@@ -27,6 +29,7 @@ const FILTER_LABELS: [keyof UniverseRequest["filters"], string][] = [
   ["persistent_loss", "Sürekli zarar"],
   ["altman", "Altman Z″ distress"],
   ["liquidity", "Likidite eşiği"],
+  ["limit_down", "Taban serisi (≤-%8)"],
 ];
 
 const pct = (v: number | null, d = 1) =>
@@ -84,6 +87,10 @@ export function Universe({ onAuthFail }: { onAuthFail: () => void }) {
           <label>Zarar yılı ≥
             <input type="number" step="1" min="1" value={req.loss_years_min}
               onChange={(e) => setReq((r) => ({ ...r, loss_years_min: +e.target.value }))} />
+          </label>
+          <label>Taban günü ≥
+            <input type="number" step="1" min="1" value={req.limit_down_days_min}
+              onChange={(e) => setReq((r) => ({ ...r, limit_down_days_min: +e.target.value }))} />
           </label>
           <label>Vol min (%)
             <input type="number" step="1" value={req.vol_min === null ? "" : req.vol_min * 100}

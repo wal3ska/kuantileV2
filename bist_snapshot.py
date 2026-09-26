@@ -17,6 +17,7 @@ from db import (BistFundamental, BistMetric, BistPrice, BistSymbol,
 TRADING_DAYS = 252
 ADV_WINDOW = 63          # ~3 ay, likidite icin
 MIN_OBS = 60             # bu kadar gunu olmayan hisseye metrik uretme
+LIMIT_DOWN_PCT = 0.08    # BIST taban ~-%10; -%8 alti "taban serisi" sayilir
 
 
 def _altman_z(f: BistFundamental) -> float | None:
@@ -53,13 +54,20 @@ def _price_metrics(rows: list[tuple]) -> dict | None:
     geo = float(math.exp(np.mean(logret) * TRADING_DAYS) - 1.0)
     simple = np.diff(closes) / closes[:-1]
     mean_ann = float(np.mean(simple) * TRADING_DAYS)
+    # Taban serisi: en son gunden geriye ust uste <= -LIMIT_DOWN_PCT gun sayisi
+    limit_down_streak = 0
+    for r in simple[::-1]:
+        if r <= -LIMIT_DOWN_PCT:
+            limit_down_streak += 1
+        else:
+            break
     # ADV: son ADV_WINDOW gunun close*volume medyani (TL)
     tail = rows[-ADV_WINDOW:]
     tl_vals = [r[1] * r[2] for r in tail if r[2] is not None and r[1] is not None]
     adv = float(np.median(tl_vals)) if tl_vals else None
     return {"obs": len(closes), "last_price": float(closes[-1]),
             "ann_vol": ann_vol, "geo_return_ann": geo, "mean_return_ann": mean_ann,
-            "adv_tl": adv}
+            "adv_tl": adv, "limit_down_streak": int(limit_down_streak)}
 
 
 def build_metrics(db, window_years: int = 5) -> int:
@@ -83,9 +91,11 @@ def build_metrics(db, window_years: int = 5) -> int:
         if pm is None:
             continue
 
-        # Emtia: fundamental yok, futures hacmi TL likiditesini temsil etmez -> muaf tut
+        # Emtia: fundamental yok, futures hacmi TL likiditesini temsil etmez, fiyat
+        # limiti (taban) yok -> likidite ve taban filtrelerinden muaf tut
         if sym.sector == "Emtia":
             pm["adv_tl"] = 1e15
+            pm["limit_down_streak"] = 0
 
         flist = funds.get(tk, [])
         latest = flist[0] if flist else None
@@ -115,7 +125,7 @@ def build_metrics(db, window_years: int = 5) -> int:
             "neg_equity": bool(neg_equity),
             "loss_streak": int(loss_streak),
             "is_watchlist": bool(sym.is_watchlist),
-        })
+        })  # pm zaten limit_down_streak icerir
 
     # Tam yenile. Tabloyu drop+recreate: turetilmis tablo oldugundan sema
     # degisikliklerini (yeni kolonlar) otomatik alir; create_all mevcut tabloya

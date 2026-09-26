@@ -23,7 +23,7 @@ from sqlalchemy import select
 import qglib.metrics as M
 import qglib.portfolio as PF
 from advanced_risk import hrp_weights, ledoit_wolf_cov
-from db import BistPrice
+from db import BistMetric, BistPrice
 
 TRADING_DAYS = 252
 METHODS = ("max_sharpe", "min_variance", "risk_parity", "hrp", "equal")
@@ -146,9 +146,12 @@ def build(db, tickers: list[str], sector_map: dict[str, str], *,
     rc = PF.risk_contributions(w, cov_ann)
     eff_n = float(1.0 / np.sum(w ** 2))
 
+    lp = {t: v for t, v in db.execute(
+        select(BistMetric.ticker, BistMetric.last_price).where(BistMetric.ticker.in_(cols)))}
     weights = sorted(
         ({"ticker": cols[i], "sector": sectors[i], "weight": float(w[i]),
-          "risk_contrib": float(rc[i])} for i in range(n) if w[i] > 1e-4),
+          "risk_contrib": float(rc[i]), "last_price": lp.get(cols[i])}
+         for i in range(n) if w[i] > 1e-4),
         key=lambda x: x["weight"], reverse=True,
     )
     sec_alloc: dict[str, float] = {}
@@ -182,4 +185,55 @@ def build(db, tickers: list[str], sector_map: dict[str, str], *,
         },
         "port_point": {"vol": float(np.sqrt(w @ cov_ann @ w)), "ret": float(w @ mu_ann)},
         "frontier": frontier,
+    }
+
+
+def project(db, tickers: list[str], sector_map: dict[str, str], *,
+            method: str = "max_sharpe", max_assets: int = 50, max_weight: float = 0.10,
+            sector_cap: float | None = 0.30, rf_annual: float = 0.0,
+            window_years: int = 5, horizon_months: int = 12, n_sims: int = 1000) -> dict:
+    """Insa edilen portfoyu ileriye projekte eder. Her VARLIK icin GBM medyan yolu
+    (exp((mu-0.5s^2)t)), PORTFOY icin Monte Carlo p5/p50/p95 bandi. Baslangic=1.0.
+    Bellek dostu: portfoy gunluk getirisi Normal(mp, sp) olarak simule edilir."""
+    rets = returns_matrix(db, tickers[: max_assets * 2], window_years)
+    if rets.shape[1] < 2 or len(rets) < 120:
+        return {"error": "Projeksiyon için yeterli fiyat geçmişi yok."}
+    ordered = [t for t in tickers if t in rets.columns][:max_assets]
+    rets = rets[ordered].dropna()
+    cols = list(rets.columns)
+    n = len(cols)
+    sectors = [sector_map.get(c) or "Diğer" for c in cols]
+    w, mu_ann, cov_ann = solve_weights(rets, sectors, method, max_weight, sector_cap, rf_annual)
+
+    mu_d = mu_ann / TRADING_DAYS
+    var_d = np.diag(cov_ann) / TRADING_DAYS
+    H = int(horizon_months * 21)
+    grid = np.unique(np.linspace(0, H, min(53, H + 1)).astype(int))
+
+    # Varlik medyan yollari (yalnizca portfoyde yer alanlar)
+    assets = []
+    for i in range(n):
+        if w[i] <= 1e-4:
+            continue
+        path = [float(np.exp((mu_d[i] - 0.5 * var_d[i]) * t)) for t in grid]
+        assets.append({"ticker": cols[i], "weight": float(w[i]), "path": path})
+    assets.sort(key=lambda a: a["weight"], reverse=True)
+
+    # Portfoy Monte Carlo (gunluk Normal yaklasimi)
+    mp = float(w @ mu_d)
+    sp = float(np.sqrt(max(w @ (cov_ann / TRADING_DAYS) @ w, 1e-12)))
+    rng = np.random.default_rng(42)
+    daily = rng.normal(mp, sp, size=(n_sims, H))
+    cum = np.cumprod(1.0 + daily, axis=1)
+    cum = np.hstack([np.ones((n_sims, 1)), cum])          # t=0 -> 1.0
+    p5 = np.percentile(cum[:, grid], 5, axis=0).tolist()
+    p50 = np.percentile(cum[:, grid], 50, axis=0).tolist()
+    p95 = np.percentile(cum[:, grid], 95, axis=0).tolist()
+
+    return {
+        "method": method, "n_assets": n, "horizon_months": horizon_months,
+        "grid_days": [int(t) for t in grid],
+        "assets": assets,
+        "portfolio": {"p5": p5, "p50": p50, "p95": p95},
+        "exp_return_ann": float(w @ mu_ann), "exp_vol_ann": float(np.sqrt(w @ cov_ann @ w)),
     }

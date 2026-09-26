@@ -2,7 +2,6 @@ import { useEffect, useState, type FormEvent } from "react";
 import { api, ApiError, getToken, setToken } from "../api";
 import { Universe } from "./Universe";
 import { Portfolio } from "./Portfolio";
-import { Backtest } from "./Backtest";
 
 interface AdminUser {
   email: string;
@@ -22,8 +21,8 @@ const TOOLS: { id: string; icon: string; title: string; desc: string; ready: boo
   {
     id: "construct",
     icon: "◈",
-    title: "Portföy İnşası",
-    desc: "Max-Sharpe, min-varyans, risk-parity ve HRP ile ağırlık üretimi; pozisyon/sektör kısıtları.",
+    title: "Portföy & Analiz",
+    desc: "Max-Sharpe/min-var/risk-parity/HRP ağırlık üretimi + OOS backtest + Monte Carlo projeksiyon + PDF risk raporu.",
     ready: true,
   },
   {
@@ -32,20 +31,6 @@ const TOOLS: { id: string; icon: string; title: string; desc: string; ready: boo
     title: "Optimizasyon",
     desc: "Etkin sınır taraması, hedef fonksiyon ve kısıt seti üzerinde optimali ara.",
     ready: false,
-  },
-  {
-    id: "simulate",
-    icon: "◉",
-    title: "Canlı Simülasyon",
-    desc: "Monte Carlo & tarihsel bootstrap ile ileriye dönük dağılım, rebalancing.",
-    ready: false,
-  },
-  {
-    id: "backtest",
-    icon: "⇌",
-    title: "Backtest",
-    desc: "Walk-forward (OOS) sınama; 1/N benchmark, reel getiri, Sharpe/PSR/drawdown.",
-    ready: true,
   },
   {
     id: "risk",
@@ -159,8 +144,6 @@ function Panel({ user, onLogout }: { user: AdminUser; onLogout: () => void }) {
             <Universe onAuthFail={onLogout} />
           ) : active === "construct" ? (
             <Portfolio onAuthFail={onLogout} />
-          ) : active === "backtest" ? (
-            <Backtest onAuthFail={onLogout} />
           ) : (
             <div className="a-placeholder">
               <span className="a-ph-ic">{tool.icon}</span>

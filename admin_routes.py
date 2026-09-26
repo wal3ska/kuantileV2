@@ -44,6 +44,7 @@ class UniverseFilters(BaseModel):
     persistent_loss: bool = True    # Surekli zarar disla
     altman: bool = True             # Altman Z" distress disla
     liquidity: bool = True          # Likidite esigi altini disla
+    limit_down: bool = True         # Taban serisi (ust uste sert dusus) disla
 
 
 class UniverseRequest(BaseModel):
@@ -51,6 +52,7 @@ class UniverseRequest(BaseModel):
     altman_min: float = 1.1                 # Z" bu esik altinda distress
     adv_min_tl: float = 5_000_000.0         # min ort. gunluk TL hacim
     loss_years_min: int = 3                 # bu kadar YIL ust uste zarar edeni ele (kronik)
+    limit_down_days_min: int = 2            # bu kadar GUN ust uste taban (<=-%8) edeni ele
     vol_min: float | None = None            # opsiyonel yillik vol bandi
     vol_max: float | None = None
     geo_min: float | None = None            # opsiyonel min yillik geometrik getiri
@@ -70,7 +72,7 @@ def _eligible(rows, req: UniverseRequest):
     nedenle elenebilir; reason sayaclari bagimsizdir. Doner: (eligible, reasons)."""
     f = req.filters
     reasons = {"watchlist": 0, "neg_equity": 0, "persistent_loss": 0,
-               "altman": 0, "liquidity": 0, "vol_band": 0, "geo_min": 0}
+               "altman": 0, "liquidity": 0, "limit_down": 0, "vol_band": 0, "geo_min": 0}
     eligible = []
     for m, s in rows:
         fails = []
@@ -80,6 +82,8 @@ def _eligible(rows, req: UniverseRequest):
             fails.append("neg_equity")
         if f.persistent_loss and m.loss_streak >= req.loss_years_min:
             fails.append("persistent_loss")
+        if f.limit_down and m.limit_down_streak >= req.limit_down_days_min:
+            fails.append("limit_down")
         if f.altman and m.altman_z is not None and m.altman_z < req.altman_min:
             fails.append("altman")
         if f.liquidity and (m.adv_tl is None or m.adv_tl < req.adv_min_tl):
@@ -223,6 +227,37 @@ def backtest(req: BacktestRequest, user: User = Depends(get_admin_user),
         db, tickers, sector_map, method=req.method, max_assets=req.max_assets,
         max_weight=req.max_weight, sector_cap=req.sector_cap, rf_annual=req.rf_annual,
         window_years=req.window_years, train_years=req.train_years, test_months=req.test_months,
+    )
+    if "error" in result:
+        raise HTTPException(400, result["error"])
+    return result
+
+
+class ProjectionRequest(PortfolioRequest):
+    horizon_months: int = Field(default=12, ge=1, le=36)
+
+
+@router.post("/projection")
+def projection(req: ProjectionRequest, user: User = Depends(get_admin_user),
+               db: Session = Depends(get_db)):
+    """Insa edilen portfoyu ileriye Monte Carlo ile projekte eder: varlik medyan
+    yollari + portfoy p5/p50/p95 bandi. Ayni PortfolioRequest'e baglidir."""
+    import bist_portfolio as PF
+
+    rows = db.execute(
+        select(BistMetric, BistSymbol).join(BistSymbol, BistSymbol.ticker == BistMetric.ticker)
+    ).all()
+    eligible, _ = _eligible(rows, req.universe)
+    if len(eligible) < 2:
+        raise HTTPException(400, "Uygun evren çok küçük; filtreleri gevşetin.")
+    eligible.sort(key=lambda t: (t[0].adv_tl or 0), reverse=True)
+    tickers = [m.ticker for m, s in eligible]
+    sector_map = {s.ticker: s.sector for m, s in eligible}
+
+    result = PF.project(
+        db, tickers, sector_map, method=req.method, max_assets=req.max_assets,
+        max_weight=req.max_weight, sector_cap=req.sector_cap, rf_annual=req.rf_annual,
+        window_years=req.window_years, horizon_months=req.horizon_months,
     )
     if "error" in result:
         raise HTTPException(400, result["error"])

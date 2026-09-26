@@ -156,6 +156,7 @@ class BistMetric(Base):
     altman_z: Mapped[float | None] = mapped_column(Float, nullable=True)         # Altman Z" (finansallarda None)
     neg_equity: Mapped[bool] = mapped_column(Boolean, default=False)
     loss_streak: Mapped[int] = mapped_column(Integer, default=0)                 # ust uste net zarar yili sayisi
+    limit_down_streak: Mapped[int] = mapped_column(Integer, default=0)           # son gunlerde ust uste taban (<=-%8) sayisi
     is_watchlist: Mapped[bool] = mapped_column(Boolean, default=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc),
                                                 onupdate=lambda: datetime.now(timezone.utc))
