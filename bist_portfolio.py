@@ -220,6 +220,64 @@ def build(db, tickers: list[str], sector_map: dict[str, str], *,
     }
 
 
+def compare_methods(db, tickers: list[str], sector_map: dict[str, str], *,
+                    max_assets: int = 50, max_weight: float = 0.10,
+                    sector_cap: float | None = 0.30, rf_annual: float = 0.0,
+                    window_years: int = 5) -> dict:
+    """Tum yontemleri ayni evrende kurar, (getiri, vol, Sharpe, CAGR, MDD, etkin N)
+    tablosu + etkin sinir + max-Sharpe portfoyu icin (yari-)Kelly kaldiraci doner."""
+    rets = returns_matrix(db, tickers[: max_assets * 2], window_years)
+    if rets.shape[1] < 2 or len(rets) < 120:
+        return {"error": "Yeterli fiyat geçmişi yok."}
+    ordered = [t for t in tickers if t in rets.columns][:max_assets]
+    rets = rets[ordered].dropna()
+    cols = list(rets.columns)
+    n = len(cols)
+    sectors = [sector_map.get(c) or "Diğer" for c in cols]
+    mu_ann = rets.mean().values * TRADING_DAYS
+    cov_ann = ledoit_wolf_cov(rets) * TRADING_DAYS
+
+    rows = []
+    best_ms = None
+    for method in METHODS:
+        try:
+            w, _, _ = solve_weights(rets, sectors, method, max_weight, sector_cap, rf_annual)
+        except Exception:
+            continue
+        port = rets.values @ w
+        s = M.summary(port, rf=rf_annual / TRADING_DAYS, periods_per_year=TRADING_DAYS)
+        ret = float(w @ mu_ann)
+        vol = float(np.sqrt(w @ cov_ann @ w))
+        row = {"method": method, "exp_return": ret, "vol": vol,
+               "sharpe": s["sharpe"], "cagr": s["cagr"], "max_drawdown": s["max_drawdown"],
+               "effective_n": float(1.0 / np.sum(w ** 2)),
+               "top": [{"ticker": cols[i], "weight": float(w[i])}
+                       for i in np.argsort(w)[::-1][:5] if w[i] > 1e-4]}
+        rows.append(row)
+        if method == "max_sharpe":
+            best_ms = (ret, vol)
+
+    frontier = None
+    if n <= 60:
+        try:
+            vols, frets, _ = PF.efficient_frontier(mu_ann, cov_ann, n_points=24, long_only=True)
+            frontier = [{"vol": float(v), "ret": float(r)} for v, r in zip(vols, frets)]
+        except Exception:
+            frontier = None
+
+    kelly = None
+    if best_ms:
+        mp, sp = best_ms
+        f = float(PF.kelly_continuous(mp, sp, rf_annual))       # tam Kelly kaldirac
+        kelly = {"full": f, "half": f / 2,
+                 "growth_full": float(PF.growth_rate(f, mp, sp, rf_annual)),
+                 "growth_half": float(PF.growth_rate(f / 2, mp, sp, rf_annual)),
+                 "port_return": mp, "port_vol": sp}
+
+    return {"n_assets": n, "observations": len(rets),
+            "methods": rows, "frontier": frontier, "kelly": kelly}
+
+
 def project(db, tickers: list[str], sector_map: dict[str, str], *,
             method: str = "max_sharpe", max_assets: int = 50, max_weight: float = 0.10,
             sector_cap: float | None = 0.30, rf_annual: float = 0.0,

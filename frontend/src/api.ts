@@ -313,7 +313,46 @@ export const api = {
 
   adminProjection: (body: ProjectionRequest) =>
     req<ProjectionResponse>("POST", "/admin/projection", body, true),
+
+  adminOptimize: (body: PortfolioRequest) =>
+    req<OptimizeResponse>("POST", "/admin/optimize", body, true),
+
+  adminRisk: (body: PortfolioRequest) =>
+    req<RiskResponse>("POST", "/admin/risk", body, true),
 };
+
+/* ---------- Quant Lab: Optimizasyon (yöntem kıyas + Kelly) ---------- */
+
+export interface OptimizeResponse {
+  n_assets: number;
+  observations: number;
+  eligible_count: number;
+  methods: {
+    method: string; exp_return: number; vol: number; sharpe: number;
+    cagr: number; max_drawdown: number; effective_n: number;
+    top: { ticker: string; weight: number }[];
+  }[];
+  frontier: { vol: number; ret: number }[] | null;
+  kelly: { full: number; half: number; growth_full: number; growth_half: number;
+           port_return: number; port_vol: number } | null;
+}
+
+/* ---------- Quant Lab: Risk Ayrıştırma ---------- */
+
+export interface RiskResponse {
+  method: string;
+  n_assets: number;
+  observations: number;
+  eligible_count: number;
+  notional: number;
+  var_pct: { var95: number; var99: number; cvar95: number; cvar99: number; var99_cf: number; worst_day: number };
+  var_tl: { var95: number; var99: number; cvar95: number; cvar99: number; var99_cf: number; worst_day: number };
+  components: { ticker: string; sector: string; weight: number; risk_share: number; comp_var99_tl: number }[];
+  sector_risk: { sector: string; risk_share: number }[];
+  concentration: { hhi: number; effective_n: number | null; diversification_ratio: number | null; port_vol_ann: number };
+  tail: { skew: number; excess_kurtosis: number };
+  factor: { pc1_explained?: number; systematic_share?: number; gold_beta?: number; gold_r2?: number };
+}
 
 /* ---------- Quant Lab: Monte Carlo projeksiyon ---------- */
 

@@ -2,6 +2,8 @@ import { useEffect, useState, type FormEvent } from "react";
 import { api, ApiError, getToken, setToken } from "../api";
 import { Universe } from "./Universe";
 import { Portfolio } from "./Portfolio";
+import { Optimize } from "./Optimize";
+import { Risk } from "./Risk";
 
 interface AdminUser {
   email: string;
@@ -29,15 +31,15 @@ const TOOLS: { id: string; icon: string; title: string; desc: string; ready: boo
     id: "optimize",
     icon: "⟐",
     title: "Optimizasyon",
-    desc: "Etkin sınır taraması, hedef fonksiyon ve kısıt seti üzerinde optimali ara.",
-    ready: false,
+    desc: "Tüm yöntemleri kıyasla, etkin sınırda konumla, ½-Kelly kaldıraç.",
+    ready: true,
   },
   {
     id: "risk",
     icon: "△",
     title: "Risk Ayrıştırma",
-    desc: "Bileşen VaR/CVaR, faktör maruziyeti ve konsantrasyon teşhisi.",
-    ready: false,
+    desc: "Bileşen VaR/CVaR, yoğunlaşma ve faktör (sistematik/altın) maruziyeti.",
+    ready: true,
   },
 ];
 
@@ -144,6 +146,10 @@ function Panel({ user, onLogout }: { user: AdminUser; onLogout: () => void }) {
             <Universe onAuthFail={onLogout} />
           ) : active === "construct" ? (
             <Portfolio onAuthFail={onLogout} />
+          ) : active === "optimize" ? (
+            <Optimize onAuthFail={onLogout} />
+          ) : active === "risk" ? (
+            <Risk onAuthFail={onLogout} />
           ) : (
             <div className="a-placeholder">
               <span className="a-ph-ic">{tool.icon}</span>

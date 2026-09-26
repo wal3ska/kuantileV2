@@ -266,3 +266,51 @@ def projection(req: ProjectionRequest, user: User = Depends(get_admin_user),
     if "error" in result:
         raise HTTPException(400, result["error"])
     return result
+
+
+def _eligible_tickers(db, universe: UniverseRequest):
+    rows = db.execute(
+        select(BistMetric, BistSymbol).join(BistSymbol, BistSymbol.ticker == BistMetric.ticker)
+    ).all()
+    eligible, _ = _eligible(rows, universe)
+    if len(eligible) < 2:
+        raise HTTPException(400, "Uygun evren çok küçük; filtreleri gevşetin.")
+    eligible.sort(key=lambda t: (t[0].adv_tl or 0), reverse=True)
+    return ([m.ticker for m, s in eligible],
+            {s.ticker: s.sector for m, s in eligible}, len(eligible))
+
+
+@router.post("/optimize")
+def optimize(req: PortfolioRequest, user: User = Depends(get_admin_user),
+             db: Session = Depends(get_db)):
+    """Tum yontemleri ayni evrende kiyaslar: getiri/vol/Sharpe tablosu + etkin sinir +
+    max-Sharpe portfoyu icin (yari-)Kelly kaldiraci."""
+    import bist_portfolio as PF
+
+    tickers, sector_map, n_elig = _eligible_tickers(db, req.universe)
+    result = PF.compare_methods(
+        db, tickers, sector_map, max_assets=req.max_assets, max_weight=req.max_weight,
+        sector_cap=req.sector_cap, rf_annual=req.rf_annual, window_years=req.window_years,
+    )
+    if "error" in result:
+        raise HTTPException(400, result["error"])
+    result["eligible_count"] = n_elig
+    return result
+
+
+@router.post("/risk")
+def risk(req: PortfolioRequest, user: User = Depends(get_admin_user),
+         db: Session = Depends(get_db)):
+    """Secilen portfoyun risk ayristirmasi: bilesen VaR/CVaR, yogunlasma, faktor."""
+    import bist_risk as RK
+
+    tickers, sector_map, n_elig = _eligible_tickers(db, req.universe)
+    result = RK.risk_report(
+        db, tickers, sector_map, method=req.method, max_assets=req.max_assets,
+        max_weight=req.max_weight, sector_cap=req.sector_cap, rf_annual=req.rf_annual,
+        window_years=req.window_years,
+    )
+    if "error" in result:
+        raise HTTPException(400, result["error"])
+    result["eligible_count"] = n_elig
+    return result
