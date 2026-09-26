@@ -52,6 +52,9 @@ def _price_metrics(rows: list[tuple]) -> dict | None:
         return None
     ann_vol = float(np.std(logret, ddof=1) * math.sqrt(TRADING_DAYS))
     geo = float(math.exp(np.mean(logret) * TRADING_DAYS) - 1.0)
+    # Tarihsel maksimum drawdown (fiyat serisi uzerinden, negatif)
+    cummax = np.maximum.accumulate(closes)
+    max_dd = float((closes / cummax - 1.0).min())
     simple = np.diff(closes) / closes[:-1]
     mean_ann = float(np.mean(simple) * TRADING_DAYS)
     # Taban serisi: en son gunden geriye ust uste <= -LIMIT_DOWN_PCT gun sayisi
@@ -67,7 +70,8 @@ def _price_metrics(rows: list[tuple]) -> dict | None:
     adv = float(np.median(tl_vals)) if tl_vals else None
     return {"obs": len(closes), "last_price": float(closes[-1]),
             "ann_vol": ann_vol, "geo_return_ann": geo, "mean_return_ann": mean_ann,
-            "adv_tl": adv, "limit_down_streak": int(limit_down_streak)}
+            "adv_tl": adv, "limit_down_streak": int(limit_down_streak),
+            "max_drawdown": max_dd}
 
 
 def build_metrics(db, window_years: int = 5) -> int:

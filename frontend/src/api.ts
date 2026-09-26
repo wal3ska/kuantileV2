@@ -347,6 +347,7 @@ export interface UniverseFilters {
   altman: boolean;
   liquidity: boolean;
   limit_down: boolean;
+  drawdown: boolean;
 }
 
 export interface UniverseRequest {
@@ -355,6 +356,7 @@ export interface UniverseRequest {
   adv_min_tl: number;
   loss_years_min: number;
   limit_down_days_min: number;
+  drawdown_limit: number;
   vol_min: number | null;
   vol_max: number | null;
   geo_min: number | null;
@@ -369,6 +371,7 @@ export interface UniverseRow {
   adv_tl: number | null;
   altman_z: number | null;
   obs: number;
+  max_drawdown: number | null;
   market_cap: number | null;
 }
 

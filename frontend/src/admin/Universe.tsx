@@ -2,11 +2,12 @@ import { useCallback, useEffect, useState } from "react";
 import { api, ApiError, setToken, type UniverseRequest, type UniverseResponse } from "../api";
 
 const DEFAULTS: UniverseRequest = {
-  filters: { watchlist: true, neg_equity: true, persistent_loss: true, altman: true, liquidity: true, limit_down: true },
+  filters: { watchlist: true, neg_equity: true, persistent_loss: true, altman: true, liquidity: true, limit_down: true, drawdown: true },
   altman_min: 1.1,
   adv_min_tl: 5_000_000,
   loss_years_min: 3,
   limit_down_days_min: 2,
+  drawdown_limit: 0.80,
   vol_min: null,
   vol_max: null,
   geo_min: null,
@@ -19,6 +20,7 @@ const REASON_LABELS: Record<string, string> = {
   altman: "Altman Z″ distress",
   liquidity: "Likidite altı",
   limit_down: "Taban serisi",
+  drawdown: "Büyük drawdown",
   vol_band: "Vol bandı dışı",
   geo_min: "Geo getiri altı",
 };
@@ -30,6 +32,7 @@ const FILTER_LABELS: [keyof UniverseRequest["filters"], string][] = [
   ["altman", "Altman Z″ distress"],
   ["liquidity", "Likidite eşiği"],
   ["limit_down", "Taban serisi (≤-%8)"],
+  ["drawdown", "Büyük drawdown"],
 ];
 
 const pct = (v: number | null, d = 1) =>
@@ -91,6 +94,10 @@ export function Universe({ onAuthFail }: { onAuthFail: () => void }) {
           <label>Taban günü ≥
             <input type="number" step="1" min="1" value={req.limit_down_days_min}
               onChange={(e) => setReq((r) => ({ ...r, limit_down_days_min: +e.target.value }))} />
+          </label>
+          <label>Max drawdown (%)
+            <input type="number" step="5" min="10" value={Math.round(req.drawdown_limit * 100)}
+              onChange={(e) => setReq((r) => ({ ...r, drawdown_limit: +e.target.value / 100 }))} />
           </label>
           <label>Vol min (%)
             <input type="number" step="1" value={req.vol_min === null ? "" : req.vol_min * 100}
@@ -171,7 +178,7 @@ export function Universe({ onAuthFail }: { onAuthFail: () => void }) {
             <div className="u-table-scroll">
               <table className="u-table">
                 <thead>
-                  <tr><th>Kod</th><th>Sektör</th><th>Yıl. Vol</th><th>Geo Getiri</th><th>Altman Z″</th><th>Günlük Hacim</th><th>Gün</th></tr>
+                  <tr><th>Kod</th><th>Sektör</th><th>Yıl. Vol</th><th>Geo Getiri</th><th>Max DD</th><th>Altman Z″</th><th>Günlük Hacim</th><th>Gün</th></tr>
                 </thead>
                 <tbody>
                   {data.sample.map((r) => (
@@ -180,6 +187,7 @@ export function Universe({ onAuthFail }: { onAuthFail: () => void }) {
                       <td className="u-sec">{r.sector ?? "—"}</td>
                       <td>{pct(r.ann_vol)}</td>
                       <td className={r.geo_return_ann != null && r.geo_return_ann < 0 ? "u-neg" : "u-pos"}>{pct(r.geo_return_ann)}</td>
+                      <td className="u-neg">{pct(r.max_drawdown)}</td>
                       <td>{r.altman_z === null ? "—" : r.altman_z.toFixed(2)}</td>
                       <td>{milyonTL(r.adv_tl)}</td>
                       <td className="u-muted">{r.obs}</td>

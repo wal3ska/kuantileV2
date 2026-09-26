@@ -381,9 +381,24 @@ a { color: var(--accent-strong); text-decoration: none; }
 
 /* Projeksiyon */
 .pj-band { fill: var(--accent-soft); stroke: none; opacity: 0.7; }
-.pj-asset { stroke: var(--ink-2); stroke-width: 1; }
+.pj-asset { stroke: var(--ink-2); stroke-width: 1; cursor: pointer; transition: stroke-width 0.1s; }
+.pj-asset:hover { stroke: var(--accent-strong); stroke-width: 2; opacity: 1 !important; }
+.pj-hi { stroke: var(--accent-strong); stroke-width: 2.5; opacity: 1 !important; }
+.pj-dim { opacity: 0.12 !important; }
 .pj-port { stroke: var(--accent); stroke-width: 2.5; }
 .pj-l-port { fill: var(--accent); font-weight: 600; }
+
+.pj-legend { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.pj-chip {
+  font-size: 12px; color: var(--ink-2); background: var(--surface-2);
+  border: 1px solid var(--border-2); border-radius: 999px; padding: 4px 10px;
+  cursor: pointer; font-family: inherit;
+}
+.pj-chip:hover { border-color: var(--accent); }
+.pj-chip.on { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); }
+.pj-chip b { color: var(--muted); font-weight: 600; }
+.pj-chip.on b { color: var(--accent-strong); }
+.pj-clear { color: var(--muted); }
 
 /* Portföy hub aksiyon çubuğu */
 .pf-actions {

@@ -45,6 +45,7 @@ class UniverseFilters(BaseModel):
     altman: bool = True             # Altman Z" distress disla
     liquidity: bool = True          # Likidite esigi altini disla
     limit_down: bool = True         # Taban serisi (ust uste sert dusus) disla
+    drawdown: bool = True           # Gecmiste buyuk drawdown yemisleri disla
 
 
 class UniverseRequest(BaseModel):
@@ -53,6 +54,7 @@ class UniverseRequest(BaseModel):
     adv_min_tl: float = 5_000_000.0         # min ort. gunluk TL hacim
     loss_years_min: int = 3                 # bu kadar YIL ust uste zarar edeni ele (kronik)
     limit_down_days_min: int = 2            # bu kadar GUN ust uste taban (<=-%8) edeni ele
+    drawdown_limit: float = 0.80            # tarihsel drawdown bunu asani (magnitude) ele
     vol_min: float | None = None            # opsiyonel yillik vol bandi
     vol_max: float | None = None
     geo_min: float | None = None            # opsiyonel min yillik geometrik getiri
@@ -71,8 +73,8 @@ def _eligible(rows, req: UniverseRequest):
     """(metric, symbol) satirlarini req esikleriyle filtreler. Bir hisse birden cok
     nedenle elenebilir; reason sayaclari bagimsizdir. Doner: (eligible, reasons)."""
     f = req.filters
-    reasons = {"watchlist": 0, "neg_equity": 0, "persistent_loss": 0,
-               "altman": 0, "liquidity": 0, "limit_down": 0, "vol_band": 0, "geo_min": 0}
+    reasons = {"watchlist": 0, "neg_equity": 0, "persistent_loss": 0, "altman": 0,
+               "liquidity": 0, "limit_down": 0, "drawdown": 0, "vol_band": 0, "geo_min": 0}
     eligible = []
     for m, s in rows:
         fails = []
@@ -84,6 +86,8 @@ def _eligible(rows, req: UniverseRequest):
             fails.append("persistent_loss")
         if f.limit_down and m.limit_down_streak >= req.limit_down_days_min:
             fails.append("limit_down")
+        if f.drawdown and m.max_drawdown is not None and m.max_drawdown < -req.drawdown_limit:
+            fails.append("drawdown")
         if f.altman and m.altman_z is not None and m.altman_z < req.altman_min:
             fails.append("altman")
         if f.liquidity and (m.adv_tl is None or m.adv_tl < req.adv_min_tl):
@@ -128,7 +132,7 @@ def universe(req: UniverseRequest, user: User = Depends(get_admin_user),
             "ticker": m.ticker, "name": s.name, "sector": s.sector,
             "ann_vol": m.ann_vol, "geo_return_ann": m.geo_return_ann,
             "adv_tl": m.adv_tl, "altman_z": m.altman_z, "obs": m.obs,
-            "market_cap": s.market_cap,
+            "max_drawdown": m.max_drawdown, "market_cap": s.market_cap,
         }
 
     sample = sorted(eligible, key=lambda t: (t[0].adv_tl or 0), reverse=True)[:60]

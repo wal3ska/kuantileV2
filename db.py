@@ -153,6 +153,7 @@ class BistMetric(Base):
     geo_return_ann: Mapped[float | None] = mapped_column(Float, nullable=True)   # yillik geometrik getiri
     mean_return_ann: Mapped[float | None] = mapped_column(Float, nullable=True)  # yillik aritmetik getiri
     adv_tl: Mapped[float | None] = mapped_column(Float, nullable=True)           # ort. gunluk TL hacim (medyan)
+    max_drawdown: Mapped[float | None] = mapped_column(Float, nullable=True)     # tarihsel max drawdown (negatif)
     altman_z: Mapped[float | None] = mapped_column(Float, nullable=True)         # Altman Z" (finansallarda None)
     neg_equity: Mapped[bool] = mapped_column(Boolean, default=False)
     loss_streak: Mapped[int] = mapped_column(Integer, default=0)                 # ust uste net zarar yili sayisi
