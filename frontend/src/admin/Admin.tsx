@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { api, ApiError, getToken, setToken } from "../api";
+import { Universe } from "./Universe";
 
 interface AdminUser {
   email: string;
@@ -13,8 +14,8 @@ const TOOLS: { id: string; icon: string; title: string; desc: string; ready: boo
     id: "universe",
     icon: "▦",
     title: "Varlık Evreni",
-    desc: "BIST, TEFAS, kripto, emtia ve döviz serilerini seç; getiri matrisini kur.",
-    ready: false,
+    desc: "Tüm BIST hisseleri: sektör, volatilite, geometrik getiri, likidite ve distress elemesi.",
+    ready: true,
   },
   {
     id: "construct",
@@ -152,14 +153,18 @@ function Panel({ user, onLogout }: { user: AdminUser; onLogout: () => void }) {
         </header>
 
         <section className="a-canvas">
-          <div className="a-placeholder">
-            <span className="a-ph-ic">{tool.icon}</span>
-            <h2>{tool.title} aracı burada çalışacak</h2>
-            <p>
-              Motor bağlandığında bu bölge parametre paneli, sonuç tablosu ve canlı grafikle
-              dolacak. Şimdilik iskelet hazır.
-            </p>
-          </div>
+          {active === "universe" ? (
+            <Universe onAuthFail={onLogout} />
+          ) : (
+            <div className="a-placeholder">
+              <span className="a-ph-ic">{tool.icon}</span>
+              <h2>{tool.title} aracı burada çalışacak</h2>
+              <p>
+                Motor bağlandığında bu bölge parametre paneli, sonuç tablosu ve canlı grafikle
+                dolacak. Şimdilik iskelet hazır.
+              </p>
+            </div>
+          )}
         </section>
       </main>
     </div>

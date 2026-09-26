@@ -298,7 +298,59 @@ export const api = {
 
   adminMe: () =>
     req<{ email: string; nickname: string | null; admin: true }>("GET", "/admin/me", undefined, true),
+
+  adminUniverseStatus: () =>
+    req<UniverseStatus>("GET", "/admin/universe/status", undefined, true),
+
+  adminUniverse: (body: UniverseRequest) =>
+    req<UniverseResponse>("POST", "/admin/universe", body, true),
 };
+
+/* ---------- Quant Lab: Varlık Evreni ---------- */
+
+export interface UniverseStatus {
+  metrics: number;
+  symbols: number;
+  as_of: string | null;
+}
+
+export interface UniverseFilters {
+  watchlist: boolean;
+  neg_equity: boolean;
+  persistent_loss: boolean;
+  altman: boolean;
+  liquidity: boolean;
+}
+
+export interface UniverseRequest {
+  filters: UniverseFilters;
+  altman_min: number;
+  adv_min_tl: number;
+  vol_min?: number | null;
+  vol_max?: number | null;
+  geo_min?: number | null;
+}
+
+export interface UniverseRow {
+  ticker: string;
+  name: string | null;
+  sector: string | null;
+  ann_vol: number | null;
+  geo_return_ann: number | null;
+  adv_tl: number | null;
+  altman_z: number | null;
+  obs: number;
+  market_cap: number | null;
+}
+
+export interface UniverseResponse {
+  as_of: string | null;
+  total: number;
+  eligible_count: number;
+  excluded_reasons: Record<string, number>;
+  sectors: { sector: string; count: number; share: number }[];
+  sample: UniverseRow[];
+}
 
 /* ---------- biçimleme yardımcıları ---------- */
 
