@@ -8,7 +8,7 @@ import { exportReport } from "../report";
 
 const DEFAULT_UNIVERSE: PortfolioRequest["universe"] = {
   filters: { watchlist: true, neg_equity: true, persistent_loss: true, altman: true, liquidity: true, limit_down: true, drawdown: true },
-  altman_min: 1.1, adv_min_tl: 5_000_000, loss_years_min: 3, limit_down_days_min: 2, drawdown_limit: 0.80,
+  altman_min: 1.1, adv_min_tl: 5_000_000, loss_years_min: 3, limit_down_days_min: 2, drawdown_limit: 0.90,
   vol_min: null, vol_max: null, geo_min: null,
 };
 
@@ -23,6 +23,7 @@ const METHODS: [PortfolioMethod, string, string][] = [
   ["risk_parity", "Risk Parity", "Eşit risk katkısı (ERC)"],
   ["hrp", "HRP", "Hiyerarşik risk paritesi"],
   ["equal", "Eşit Ağırlık", "1/N referans"],
+  ["mc_max_return", "MC Max Getiri", "Monte Carlo ile en yüksek beklenen getiri (agresif; riski projeksiyon/backtest'te gör)"],
 ];
 
 const NOTIONAL = 1_000_000;              // PDF/aktarım için varsayılan portföy büyüklüğü
@@ -172,7 +173,7 @@ export function Portfolio({ onAuthFail }: { onAuthFail: () => void }) {
 
   const [pj, setPj] = useState<ProjectionResponse | null>(null);
   const [pjBusy, setPjBusy] = useState(false);
-  const [horizon, setHorizon] = useState(12);
+  const [horizon, setHorizon] = useState(9);   // ~Haz 2027 (bugünden)
   const [hi, setHi] = useState<string | null>(null);   // projeksiyonda vurgulanan hisse
 
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);

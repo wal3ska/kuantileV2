@@ -386,7 +386,7 @@ export interface UniverseResponse {
 
 /* ---------- Quant Lab: Portföy İnşası ---------- */
 
-export type PortfolioMethod = "max_sharpe" | "min_variance" | "risk_parity" | "hrp" | "equal";
+export type PortfolioMethod = "max_sharpe" | "min_variance" | "risk_parity" | "hrp" | "equal" | "mc_max_return";
 
 export interface PortfolioRequest {
   universe: UniverseRequest;

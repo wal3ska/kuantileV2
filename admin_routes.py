@@ -54,7 +54,7 @@ class UniverseRequest(BaseModel):
     adv_min_tl: float = 5_000_000.0         # min ort. gunluk TL hacim
     loss_years_min: int = 3                 # bu kadar YIL ust uste zarar edeni ele (kronik)
     limit_down_days_min: int = 2            # bu kadar GUN ust uste taban (<=-%8) edeni ele
-    drawdown_limit: float = 0.80            # tarihsel drawdown bunu asani (magnitude) ele
+    drawdown_limit: float = 0.90            # tarihsel drawdown bunu asani (magnitude) ele
     vol_min: float | None = None            # opsiyonel yillik vol bandi
     vol_max: float | None = None
     geo_min: float | None = None            # opsiyonel min yillik geometrik getiri

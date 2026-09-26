@@ -7,7 +7,7 @@ const DEFAULTS: UniverseRequest = {
   adv_min_tl: 5_000_000,
   loss_years_min: 3,
   limit_down_days_min: 2,
-  drawdown_limit: 0.80,
+  drawdown_limit: 0.90,
   vol_min: null,
   vol_max: null,
   geo_min: null,

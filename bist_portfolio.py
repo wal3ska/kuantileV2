@@ -26,7 +26,7 @@ from advanced_risk import hrp_weights, ledoit_wolf_cov
 from db import BistMetric, BistPrice
 
 TRADING_DAYS = 252
-METHODS = ("max_sharpe", "min_variance", "risk_parity", "hrp", "equal")
+METHODS = ("max_sharpe", "min_variance", "risk_parity", "hrp", "equal", "mc_max_return")
 
 
 def returns_matrix(db, tickers: list[str], window_years: int = 5) -> pd.DataFrame:
@@ -84,6 +84,33 @@ def _constrained(obj, n: int, max_w: float, sectors=None, sector_caps=None) -> n
     return w / w.sum() if w.sum() > 0 else np.full(n, 1 / n)
 
 
+def _mc_max_return(mu_ann: np.ndarray, sectors: list[str], max_weight: float,
+                   sector_caps: dict | None, n_iter: int = 8000) -> np.ndarray:
+    """Monte Carlo rastgele arama: kisitlar altinda (long-only, sum=1, poz. tavani,
+    sektor tavani) beklenen yillik getiriyi (w·mu) EN YUKSEK yapan agirliklari arar.
+    Varliklari ve oranlarini rastgele deneyip en iyisini tutar. Amac dogrusal
+    oldugundan optimum ~ en yuksek getirili varliklarin tavana kadar doldurulmasidir;
+    bu 'agresif' bir portfoydur (riski ayrica raporlanir)."""
+    rng = np.random.default_rng(0)
+    n = len(mu_ann)
+    sec = np.array(sectors)
+    kmax = min(n, max(2, int(np.ceil(1.0 / max_weight)) + 4))
+    best_w, best = None, -np.inf
+    for _ in range(n_iter):
+        k = int(rng.integers(2, kmax + 1))
+        idx = rng.choice(n, size=k, replace=False)
+        w = np.zeros(n)
+        w[idx] = rng.random(k)
+        w = _cap_project(w, max_weight)
+        if sector_caps:
+            if any(w[sec == s].sum() > cap + 1e-9 for s, cap in sector_caps.items()):
+                continue
+        obj = float(w @ mu_ann)
+        if obj > best:
+            best, best_w = obj, w
+    return best_w if best_w is not None else _cap_project(np.ones(n), max_weight)
+
+
 def solve_weights(rets: pd.DataFrame, sectors: list[str], method: str,
                   max_weight: float, sector_cap: float | None, rf_annual: float):
     """Bir getiri matrisinden secilen yontemle agirlik uretir.
@@ -113,6 +140,8 @@ def solve_weights(rets: pd.DataFrame, sectors: list[str], method: str,
         if base.sum() <= 0:
             base = np.full(n, 1 / n)
         w = _cap_project(base, max_weight)
+    elif method == "mc_max_return":
+        w = _mc_max_return(mu_ann, sectors, max_weight, sector_caps)
     else:
         raise ValueError(f"bilinmeyen yontem: {method}")
     return w, mu_ann, cov_ann
