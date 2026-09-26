@@ -94,10 +94,13 @@ def _mc_max_return(mu_ann: np.ndarray, sectors: list[str], max_weight: float,
     rng = np.random.default_rng(0)
     n = len(mu_ann)
     sec = np.array(sectors)
-    kmax = min(n, max(2, int(np.ceil(1.0 / max_weight)) + 4))
+    # Tavanin uygulanabilmesi icin en az ceil(1/tavan) hisse gerekir; aksi halde
+    # agirliklar tavani asar. k bu tabandan baslar.
+    kmin = min(n, max(2, int(np.ceil(1.0 / max_weight))))
+    kmax = min(n, kmin + 8)
     best_w, best = None, -np.inf
     for _ in range(n_iter):
-        k = int(rng.integers(2, kmax + 1))
+        k = int(rng.integers(kmin, kmax + 1)) if kmax > kmin else kmin
         idx = rng.choice(n, size=k, replace=False)
         w = np.zeros(n)
         w[idx] = rng.random(k)
