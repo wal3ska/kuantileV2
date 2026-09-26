@@ -1,0 +1,258 @@
+/* Kuantile Quant Lab — bağımsız admin paneli teması (koyu).
+   Renkler ana sitenin dark paletiyle uyumlu; ama panel kendi kabuğuna sahip. */
+
+:root {
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --surface-2: #222221;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-2: #3d3d39;
+  --ink: #ffffff;
+  --ink-2: #c3c2b7;
+  --muted: #898781;
+  --accent: #3987e5;
+  --accent-strong: #5598e7;
+  --accent-soft: rgba(57, 135, 229, 0.16);
+  --pos: #0ca30c;
+  --neg: #e66767;
+  --radius: 12px;
+  --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 14.5px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent-strong); text-decoration: none; }
+
+/* ---------- marka bloğu ---------- */
+
+.a-brand { display: flex; align-items: center; gap: 10px; }
+.a-brand > div { display: flex; flex-direction: column; line-height: 1.1; }
+.a-brand b { font-size: 15px; letter-spacing: -0.2px; }
+.a-brand span { font-size: 11.5px; color: var(--muted); }
+
+/* ---------- boot ---------- */
+
+.a-boot {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+/* ---------- giriş ---------- */
+
+.a-login {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(900px 500px at 70% -10%, rgba(57, 135, 229, 0.12), transparent 60%),
+    var(--page);
+}
+
+.a-login-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 26px 22px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+.a-login-card h1 { font-size: 20px; margin: 18px 0 4px; }
+.a-sub { color: var(--muted); margin: 0 0 18px; font-size: 13px; }
+
+.a-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  margin-bottom: 14px;
+}
+
+.a-field input {
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  border-radius: 9px;
+  padding: 10px 12px;
+  color: var(--ink);
+  font-size: 14.5px;
+  font-family: inherit;
+}
+.a-field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.a-primary {
+  width: 100%;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 9px;
+  padding: 11px 14px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 4px;
+}
+.a-primary:hover:not(:disabled) { background: var(--accent-strong); }
+.a-primary:disabled { opacity: 0.6; cursor: default; }
+
+.a-err {
+  background: rgba(230, 103, 103, 0.12);
+  border: 1px solid rgba(230, 103, 103, 0.4);
+  color: var(--neg);
+  border-radius: 9px;
+  padding: 9px 12px;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.a-back { display: block; text-align: center; margin-top: 16px; font-size: 13px; color: var(--muted); }
+
+/* ---------- panel kabuğu ---------- */
+
+.a-shell {
+  display: grid;
+  grid-template-columns: 248px 1fr;
+  min-height: 100%;
+}
+
+.a-side {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 20px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.a-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+
+.a-nav button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: none;
+  border: none;
+  border-radius: 9px;
+  padding: 9px 10px;
+  color: var(--ink-2);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.a-nav button:hover { background: var(--surface-2); color: var(--ink); }
+.a-nav button.on { background: var(--accent-soft); color: var(--ink); }
+
+.a-nav-ic { width: 18px; text-align: center; color: var(--accent-strong); }
+
+.a-soon {
+  margin-left: auto;
+  font-size: 10px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--border-2);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+.a-side-foot { border-top: 1px solid var(--border); padding-top: 14px; }
+.a-who {
+  font-size: 12px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 8px;
+}
+.a-side-links { display: flex; gap: 10px; align-items: center; }
+.a-side-links a, .a-side-links button {
+  font-size: 13px;
+  color: var(--ink-2);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+.a-side-links button:hover, .a-side-links a:hover { color: var(--accent-strong); }
+
+/* ---------- ana alan ---------- */
+
+.a-main { padding: 26px clamp(18px, 4vw, 40px); }
+
+.a-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 18px;
+  margin-bottom: 22px;
+}
+.a-top h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.3px; }
+.a-top p { margin: 0; color: var(--muted); font-size: 13.5px; max-width: 620px; }
+
+.a-badge {
+  flex: none;
+  font-size: 11.5px;
+  color: var(--muted);
+  border: 1px solid var(--border-2);
+  border-radius: 999px;
+  padding: 4px 11px;
+  white-space: nowrap;
+}
+.a-badge.live { color: var(--pos); border-color: rgba(12, 163, 12, 0.5); }
+
+.a-canvas { display: grid; }
+
+.a-placeholder {
+  border: 1px dashed var(--border-2);
+  border-radius: 16px;
+  background: var(--surface);
+  padding: 60px 30px;
+  text-align: center;
+  color: var(--muted);
+}
+.a-ph-ic { font-size: 40px; color: var(--accent-strong); display: block; margin-bottom: 12px; }
+.a-placeholder h2 { color: var(--ink-2); font-size: 17px; margin: 0 0 8px; font-weight: 600; }
+.a-placeholder p { margin: 0 auto; max-width: 440px; font-size: 13.5px; }
+
+/* ---------- mobil ---------- */
+
+@media (max-width: 720px) {
+  .a-shell { grid-template-columns: 1fr; }
+  .a-side {
+    flex-direction: row;
+    align-items: center;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  .a-nav { flex-direction: row; }
+  .a-nav button { white-space: nowrap; }
+  .a-soon { display: none; }
+  .a-side-foot { border-top: none; padding-top: 0; margin-left: auto; }
+  .a-who { display: none; }
+}

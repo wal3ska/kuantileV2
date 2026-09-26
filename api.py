@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 import advanced_risk as adv
 import data_provider as dp
 import risk_engine as engine
+from admin_routes import router as admin_router
 from auth import router as auth_router
 from db import init_db
 from portfolio_routes import router as portfolio_router
@@ -27,6 +28,7 @@ app = FastAPI(
 
 app.include_router(auth_router)
 app.include_router(portfolio_router)
+app.include_router(admin_router)
 
 
 @app.on_event("startup")

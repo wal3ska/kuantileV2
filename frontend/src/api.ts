@@ -295,6 +295,9 @@ export const api = {
 
   simulate: (positions: PositionIn[], start: string, end: string) =>
     req<SimulateResponse>("POST", "/portfolio/simulate", { positions, start, end }),
+
+  adminMe: () =>
+    req<{ email: string; nickname: string | null; admin: true }>("GET", "/admin/me", undefined, true),
 };
 
 /* ---------- biçimleme yardımcıları ---------- */
