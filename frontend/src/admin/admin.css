@@ -351,6 +351,28 @@ a { color: var(--accent-strong); text-decoration: none; }
   .u-apply { margin-left: 0; }
 }
 
+/* ---------- Portföy İnşası tool ---------- */
+
+.pf-methods { display: flex; flex-wrap: wrap; gap: 8px; }
+.pf-method {
+  font-size: 13px;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  border-radius: 9px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.pf-method.on { color: #fff; background: var(--accent); border-color: var(--accent); }
+
+.pf-chart { width: 100%; height: auto; display: block; }
+.pf-axis { stroke: var(--border-2); stroke-width: 1; }
+.pf-frontier { stroke: var(--accent); stroke-width: 2; }
+.pf-dot { fill: var(--neg); stroke: var(--surface); stroke-width: 2; }
+.pf-lbl { fill: var(--muted); font-size: 11px; }
+.pf-lbl-strong { fill: var(--ink-2); font-size: 11px; font-weight: 600; }
+
 /* ---------- mobil ---------- */
 
 @media (max-width: 720px) {

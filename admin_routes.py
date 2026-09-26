@@ -64,17 +64,10 @@ def universe_status(user: User = Depends(get_admin_user), db: Session = Depends(
     return {"metrics": n, "symbols": n_sym, "as_of": as_of.isoformat() if as_of else None}
 
 
-@router.post("/universe")
-def universe(req: UniverseRequest, user: User = Depends(get_admin_user),
-             db: Session = Depends(get_db)):
-    """Ham metrikleri kullanicinin esikleriyle canli filtreler; temizlenmis evreni,
-    sektor dagilimini ve eleme nedenlerini doner. Bir hisse birden cok nedenle
-    elenebilir; reason sayaclari bagimsizdir (toplamlari elenen sayisini asabilir)."""
+def _eligible(rows, req: UniverseRequest):
+    """(metric, symbol) satirlarini req esikleriyle filtreler. Bir hisse birden cok
+    nedenle elenebilir; reason sayaclari bagimsizdir. Doner: (eligible, reasons)."""
     f = req.filters
-    rows = db.execute(
-        select(BistMetric, BistSymbol).join(BistSymbol, BistSymbol.ticker == BistMetric.ticker)
-    ).all()
-
     reasons = {"watchlist": 0, "neg_equity": 0, "persistent_loss": 0,
                "altman": 0, "liquidity": 0, "vol_band": 0, "geo_min": 0}
     eligible = []
@@ -100,6 +93,18 @@ def universe(req: UniverseRequest, user: User = Depends(get_admin_user),
             reasons[r] += 1
         if not fails:
             eligible.append((m, s))
+    return eligible, reasons
+
+
+@router.post("/universe")
+def universe(req: UniverseRequest, user: User = Depends(get_admin_user),
+             db: Session = Depends(get_db)):
+    """Ham metrikleri kullanicinin esikleriyle canli filtreler; temizlenmis evreni,
+    sektor dagilimini ve eleme nedenlerini doner."""
+    rows = db.execute(
+        select(BistMetric, BistSymbol).join(BistSymbol, BistSymbol.ticker == BistMetric.ticker)
+    ).all()
+    eligible, reasons = _eligible(rows, req)
 
     # Sektor dagilimi (yalnizca uygun hisseler)
     sec_counts: dict[str, int] = {}
@@ -131,3 +136,50 @@ def universe(req: UniverseRequest, user: User = Depends(get_admin_user),
         "sectors": sectors,
         "sample": [_row(m, s) for m, s in sample],
     }
+
+
+# --------------------------------------------------------------------------- #
+# Quant Lab · Portfoy Insasi (Faz 2)
+# --------------------------------------------------------------------------- #
+
+class PortfolioRequest(BaseModel):
+    universe: UniverseRequest = Field(default_factory=UniverseRequest)  # eleme
+    method: str = "max_sharpe"          # max_sharpe|min_variance|risk_parity|hrp|equal
+    max_assets: int = Field(default=50, ge=5, le=120)
+    max_weight: float = Field(default=0.10, gt=0, le=1)
+    sector_cap: float | None = Field(default=0.30)   # sektor basi tavan (None=kapali)
+    rf_annual: float = Field(default=0.0, ge=0, le=3)
+    window_years: int = Field(default=5, ge=1, le=5)
+
+
+@router.post("/portfolio")
+def portfolio(req: PortfolioRequest, user: User = Depends(get_admin_user),
+              db: Session = Depends(get_db)):
+    """Uygun evrende (en likit `max_assets` hisse) secilen yontemle portfoy kurar
+    ve degerlendirir. Agir hesaplama import'lari yalnizca burada yuklenir."""
+    import bist_portfolio as PF
+
+    if req.method not in PF.METHODS:
+        raise HTTPException(400, f"Geçersiz yöntem. Seçenekler: {', '.join(PF.METHODS)}")
+
+    rows = db.execute(
+        select(BistMetric, BistSymbol).join(BistSymbol, BistSymbol.ticker == BistMetric.ticker)
+    ).all()
+    eligible, _ = _eligible(rows, req.universe)
+    if len(eligible) < 2:
+        raise HTTPException(400, "Uygun evren çok küçük; filtreleri gevşetin.")
+
+    # Likiditeye gore sirala; en likit adaylari optimizasyona ver
+    eligible.sort(key=lambda t: (t[0].adv_tl or 0), reverse=True)
+    tickers = [m.ticker for m, s in eligible]
+    sector_map = {s.ticker: s.sector for m, s in eligible}
+
+    result = PF.build(
+        db, tickers, sector_map, method=req.method, max_assets=req.max_assets,
+        max_weight=req.max_weight, sector_cap=req.sector_cap, rf_annual=req.rf_annual,
+        window_years=req.window_years,
+    )
+    if "error" in result:
+        raise HTTPException(400, result["error"])
+    result["eligible_count"] = len(eligible)
+    return result

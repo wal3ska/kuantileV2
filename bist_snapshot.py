@@ -95,14 +95,11 @@ def build_metrics(db, window_years: int = 5) -> int:
         eq = sym.equity if sym.equity is not None else (latest.equity if latest else None)
         neg_equity = eq is not None and eq < 0
 
-        # Surekli zarar: son 4 donem net zarar; yoksa guncel net kar proxy
-        nis = [f.net_income for f in flist[:4] if f.net_income is not None]
-        if len(nis) >= 4:
-            persistent_loss = all(n < 0 for n in nis)
-        elif sym.net_profit is not None:
-            persistent_loss = sym.net_profit < 0
-        else:
-            persistent_loss = False
+        # Surekli zarar: son 2 TAMAMLANMIS yilin ikisi de net zarar (cok-yilli, kronik).
+        # Tek donemlik zarar proxy'si KALDIRILDI (enflasyon muhasebesiyle cogu firma
+        # tek donem zarar yaziyor; bu asiri eliyordu). Yeterli yil yoksa elenmez.
+        annual = [f.net_income for f in flist if f.net_income is not None]
+        persistent_loss = len(annual) >= 2 and annual[0] < 0 and annual[1] < 0
 
         out.append({
             "ticker": tk, **pm, "altman_z": altman,

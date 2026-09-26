@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { api, ApiError, getToken, setToken } from "../api";
 import { Universe } from "./Universe";
+import { Portfolio } from "./Portfolio";
 
 interface AdminUser {
   email: string;
@@ -21,8 +22,8 @@ const TOOLS: { id: string; icon: string; title: string; desc: string; ready: boo
     id: "construct",
     icon: "◈",
     title: "Portföy İnşası",
-    desc: "Mean-variance, HRP, risk-parity ve min-CVaR ile ağırlık üretimi; kısıtlar.",
-    ready: false,
+    desc: "Max-Sharpe, min-varyans, risk-parity ve HRP ile ağırlık üretimi; pozisyon/sektör kısıtları.",
+    ready: true,
   },
   {
     id: "optimize",
@@ -155,6 +156,8 @@ function Panel({ user, onLogout }: { user: AdminUser; onLogout: () => void }) {
         <section className="a-canvas">
           {active === "universe" ? (
             <Universe onAuthFail={onLogout} />
+          ) : active === "construct" ? (
+            <Portfolio onAuthFail={onLogout} />
           ) : (
             <div className="a-placeholder">
               <span className="a-ph-ic">{tool.icon}</span>

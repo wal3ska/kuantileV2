@@ -304,6 +304,9 @@ export const api = {
 
   adminUniverse: (body: UniverseRequest) =>
     req<UniverseResponse>("POST", "/admin/universe", body, true),
+
+  adminPortfolio: (body: PortfolioRequest) =>
+    req<PortfolioResponse>("POST", "/admin/portfolio", body, true),
 };
 
 /* ---------- Quant Lab: Varlık Evreni ---------- */
@@ -350,6 +353,38 @@ export interface UniverseResponse {
   excluded_reasons: Record<string, number>;
   sectors: { sector: string; count: number; share: number }[];
   sample: UniverseRow[];
+}
+
+/* ---------- Quant Lab: Portföy İnşası ---------- */
+
+export type PortfolioMethod = "max_sharpe" | "min_variance" | "risk_parity" | "hrp" | "equal";
+
+export interface PortfolioRequest {
+  universe: UniverseRequest;
+  method: PortfolioMethod;
+  max_assets: number;
+  max_weight: number;
+  sector_cap: number | null;
+  rf_annual: number;
+  window_years: number;
+}
+
+export interface PortfolioResponse {
+  method: string;
+  n_assets: number;
+  observations: number;
+  as_of: string | null;
+  eligible_count: number;
+  effective_n: number;
+  weights: { ticker: string; sector: string; weight: number; risk_contrib: number }[];
+  sectors: { sector: string; weight: number }[];
+  metrics: {
+    cagr: number; ann_vol: number; sharpe: number; sharpe_se: number; psr_vs_0: number;
+    sortino: number; max_drawdown: number; calmar: number; skew: number;
+    excess_kurtosis: number; geo_growth: number; vol_drag: number;
+  };
+  port_point: { vol: number; ret: number };
+  frontier: { vol: number; ret: number }[] | null;
 }
 
 /* ---------- biçimleme yardımcıları ---------- */

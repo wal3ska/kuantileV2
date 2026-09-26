@@ -136,11 +136,11 @@ _ITEM_DESC = {
 }
 
 
-def fetch_maltablo(ticker: str, year: int, group: str = "XI_29") -> dict:
-    """Bir hissenin 4 donemlik mali tablosunu (value1=en yeni) doner: {itemCode: row}."""
-    url = (f"{IS_BASE}/MaliTablo?companyCode={ticker}&exchange=TRY&financialGroup={group}"
-           f"&year1={year}&period1=12&year2={year}&period2=9"
-           f"&year3={year}&period3=6&year4={year}&period4=3")
+def fetch_maltablo(ticker: str, years: list[int], periods: list[int],
+                   group: str = "XI_29") -> dict:
+    """MaliTablo: verilen (yil,donem) ciftlerini (value1=ilk cift) {itemCode: row} doner."""
+    parts = [f"year{i}={y}&period{i}={p}" for i, (y, p) in enumerate(zip(years, periods), 1)]
+    url = f"{IS_BASE}/MaliTablo?companyCode={ticker}&exchange=TRY&financialGroup={group}&" + "&".join(parts)
     r = httpx.get(url, headers=_HEADERS, timeout=30)
     r.raise_for_status()
     return {row.get("itemCode"): row for row in (r.json().get("value") or [])}
@@ -158,36 +158,37 @@ def _pick(items: dict, field: str, vkey: str):
 
 
 def _fundamentals_for(ticker: str) -> list[dict]:
-    """En guncel yila (gerekirse onceki) bakip donem satirlari uretir.
-    XI_29 bos donerse UFRS_K denenir (banka/finansal icin)."""
-    now_year = date.today().year
-    for year in (now_year, now_year - 1):
-        for group in ("XI_29", "UFRS_K", "UFRS"):
-            try:
-                items = fetch_maltablo(ticker, year, group)
-            except Exception:
+    """Son 4 TAMAMLANMIS mali yilin yillik (donem 12) kalemlerini tek cagriyla ceker.
+    value1 = en yeni tamamlanmis yil (Altman Z bunun bilancosunu kullanir);
+    net_income serisi de cok-yilli 'surekli zarar' testine girer.
+    XI_29 bos donerse UFRS_K/UFRS denenir (banka/finansal)."""
+    cy = date.today().year
+    years = [cy - 1, cy - 2, cy - 3, cy - 4]   # ornek 2026 icin: 2025..2022
+    for group in ("XI_29", "UFRS_K", "UFRS"):
+        try:
+            items = fetch_maltablo(ticker, years, [12, 12, 12, 12], group)
+        except Exception:
+            continue
+        if not items:
+            continue
+        rows = []
+        for idx, vkey in enumerate(("value1", "value2", "value3", "value4")):
+            ni = _pick(items, "net_income", vkey)
+            ta = _pick(items, "total_assets", vkey)
+            if ni is None and ta is None:
                 continue
-            if not items:
-                continue
-            rows = []
-            for idx, vkey in enumerate(("value1", "value2", "value3", "value4")):
-                period = f"{year}/{[12, 9, 6, 3][idx]:02d}"
-                ni = _pick(items, "net_income", vkey)
-                ta = _pick(items, "total_assets", vkey)
-                if ni is None and ta is None:
-                    continue
-                rows.append({
-                    "ticker": ticker, "period": period,
-                    "current_assets": _pick(items, "current_assets", vkey),
-                    "current_liabilities": _pick(items, "current_liabilities", vkey),
-                    "total_assets": ta,
-                    "equity": _pick(items, "equity", vkey),
-                    "retained_earnings": _pick(items, "retained_earnings", vkey),
-                    "ebit": _pick(items, "ebit", vkey),
-                    "net_income": ni,
-                })
-            if rows:
-                return rows
+            rows.append({
+                "ticker": ticker, "period": f"{years[idx]}/12",
+                "current_assets": _pick(items, "current_assets", vkey),
+                "current_liabilities": _pick(items, "current_liabilities", vkey),
+                "total_assets": ta,
+                "equity": _pick(items, "equity", vkey),
+                "retained_earnings": _pick(items, "retained_earnings", vkey),
+                "ebit": _pick(items, "ebit", vkey),
+                "net_income": ni,
+            })
+        if rows:
+            return rows
     return []
 
 

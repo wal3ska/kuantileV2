@@ -2,6 +2,7 @@ yfinance>=1.5
 tefas-crawler
 pandas
 numpy
+scipy
 fastapi
 uvicorn[standard]
 sqlalchemy
