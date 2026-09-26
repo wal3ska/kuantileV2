@@ -11,7 +11,8 @@ Iki asama, cunku her kombinasyonda backtest cok pahali olurdu (1GB + istek timeo
 import numpy as np
 
 import qglib.metrics as M
-from bist_portfolio import TRADING_DAYS, returns_matrix, solve_weights
+from advanced_risk import hrp_weights
+from bist_portfolio import TRADING_DAYS, _cap_project, returns_matrix
 
 # Tarama izgarasi (makul ve sinirli tutuldu)
 ASSETS_GRID = [20, 30, 40, 50]
@@ -20,10 +21,59 @@ SECTOR_GRID = [0.30, 0.50, None]          # None = sektor tavani yok
 METHODS = ["max_sharpe", "min_variance", "risk_parity", "hrp"]  # Sharpe hedefli (mc_max_return haric)
 
 
+def _sector_cap_project(w: np.ndarray, sec: np.ndarray, sc: float, mw: float) -> np.ndarray:
+    """Hizli heuristik: sektor toplamini sc'ye kirp, fazlayi tavani dolmamis
+    sektorlerdeki bos kapasiteye dagit. (Stage-1 elemesi icin yaklasik.)"""
+    w = w.copy()
+    for _ in range(30):
+        over = [s for s in np.unique(sec) if w[sec == s].sum() > sc + 1e-9]
+        if not over:
+            break
+        for s in over:
+            idx = sec == s
+            tot = w[idx].sum()
+            if tot > 0:
+                w[idx] *= sc / tot
+        deficit = 1.0 - w.sum()
+        if deficit <= 1e-9:
+            break
+        under = np.array([w[sec == sec[i]].sum() < sc - 1e-9 for i in range(len(w))])
+        room = np.where(under, np.maximum(mw - w, 0.0), 0.0)
+        if room.sum() <= 0:
+            break
+        w += deficit * room / room.sum()
+    s = w.sum()
+    return w / s if s > 0 else w
+
+
+def _fast_weights(method: str, mu_ann, cov_ann, rets, sec, mw: float,
+                  sc: float | None, rf: float) -> np.ndarray:
+    """SLSQP'siz hizli yaklasik agirlik (yalnizca eleme/siralama icin). Stage-2
+    en iyi adaylari solve_weights ile TAM cozer."""
+    n = len(mu_ann)
+    if method == "max_sharpe":
+        raw = np.linalg.solve(cov_ann, mu_ann - rf)
+    elif method == "min_variance":
+        raw = np.linalg.solve(cov_ann, np.ones(n))
+    elif method == "risk_parity":
+        raw = 1.0 / np.sqrt(np.maximum(np.diag(cov_ann), 1e-12))   # ters-vol proxy
+    else:  # hrp
+        hw = hrp_weights(rets)
+        cols = list(rets.columns)
+        raw = np.array([(hw["weights"].get(c, 0.0) if hw else 0.0) for c in cols])
+    raw = np.clip(raw, 0, None)
+    if raw.sum() <= 0:
+        raw = np.ones(n)
+    w = _cap_project(raw / raw.sum(), mw)
+    if sc is not None and sc < 1:
+        w = _sector_cap_project(w, sec, sc, mw)
+    return w
+
+
 def run_experiment(db, tickers: list[str], sector_map: dict[str, str], *,
                    rf_annual: float = 0.35, var_limit: float = 0.03,
                    window_years: int = 5, train_years: float = 2.0, test_months: int = 3,
-                   horizon_months: int = 9, top_k: int = 5) -> dict:
+                   horizon_months: int = 9, top_k: int = 4) -> dict:
     kmax = max(ASSETS_GRID)
     rets_full = returns_matrix(db, tickers[: kmax * 2], window_years)
     if rets_full.shape[1] < 5 or len(rets_full) < 300:
@@ -38,12 +88,17 @@ def run_experiment(db, tickers: list[str], sector_map: dict[str, str], *,
     total = 0
     var_elim = 0
     survivors = []
+    from advanced_risk import ledoit_wolf_cov
     for k in ASSETS_GRID:
         if k > len(cols_all):
             continue
         sub = rets_full.iloc[:, :k]
         cols = cols_all[:k]
         secs = sectors_all[:k]
+        sec_arr = np.array(secs)
+        mu_k = sub.mean().values * TRADING_DAYS
+        cov_k = ledoit_wolf_cov(sub) * TRADING_DAYS
+        subvals = sub.values
         for mw in WEIGHT_GRID:
             if k * mw < 1.0:            # tavanla toplam 1'e ulasilamaz -> atla
                 continue
@@ -51,10 +106,10 @@ def run_experiment(db, tickers: list[str], sector_map: dict[str, str], *,
                 for method in METHODS:
                     total += 1
                     try:
-                        w, _, _ = solve_weights(sub, secs, method, mw, sc, rf_annual)
+                        w = _fast_weights(method, mu_k, cov_k, sub, sec_arr, mw, sc, rf_annual)
                     except Exception:
                         continue
-                    port = sub.values @ w
+                    port = subvals @ w
                     var99 = M.var_historical(port, 0.99)
                     if var99 > var_limit:
                         var_elim += 1
