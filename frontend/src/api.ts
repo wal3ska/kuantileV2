@@ -307,6 +307,9 @@ export const api = {
 
   adminPortfolio: (body: PortfolioRequest) =>
     req<PortfolioResponse>("POST", "/admin/portfolio", body, true),
+
+  adminBacktest: (body: BacktestRequest) =>
+    req<BacktestResponse>("POST", "/admin/backtest", body, true),
 };
 
 /* ---------- Quant Lab: Varlık Evreni ---------- */
@@ -386,6 +389,38 @@ export interface PortfolioResponse {
   };
   port_point: { vol: number; ret: number };
   frontier: { vol: number; ret: number }[] | null;
+}
+
+/* ---------- Quant Lab: Backtest (walk-forward OOS) ---------- */
+
+export interface BacktestRequest {
+  universe: UniverseRequest;
+  method: PortfolioMethod;
+  max_assets: number;
+  max_weight: number;
+  sector_cap: number | null;
+  rf_annual: number;
+  window_years: number;
+  train_years: number;
+  test_months: number;
+}
+
+export interface BacktestResponse {
+  method: string;
+  n_assets: number;
+  oos_days: number;
+  rebalances: number;
+  train_days: number;
+  test_days: number;
+  start: string;
+  end: string;
+  metrics: {
+    cagr: number; ann_vol: number; sharpe: number; sharpe_se: number;
+    psr_vs_0: number; sortino: number; max_drawdown: number; calmar: number;
+  };
+  benchmark: { cagr: number; sharpe: number; max_drawdown: number };
+  real: { real_cagr: number; inflation_cagr: number } | null;
+  curve: { date: string; port: number; bench: number }[];
 }
 
 /* ---------- biçimleme yardımcıları ---------- */

@@ -84,24 +84,11 @@ def _constrained(obj, n: int, max_w: float, sectors=None, sector_caps=None) -> n
     return w / w.sum() if w.sum() > 0 else np.full(n, 1 / n)
 
 
-def build(db, tickers: list[str], sector_map: dict[str, str], *,
-          method: str = "max_sharpe", max_assets: int = 50, max_weight: float = 0.10,
-          sector_cap: float | None = None, rf_annual: float = 0.0,
-          window_years: int = 5) -> dict:
-    if method not in METHODS:
-        raise ValueError(f"bilinmeyen yontem: {method}")
-
-    rets = returns_matrix(db, tickers[: max_assets * 2], window_years)
-    if rets.shape[1] < 2 or len(rets) < 120:
-        return {"error": "Yeterli fiyat gecmisi yok (en az 2 hisse, 120 gun)."}
-
-    # Likiditeye gore verilen sirayi koru; ortak-tarih matrisinden ilk max_assets
-    ordered = [t for t in tickers if t in rets.columns][:max_assets]
-    rets = rets[ordered].dropna()
-    cols = list(rets.columns)
-    n = len(cols)
-    sectors = [sector_map.get(c) or "Diğer" for c in cols]
-
+def solve_weights(rets: pd.DataFrame, sectors: list[str], method: str,
+                  max_weight: float, sector_cap: float | None, rf_annual: float):
+    """Bir getiri matrisinden secilen yontemle agirlik uretir.
+    Doner: (w, mu_ann, cov_ann). build() ve backtest ayni mantigi kullanir."""
+    n = rets.shape[1]
     mu_ann = rets.mean().values * TRADING_DAYS
     cov_ann = ledoit_wolf_cov(rets) * TRADING_DAYS
     sector_caps = None
@@ -121,10 +108,35 @@ def build(db, tickers: list[str], sector_map: dict[str, str], *,
         w = _cap_project(PF.risk_parity_weights(cov_ann), max_weight)
     elif method == "hrp":
         hw = hrp_weights(rets)
+        cols = list(rets.columns)
         base = np.array([(hw["weights"].get(c, 0.0) if hw else 0.0) for c in cols])
         if base.sum() <= 0:
             base = np.full(n, 1 / n)
         w = _cap_project(base, max_weight)
+    else:
+        raise ValueError(f"bilinmeyen yontem: {method}")
+    return w, mu_ann, cov_ann
+
+
+def build(db, tickers: list[str], sector_map: dict[str, str], *,
+          method: str = "max_sharpe", max_assets: int = 50, max_weight: float = 0.10,
+          sector_cap: float | None = None, rf_annual: float = 0.0,
+          window_years: int = 5) -> dict:
+    if method not in METHODS:
+        raise ValueError(f"bilinmeyen yontem: {method}")
+
+    rets = returns_matrix(db, tickers[: max_assets * 2], window_years)
+    if rets.shape[1] < 2 or len(rets) < 120:
+        return {"error": "Yeterli fiyat gecmisi yok (en az 2 hisse, 120 gun)."}
+
+    # Likiditeye gore verilen sirayi koru; ortak-tarih matrisinden ilk max_assets
+    ordered = [t for t in tickers if t in rets.columns][:max_assets]
+    rets = rets[ordered].dropna()
+    cols = list(rets.columns)
+    n = len(cols)
+    sectors = [sector_map.get(c) or "Diğer" for c in cols]
+
+    w, mu_ann, cov_ann = solve_weights(rets, sectors, method, max_weight, sector_cap, rf_annual)
 
     # --- degerlendirme ---
     port = (rets.values @ w)

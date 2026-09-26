@@ -184,3 +184,46 @@ def portfolio(req: PortfolioRequest, user: User = Depends(get_admin_user),
         raise HTTPException(400, result["error"])
     result["eligible_count"] = len(eligible)
     return result
+
+
+# --------------------------------------------------------------------------- #
+# Quant Lab · Backtest (Faz 3) — walk-forward OOS + reel getiri
+# --------------------------------------------------------------------------- #
+
+class BacktestRequest(BaseModel):
+    universe: UniverseRequest = Field(default_factory=UniverseRequest)
+    method: str = "max_sharpe"
+    max_assets: int = Field(default=30, ge=5, le=80)
+    max_weight: float = Field(default=0.10, gt=0, le=1)
+    sector_cap: float | None = Field(default=0.30)
+    rf_annual: float = Field(default=0.0, ge=0, le=3)
+    window_years: int = Field(default=5, ge=1, le=5)
+    train_years: float = Field(default=3.0, ge=0.5, le=5)
+    test_months: int = Field(default=3, ge=1, le=12)
+
+
+@router.post("/backtest")
+def backtest(req: BacktestRequest, user: User = Depends(get_admin_user),
+             db: Session = Depends(get_db)):
+    """Uygun evrende walk-forward (OOS) backtest: agirliklar train'de uretilir,
+    test'te degerlendirilir. 1/N benchmark ve TUFE reel getirisiyle raporlanir."""
+    import bist_backtest as BT
+
+    rows = db.execute(
+        select(BistMetric, BistSymbol).join(BistSymbol, BistSymbol.ticker == BistMetric.ticker)
+    ).all()
+    eligible, _ = _eligible(rows, req.universe)
+    if len(eligible) < 2:
+        raise HTTPException(400, "Uygun evren çok küçük; filtreleri gevşetin.")
+    eligible.sort(key=lambda t: (t[0].adv_tl or 0), reverse=True)
+    tickers = [m.ticker for m, s in eligible]
+    sector_map = {s.ticker: s.sector for m, s in eligible}
+
+    result = BT.run_backtest(
+        db, tickers, sector_map, method=req.method, max_assets=req.max_assets,
+        max_weight=req.max_weight, sector_cap=req.sector_cap, rf_annual=req.rf_annual,
+        window_years=req.window_years, train_years=req.train_years, test_months=req.test_months,
+    )
+    if "error" in result:
+        raise HTTPException(400, result["error"])
+    return result

@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { api, ApiError, getToken, setToken } from "../api";
 import { Universe } from "./Universe";
 import { Portfolio } from "./Portfolio";
+import { Backtest } from "./Backtest";
 
 interface AdminUser {
   email: string;
@@ -43,8 +44,8 @@ const TOOLS: { id: string; icon: string; title: string; desc: string; ready: boo
     id: "backtest",
     icon: "⇌",
     title: "Backtest",
-    desc: "Strateji ağırlıklarını geçmişte yürüt; Sharpe, drawdown, turnover raporu.",
-    ready: false,
+    desc: "Walk-forward (OOS) sınama; 1/N benchmark, reel getiri, Sharpe/PSR/drawdown.",
+    ready: true,
   },
   {
     id: "risk",
@@ -158,6 +159,8 @@ function Panel({ user, onLogout }: { user: AdminUser; onLogout: () => void }) {
             <Universe onAuthFail={onLogout} />
           ) : active === "construct" ? (
             <Portfolio onAuthFail={onLogout} />
+          ) : active === "backtest" ? (
+            <Backtest onAuthFail={onLogout} />
           ) : (
             <div className="a-placeholder">
               <span className="a-ph-ic">{tool.icon}</span>

@@ -83,6 +83,10 @@ def build_metrics(db, window_years: int = 5) -> int:
         if pm is None:
             continue
 
+        # Emtia: fundamental yok, futures hacmi TL likiditesini temsil etmez -> muaf tut
+        if sym.sector == "Emtia":
+            pm["adv_tl"] = 1e15
+
         flist = funds.get(tk, [])
         latest = flist[0] if flist else None
 

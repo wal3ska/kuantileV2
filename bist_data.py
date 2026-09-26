@@ -271,6 +271,58 @@ def sync_prices(db, tickers: list[str] | None = None, years: int = 5,
 
 
 # --------------------------------------------------------------------------- #
+# 4) Emtia (TL bazli) — Yahoo USD serisi * USDTRY, gerekirse gram'a cevrilir
+# --------------------------------------------------------------------------- #
+
+OUNCE_TO_GRAM = 31.1034768
+# (kod, ad, yahoo sembol, bolen)  bolen=31.10 -> ons'tan grama; 1.0 -> birim basi
+_COMMODITIES = [
+    ("XAUTRY", "Gram Altın (TL)", "GC=F", OUNCE_TO_GRAM),
+    ("XAGTRY", "Gram Gümüş (TL)", "SI=F", OUNCE_TO_GRAM),
+    ("XPTTRY", "Gram Platin (TL)", "PL=F", OUNCE_TO_GRAM),
+    ("BRENTTRY", "Brent Petrol (TL/varil)", "BZ=F", 1.0),
+    ("COPPERTRY", "Bakır (TL/lb)", "HG=F", 1.0),
+]
+
+
+def sync_commodities(db, years: int = 5) -> int:
+    """Emtiaları TL bazinda BistPrice'a yazar; sektor='Emtia' (fundamental filtreler
+    uygulanmaz, snapshot'ta likidite muaf). USD serisi * USDTRY, altin/gumus/platin gram."""
+    start = date.today() - timedelta(days=int(years * 365.25))
+    ysyms = ["TRY=X"] + [c[2] for c in _COMMODITIES]
+    try:
+        df = yf.download(ysyms, start=start.isoformat(), auto_adjust=True,
+                         group_by="ticker", threads=True, progress=False)
+    except Exception:
+        return 0
+    if df is None or df.empty:
+        return 0
+    try:
+        fx = df["TRY=X"]["Close"].dropna()          # 1 USD kac TL
+    except KeyError:
+        return 0
+    last = _last_price_dates(db)
+    total = 0
+    for code, name, ysym, div in _COMMODITIES:
+        _upsert(db, BistSymbol, [{
+            "ticker": code, "name": name, "sector": "Emtia", "sector_code": "EMTIA",
+            "is_financial": False, "is_watchlist": False, "market_segment": None,
+        }], ["ticker"])
+        try:
+            usd = df[ysym]["Close"].dropna()
+        except KeyError:
+            continue
+        merged = pd.concat([usd.rename("u"), fx.rename("fx")], axis=1).dropna()
+        tl = merged["u"] * merged["fx"] / div
+        cutoff = last.get(code)
+        rows = [{"ticker": code, "d": ts.date(), "close": float(v), "volume": None}
+                for ts, v in tl.items() if (cutoff is None or ts.date() > cutoff)]
+        _upsert(db, BistPrice, rows, ["ticker", "d"])
+        total += len(rows)
+    return total
+
+
+# --------------------------------------------------------------------------- #
 # Tekil calistirma yardimcisi
 # --------------------------------------------------------------------------- #
 
@@ -280,7 +332,11 @@ def run(job: str) -> str:
         if job == "universe":
             return f"universe: {sync_universe(db)} hisse"
         if job == "prices":
-            return f"prices: {sync_prices(db)} yeni satir"
+            n_stock = sync_prices(db)
+            n_comm = sync_commodities(db)
+            return f"prices: {n_stock} hisse + {n_comm} emtia yeni satir"
+        if job == "commodities":
+            return f"commodities: {sync_commodities(db)} yeni satir"
         if job == "fundamentals":
             return f"fundamentals: {sync_fundamentals(db)} donem satiri"
         raise ValueError(f"bilinmeyen job: {job}")
