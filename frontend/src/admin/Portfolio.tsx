@@ -43,8 +43,8 @@ function toPositions(weights: PortfolioResponse["weights"]): PositionIn[] {
     let ticker: string, name: string, category: string;
     if (w.ticker in COMMODITY_MAP) {
       ({ ticker, name } = COMMODITY_MAP[w.ticker]); category = "Emtia";
-    } else if (/^(XAG|XPT|BRENT|COPPER)TRY$/.test(w.ticker)) {
-      continue;                       // diğer emtiaların ana sitede fiyatlaması yok
+    } else if (w.ticker === "XAGTRY") {
+      continue;                       // gram gümüşün ana sitede fiyatlaması yok (yalnız altın map'li)
     } else {
       ticker = `${w.ticker}.IS`; name = w.ticker; category = "BIST";
     }

@@ -275,13 +275,12 @@ def sync_prices(db, tickers: list[str] | None = None, years: int = 5,
 # --------------------------------------------------------------------------- #
 
 OUNCE_TO_GRAM = 31.1034768
-# (kod, ad, yahoo sembol, bolen)  bolen=31.10 -> ons'tan grama; 1.0 -> birim basi
+# (kod, ad, yahoo sembol, bolen)  bolen=31.10 -> ons'tan grama.
+# Yalnizca yatirimi kolay degerli metaller: gram altin + gram gumus.
+# (platin/Brent/bakir cikarildi — bireysel yatirim araci degil.)
 _COMMODITIES = [
     ("XAUTRY", "Gram Altın (TL)", "GC=F", OUNCE_TO_GRAM),
     ("XAGTRY", "Gram Gümüş (TL)", "SI=F", OUNCE_TO_GRAM),
-    ("XPTTRY", "Gram Platin (TL)", "PL=F", OUNCE_TO_GRAM),
-    ("BRENTTRY", "Brent Petrol (TL/varil)", "BZ=F", 1.0),
-    ("COPPERTRY", "Bakır (TL/lb)", "HG=F", 1.0),
 ]
 
 
