@@ -326,9 +326,9 @@ export interface UniverseRequest {
   filters: UniverseFilters;
   altman_min: number;
   adv_min_tl: number;
-  vol_min?: number | null;
-  vol_max?: number | null;
-  geo_min?: number | null;
+  vol_min: number | null;
+  vol_max: number | null;
+  geo_min: number | null;
 }
 
 export interface UniverseRow {
