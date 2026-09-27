@@ -322,7 +322,51 @@ export const api = {
 
   adminExperiment: (body: ExperimentRequest) =>
     req<ExperimentResponse>("POST", "/admin/experiment", body, true),
+
+  adminTickers: () =>
+    req<{ tickers: { ticker: string; name: string | null; sector: string | null }[] }>("GET", "/admin/tickers", undefined, true),
+
+  adminManual: (body: ManualRequest) =>
+    req<ManualResponse>("POST", "/admin/manual", body, true),
 };
+
+/* ---------- Quant Lab: Manuel Test ---------- */
+
+export interface ManualRequest {
+  holdings: { ticker: string; weight: number }[];
+  rf_annual: number;
+  window_years: number;
+  horizon_months: number;
+  notional: number;
+}
+
+export interface ManualResponse {
+  used: string[];
+  missing: string[];
+  n_assets: number;
+  observations: number;
+  notional: number;
+  start: string;
+  end: string;
+  weights: { ticker: string; sector: string; weight: number }[];
+  metrics: {
+    cagr: number; ann_vol: number; sharpe: number; sharpe_se: number; psr_vs_0: number;
+    sortino: number; max_drawdown: number; calmar: number; skew: number; excess_kurtosis: number;
+    geo_growth: number; vol_drag: number;
+  };
+  benchmark: { cagr: number; sharpe: number; max_drawdown: number };
+  curve: { date: string; port: number; bench: number }[];
+  var_pct: { var95: number; var99: number; cvar95: number; cvar99: number; var99_cf: number; worst_day: number };
+  var_tl: { var95: number; var99: number; cvar95: number; cvar99: number; var99_cf: number; worst_day: number };
+  components: { ticker: string; sector: string; weight: number; risk_share: number; comp_var99_tl: number }[];
+  concentration: { hhi: number; effective_n: number | null; diversification_ratio: number | null };
+  factor: { pc1_explained?: number; systematic_share?: number; gold_beta?: number };
+  mc: {
+    grid_days: number[]; horizon_months: number; exp_return_ann: number; exp_vol_ann: number;
+    assets: { ticker: string; weight: number; path: number[] }[];
+    portfolio: { p5: number[]; p50: number[]; p95: number[] };
+  };
+}
 
 /* ---------- Quant Lab: Deney (kısıt taraması) ---------- */
 

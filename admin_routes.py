@@ -316,6 +316,46 @@ def risk(req: PortfolioRequest, user: User = Depends(get_admin_user),
     return result
 
 
+@router.get("/tickers")
+def tickers(user: User = Depends(get_admin_user), db: Session = Depends(get_db)):
+    """Manuel test otomatik-tamamlama icin: metrigi olan tum kodlar (kod, ad, sektor)."""
+    rows = db.execute(
+        select(BistSymbol.ticker, BistSymbol.name, BistSymbol.sector)
+        .join(BistMetric, BistMetric.ticker == BistSymbol.ticker)
+        .order_by(BistSymbol.ticker)
+    ).all()
+    return {"tickers": [{"ticker": t, "name": nm, "sector": sec} for t, nm, sec in rows]}
+
+
+class ManualHolding(BaseModel):
+    ticker: str
+    weight: float = Field(ge=0)
+
+
+class ManualRequest(BaseModel):
+    holdings: list[ManualHolding]
+    rf_annual: float = Field(default=0.0, ge=0, le=3)
+    window_years: int = Field(default=5, ge=1, le=5)
+    horizon_months: int = Field(default=9, ge=1, le=36)
+    notional: float = Field(default=1_000_000.0, gt=0)
+
+
+@router.post("/manual")
+def manual(req: ManualRequest, user: User = Depends(get_admin_user),
+           db: Session = Depends(get_db)):
+    """Kullanicinin kendi girdigi hisse+agirliklar icin sabit-agirlik backtest +
+    Sharpe/PSR + Monte Carlo + VaR/bilesen risk."""
+    import bist_manual as MAN
+
+    result = MAN.manual_eval(
+        db, [h.model_dump() for h in req.holdings], rf_annual=req.rf_annual,
+        window_years=req.window_years, horizon_months=req.horizon_months, notional=req.notional,
+    )
+    if "error" in result:
+        raise HTTPException(400, result["error"])
+    return result
+
+
 class ExperimentRequest(BaseModel):
     universe: UniverseRequest = Field(default_factory=UniverseRequest)
     rf_annual: float = Field(default=0.35, ge=0, le=3)

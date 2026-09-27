@@ -404,6 +404,26 @@ a { color: var(--accent-strong); text-decoration: none; }
 .opt-best { font-size: 12px; color: var(--pos); font-weight: 600; margin-left: 8px; }
 .opt-row-best td { background: rgba(12, 163, 12, 0.08); }
 
+/* Manuel test */
+.mn-rows { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.mn-row { display: flex; align-items: center; gap: 4px; }
+.mn-tk {
+  width: 92px; text-transform: uppercase; background: var(--surface-2);
+  border: 1px solid var(--border-2); border-radius: 8px 0 0 8px; padding: 8px 10px;
+  color: var(--ink); font-family: inherit; font-size: 14px; font-weight: 600;
+}
+.mn-w {
+  width: 60px; background: var(--surface-2); border: 1px solid var(--border-2);
+  border-left: none; border-radius: 0; padding: 8px 8px; color: var(--ink); font-family: inherit; font-size: 14px;
+}
+.mn-x {
+  border: 1px solid var(--border-2); border-left: none; border-radius: 0 8px 8px 0;
+  background: var(--surface-2); color: var(--muted); cursor: pointer; padding: 8px 10px; font-size: 14px;
+}
+.mn-x:hover { color: var(--neg); }
+.mn-sum { font-size: 13px; color: var(--muted); align-self: center; }
+.mn-warn { color: var(--neg); }
+
 /* Deney */
 .dn-best { display: flex; flex-wrap: wrap; gap: 8px; }
 .dn-tag {

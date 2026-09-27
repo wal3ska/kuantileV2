@@ -5,6 +5,7 @@ import { Portfolio } from "./Portfolio";
 import { Optimize } from "./Optimize";
 import { Risk } from "./Risk";
 import { Deney } from "./Deney";
+import { Manuel } from "./Manuel";
 
 interface AdminUser {
   email: string;
@@ -47,6 +48,13 @@ const TOOLS: { id: string; icon: string; title: string; desc: string; ready: boo
     icon: "⚗",
     title: "Deney",
     desc: "Tüm kısıt kombinasyonlarını tara, VaR>%3 ele, en iyi OOS-Sharpe portföyü bul.",
+    ready: true,
+  },
+  {
+    id: "manual",
+    icon: "✎",
+    title: "Manuel Test",
+    desc: "Kendi hisse ve ağırlıklarını gir; sabit-ağırlık backtest, Sharpe/PSR, MC, VaR.",
     ready: true,
   },
 ];
@@ -160,6 +168,8 @@ function Panel({ user, onLogout }: { user: AdminUser; onLogout: () => void }) {
             <Risk onAuthFail={onLogout} />
           ) : active === "experiment" ? (
             <Deney onAuthFail={onLogout} />
+          ) : active === "manual" ? (
+            <Manuel onAuthFail={onLogout} />
           ) : (
             <div className="a-placeholder">
               <span className="a-ph-ic">{tool.icon}</span>
