@@ -423,6 +423,7 @@ a { color: var(--accent-strong); text-decoration: none; }
 .mn-x:hover { color: var(--neg); }
 .mn-sum { font-size: 13px; color: var(--muted); align-self: center; }
 .mn-warn { color: var(--neg); }
+.mn-amt { font-size: 12px; color: var(--accent-strong); min-width: 78px; }
 
 /* Deney */
 .dn-best { display: flex; flex-wrap: wrap; gap: 8px; }

@@ -122,6 +122,7 @@ export function Manuel({ onAuthFail }: { onAuthFail: () => void }) {
               <input type="number" placeholder="%" value={r.weight}
                 onChange={(e) => setRow(i, "weight", e.target.value)} className="mn-w" />
               <button className="mn-x" onClick={() => setRows((rs) => rs.filter((_, j) => j !== i))}>×</button>
+              <span className="mn-amt">{sum > 0 ? tl(((parseFloat(r.weight) || 0) / sum) * notional) : "—"}</span>
             </div>
           ))}
           <button className="pf-btn" onClick={() => setRows((rs) => [...rs, { ticker: "", weight: "" }])}>+ satır</button>
@@ -185,12 +186,13 @@ export function Manuel({ onAuthFail }: { onAuthFail: () => void }) {
             <h3>Bileşen risk (VaR %99 payı)</h3>
             <div className="u-table-scroll">
               <table className="u-table">
-                <thead><tr><th>Kod</th><th>Sektör</th><th>Ağırlık</th><th>Risk payı</th><th>Bileşen VaR</th></tr></thead>
+                <thead><tr><th>Kod</th><th>Sektör</th><th>Ağırlık</th><th>Tutar</th><th>Risk payı</th><th>Bileşen VaR</th></tr></thead>
                 <tbody>
                   {data.components.map((c) => (
                     <tr key={c.ticker}>
                       <td className="u-tk">{c.ticker}</td><td className="u-sec">{c.sector}</td>
-                      <td>{pct(c.weight)}</td><td><b>{pct(c.risk_share)}</b></td><td className="u-muted">{tl(c.comp_var99_tl)}</td>
+                      <td>{pct(c.weight)}</td><td>{tl(c.weight * data.notional)}</td>
+                      <td><b>{pct(c.risk_share)}</b></td><td className="u-muted">{tl(c.comp_var99_tl)}</td>
                     </tr>
                   ))}
                 </tbody>
