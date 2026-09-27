@@ -333,8 +333,11 @@ def _tefas_fund_list() -> dict:
     out: dict[str, str] = {}
     for kind in ("YAT", "BYF"):
         try:
-            df = Crawler().fetch(start=start.strftime("%Y-%m-%d"), end=end.strftime("%Y-%m-%d"),
-                                 columns=["code", "title"], kind=kind)
+            # Yeni TEFAS API'sinde isimsiz cagri fon-basi fan-out yapar ve 50 ile
+            # sinirlidir; fund_limit yukseltilerek tum fonlar listelenir.
+            df = Crawler(fund_limit=3000).fetch(
+                start=start.strftime("%Y-%m-%d"), end=end.strftime("%Y-%m-%d"),
+                columns=["code", "title"], kind=kind)
         except Exception:
             continue
         if df is None or df.empty:
