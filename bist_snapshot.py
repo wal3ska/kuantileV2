@@ -95,9 +95,9 @@ def build_metrics(db, window_years: int = 5) -> int:
         if pm is None:
             continue
 
-        # Emtia: fundamental yok, futures hacmi TL likiditesini temsil etmez, fiyat
-        # limiti (taban) yok -> likidite ve taban filtrelerinden muaf tut
-        if sym.sector == "Emtia":
+        # Emtia + TEFAS fonlari: fundamental yok, TL hacmi/taban kavrami yok ->
+        # likidite ve taban filtrelerinden muaf tut (drawdown/vol/geo yine hesaplanir)
+        if sym.sector in ("Emtia", "TEFAS Fon"):
             pm["adv_tl"] = 1e15
             pm["limit_down_streak"] = 0
 

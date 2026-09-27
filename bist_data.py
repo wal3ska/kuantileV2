@@ -322,6 +322,76 @@ def sync_commodities(db, years: int = 5) -> int:
 
 
 # --------------------------------------------------------------------------- #
+# 5) TEFAS fonlari (YAT + BYF) — NAV serisi, incremental
+# --------------------------------------------------------------------------- #
+
+def _tefas_fund_list() -> dict:
+    """Tum aktif TEFAS fonlari: kod -> unvan. Son gunlerin snapshot'indan derlenir."""
+    from tefas import Crawler
+    end = date.today()
+    start = end - timedelta(days=6)
+    out: dict[str, str] = {}
+    for kind in ("YAT", "BYF"):
+        try:
+            df = Crawler().fetch(start=start.strftime("%Y-%m-%d"), end=end.strftime("%Y-%m-%d"),
+                                 columns=["code", "title"], kind=kind)
+        except Exception:
+            continue
+        if df is None or df.empty:
+            continue
+        titles = df["title"] if "title" in df.columns else df["code"]
+        for c, t in zip(df["code"], titles):
+            code = str(c).strip().upper()
+            if code:
+                out[code] = str(t).strip()[:120]
+    return out
+
+
+def sync_tefas(db, years: int = 5, workers: int = 6) -> int:
+    """TEFAS fonlarini BistPrice'a yazar; sektor='TEFAS Fon' (fundamental/likidite/taban
+    filtrelerinden muaf, snapshot'ta). NAV serisi _fetch_one_tefas ile (YAT/EMK/BYF oto)."""
+    from data_provider import _fetch_one_tefas
+    funds = _tefas_fund_list()
+    if not funds:
+        return 0
+    _upsert(db, BistSymbol, [{
+        "ticker": code, "name": title or code, "sector": "TEFAS Fon", "sector_code": "TEFAS",
+        "is_financial": False, "is_watchlist": False, "market_segment": None,
+    } for code, title in funds.items()], ["ticker"])
+
+    last = _last_price_dates(db)
+    full_start = date.today() - timedelta(days=int(years * 365.25))
+    end_str = date.today().strftime("%Y-%m-%d")
+
+    def _one(code):
+        start = (last[code] + timedelta(days=1)) if code in last else full_start
+        if start > date.today():
+            return code, None
+        return code, _fetch_one_tefas(code, start.strftime("%Y-%m-%d"), end_str)
+
+    total = 0
+    batch: list[dict] = []
+    with ThreadPoolExecutor(max_workers=workers) as ex:
+        for code, s in ex.map(_one, list(funds)):
+            if s is None:
+                continue
+            cutoff = last.get(code)
+            for ts, v in s.items():
+                d = ts.date()
+                if cutoff and d <= cutoff:
+                    continue
+                batch.append({"ticker": code, "d": d, "close": float(v), "volume": None})
+            if len(batch) >= 2000:
+                _upsert(db, BistPrice, batch, ["ticker", "d"])
+                total += len(batch)
+                batch = []
+    if batch:
+        _upsert(db, BistPrice, batch, ["ticker", "d"])
+        total += len(batch)
+    return total
+
+
+# --------------------------------------------------------------------------- #
 # Tekil calistirma yardimcisi
 # --------------------------------------------------------------------------- #
 
@@ -336,6 +406,8 @@ def run(job: str) -> str:
             return f"prices: {n_stock} hisse + {n_comm} emtia yeni satir"
         if job == "commodities":
             return f"commodities: {sync_commodities(db)} yeni satir"
+        if job == "tefas":
+            return f"tefas: {sync_tefas(db)} yeni satir"
         if job == "fundamentals":
             return f"fundamentals: {sync_fundamentals(db)} donem satiri"
         raise ValueError(f"bilinmeyen job: {job}")

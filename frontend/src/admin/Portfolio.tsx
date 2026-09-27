@@ -36,20 +36,23 @@ const pct = (v: number | null | undefined, d = 1) =>
 const num = (v: number | null | undefined, d = 2) =>
   v === null || v === undefined ? "—" : v.toFixed(d);
 
-/* Portföy ağırlıklarını ana site pozisyonlarına çevirir (BIST + gram altın). */
+/* Portföy ağırlıklarını ana site pozisyonlarına çevirir (BIST + gram altın + TEFAS). */
 function toPositions(weights: PortfolioResponse["weights"]): PositionIn[] {
   const out: PositionIn[] = [];
   for (const w of weights) {
     if (!w.last_price || w.last_price <= 0) continue;
     let ticker: string, name: string, category: string;
-    if (w.ticker in COMMODITY_MAP) {
+    let source: PositionIn["source"] = "yahoo";
+    if (w.sector === "TEFAS Fon") {
+      ticker = w.ticker; name = w.ticker; category = "TEFAS Fon"; source = "tefas";
+    } else if (w.ticker in COMMODITY_MAP) {
       ({ ticker, name } = COMMODITY_MAP[w.ticker]); category = "Emtia";
     } else if (w.ticker === "XAGTRY") {
       continue;                       // gram gümüşün ana sitede fiyatlaması yok (yalnız altın map'li)
     } else {
       ticker = `${w.ticker}.IS`; name = w.ticker; category = "BIST";
     }
-    out.push({ name, ticker, currency: "TRY", source: "yahoo", category,
+    out.push({ name, ticker, currency: "TRY", source, category,
                quantity: (w.weight * NOTIONAL) / w.last_price, cost: null });
   }
   return out;

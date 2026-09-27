@@ -132,7 +132,7 @@ function AuthPop({ onLogin }: { onLogin: (u: UserInfo) => void }) {
       {mode === "register" && (
         <label className="f">{t("nickname")}
           <input
-            type="text" required minLength={2} maxLength={30} placeholder={t("nickPh")}
+            type="text" required minLength={2} maxLength={30}
             value={nick} onChange={(e) => setNick(e.target.value)} autoComplete="nickname"
           />
         </label>
