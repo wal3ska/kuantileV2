@@ -1,37 +1,18 @@
-"""Admin paneli uclari. Yalnizca ADMIN_EMAIL sahibi erisebilir.
+"""Quant Lab uclari — HERKESE ACIK (kimlik dogrulama gerektirmez).
 
-Kimlik dogrulama mevcut JWT akisini yeniden kullanir (auth.get_current_user);
-tek fark, get_admin_user'in token sahibinin e-postasini ADMIN_EMAIL ile
-karsilastirmasidir. QPC (kantitatif portfoy insasi) toollari buraya eklenecek.
+Onceden yalnizca ADMIN_EMAIL erisebiliyordu; 2026-09 itibariyla panel herkese
+acildi (ana arayuzde 'Quant Lab' butonu). Uclar salt-okur/hesaplama; yazma yok.
+Kotuye kullanima karsi nginx hiz limiti (apilimit) devrede.
 """
 
-import os
-
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from auth import get_current_user
-from db import BistMetric, BistSymbol, User, get_db
+from db import BistMetric, BistSymbol, get_db
 
-# Panelin tek yetkili kullanicisi. Prod'da env ile ezilebilir.
-ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "anilserdar.unal20@gmail.com").lower()
-
-router = APIRouter(prefix="/admin", tags=["admin"])
-
-
-def get_admin_user(user: User = Depends(get_current_user)) -> User:
-    """get_current_user'in ustune yetki katmani: sadece ADMIN_EMAIL gecer."""
-    if (user.email or "").lower() != ADMIN_EMAIL:
-        raise HTTPException(403, "Bu alana erişim yetkiniz yok.")
-    return user
-
-
-@router.get("/me")
-def admin_me(user: User = Depends(get_admin_user)):
-    """Panel acilisinda token + yetki dogrulamasi. Frontend bununla kapiyi acar."""
-    return {"email": user.email, "nickname": user.nickname, "admin": True}
+router = APIRouter(prefix="/quantlab", tags=["quantlab"])
 
 
 # --------------------------------------------------------------------------- #
@@ -61,7 +42,7 @@ class UniverseRequest(BaseModel):
 
 
 @router.get("/universe/status")
-def universe_status(user: User = Depends(get_admin_user), db: Session = Depends(get_db)):
+def universe_status(db: Session = Depends(get_db)):
     """Veri tazeligi: kac hisse, en son ne zaman guncellendi."""
     n = db.scalar(select(func.count()).select_from(BistMetric)) or 0
     as_of = db.scalar(select(func.max(BistMetric.updated_at)))
@@ -106,7 +87,7 @@ def _eligible(rows, req: UniverseRequest):
 
 
 @router.post("/universe")
-def universe(req: UniverseRequest, user: User = Depends(get_admin_user),
+def universe(req: UniverseRequest,
              db: Session = Depends(get_db)):
     """Ham metrikleri kullanicinin esikleriyle canli filtreler; temizlenmis evreni,
     sektor dagilimini ve eleme nedenlerini doner."""
@@ -162,7 +143,7 @@ class PortfolioRequest(BaseModel):
 
 
 @router.post("/portfolio")
-def portfolio(req: PortfolioRequest, user: User = Depends(get_admin_user),
+def portfolio(req: PortfolioRequest,
               db: Session = Depends(get_db)):
     """Uygun evrende (en likit `max_assets` hisse) secilen yontemle portfoy kurar
     ve degerlendirir. Agir hesaplama import'lari yalnizca burada yuklenir."""
@@ -211,7 +192,7 @@ class BacktestRequest(BaseModel):
 
 
 @router.post("/backtest")
-def backtest(req: BacktestRequest, user: User = Depends(get_admin_user),
+def backtest(req: BacktestRequest,
              db: Session = Depends(get_db)):
     """Uygun evrende walk-forward (OOS) backtest: agirliklar train'de uretilir,
     test'te degerlendirilir. 1/N benchmark ve TUFE reel getirisiyle raporlanir."""
@@ -242,7 +223,7 @@ class ProjectionRequest(PortfolioRequest):
 
 
 @router.post("/projection")
-def projection(req: ProjectionRequest, user: User = Depends(get_admin_user),
+def projection(req: ProjectionRequest,
                db: Session = Depends(get_db)):
     """Insa edilen portfoyu ileriye Monte Carlo ile projekte eder: varlik medyan
     yollari + portfoy p5/p50/p95 bandi. Ayni PortfolioRequest'e baglidir."""
@@ -281,7 +262,7 @@ def _eligible_tickers(db, universe: UniverseRequest):
 
 
 @router.post("/optimize")
-def optimize(req: PortfolioRequest, user: User = Depends(get_admin_user),
+def optimize(req: PortfolioRequest,
              db: Session = Depends(get_db)):
     """Tum yontemleri ayni evrende kiyaslar: getiri/vol/Sharpe tablosu + etkin sinir +
     max-Sharpe portfoyu icin (yari-)Kelly kaldiraci."""
@@ -299,7 +280,7 @@ def optimize(req: PortfolioRequest, user: User = Depends(get_admin_user),
 
 
 @router.post("/risk")
-def risk(req: PortfolioRequest, user: User = Depends(get_admin_user),
+def risk(req: PortfolioRequest,
          db: Session = Depends(get_db)):
     """Secilen portfoyun risk ayristirmasi: bilesen VaR/CVaR, yogunlasma, faktor."""
     import bist_risk as RK
@@ -317,7 +298,7 @@ def risk(req: PortfolioRequest, user: User = Depends(get_admin_user),
 
 
 @router.get("/tickers")
-def tickers(user: User = Depends(get_admin_user), db: Session = Depends(get_db)):
+def tickers(db: Session = Depends(get_db)):
     """Manuel test otomatik-tamamlama icin: metrigi olan tum kodlar (kod, ad, sektor)."""
     rows = db.execute(
         select(BistSymbol.ticker, BistSymbol.name, BistSymbol.sector)
@@ -341,7 +322,7 @@ class ManualRequest(BaseModel):
 
 
 @router.post("/manual")
-def manual(req: ManualRequest, user: User = Depends(get_admin_user),
+def manual(req: ManualRequest,
            db: Session = Depends(get_db)):
     """Kullanicinin kendi girdigi hisse+agirliklar icin sabit-agirlik backtest +
     Sharpe/PSR + Monte Carlo + VaR/bilesen risk."""
@@ -367,7 +348,7 @@ class ExperimentRequest(BaseModel):
 
 
 @router.post("/experiment")
-def experiment(req: ExperimentRequest, user: User = Depends(get_admin_user),
+def experiment(req: ExperimentRequest,
                db: Session = Depends(get_db)):
     """Deney: kisit izgarasini rf'de tarar, VaR%99>var_limit olani eler, en iyi
     OOS-Sharpe portfoyu (tum agirliklariyla) + backtest + MC ile doner. Uzun surer."""

@@ -1,5 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { api, ApiError, getToken, setToken } from "../api";
+import { useState } from "react";
 import { Universe } from "./Universe";
 import { Portfolio } from "./Portfolio";
 import { Optimize } from "./Optimize";
@@ -7,13 +6,7 @@ import { Risk } from "./Risk";
 import { Deney } from "./Deney";
 import { Manuel } from "./Manuel";
 
-interface AdminUser {
-  email: string;
-  nickname: string | null;
-}
-
-/* Panele eklenecek QPC toollari. Simdilik hepsi "yakinda" — kart iskeleti
-   hazir, motor baglaninca `ready: true` yapip panel icerigini asariz. */
+/* Quant Lab araclari — hepsi herkese acik. */
 const TOOLS: { id: string; icon: string; title: string; desc: string; ready: boolean }[] = [
   {
     id: "universe",
@@ -59,66 +52,10 @@ const TOOLS: { id: string; icon: string; title: string; desc: string; ready: boo
   },
 ];
 
-function LoginView({ onLogin }: { onLogin: (u: AdminUser) => void }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-
-  async function submit(e: FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setErr(null);
-    try {
-      const r = await api.login(email.trim(), password);
-      setToken(r.access_token);
-      // Girisi yapan hesap admin mi? Backend get_admin_user karar verir.
-      const me = await api.adminMe();
-      onLogin({ email: me.email, nickname: me.nickname });
-    } catch (ex) {
-      setToken(null);
-      if (ex instanceof ApiError && ex.status === 403) setErr("Bu hesabın panele erişim yetkisi yok.");
-      else setErr(ex instanceof ApiError ? ex.message : "Giriş başarısız.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div className="a-login">
-      <form className="a-login-card" onSubmit={submit}>
-        <div className="a-brand">
-          <img src="/logo.png" width="30" height="30" alt="" />
-          <div>
-            <b>Kuantile</b>
-            <span>Quant Lab</span>
-          </div>
-        </div>
-        <h1>Yönetici girişi</h1>
-        <p className="a-sub">Bu alan yalnızca yetkili hesaba açıktır.</p>
-        <label className="a-field">
-          E-posta
-          <input type="email" autoComplete="username" value={email}
-            onChange={(e) => setEmail(e.target.value)} required />
-        </label>
-        <label className="a-field">
-          Şifre
-          <input type="password" autoComplete="current-password" value={password}
-            onChange={(e) => setPassword(e.target.value)} required />
-        </label>
-        {err && <div className="a-err">{err}</div>}
-        <button className="a-primary" type="submit" disabled={busy}>
-          {busy ? "Doğrulanıyor…" : "Giriş yap"}
-        </button>
-        <a className="a-back" href="/">← Siteye dön</a>
-      </form>
-    </div>
-  );
-}
-
-function Panel({ user, onLogout }: { user: AdminUser; onLogout: () => void }) {
+function Panel() {
   const [active, setActive] = useState(TOOLS[0].id);
   const tool = TOOLS.find((t) => t.id === active)!;
+  const noop = () => { /* herkese acik: auth-fail yok */ };
 
   return (
     <div className="a-shell">
@@ -140,10 +77,8 @@ function Panel({ user, onLogout }: { user: AdminUser; onLogout: () => void }) {
           ))}
         </nav>
         <div className="a-side-foot">
-          <div className="a-who" title={user.email}>{user.email}</div>
           <div className="a-side-links">
-            <a href="/">Site</a>
-            <button onClick={onLogout}>Çıkış</button>
+            <a href="/">← Kuantile'a dön</a>
           </div>
         </div>
       </aside>
@@ -159,17 +94,17 @@ function Panel({ user, onLogout }: { user: AdminUser; onLogout: () => void }) {
 
         <section className="a-canvas">
           {active === "universe" ? (
-            <Universe onAuthFail={onLogout} />
+            <Universe onAuthFail={noop} />
           ) : active === "construct" ? (
-            <Portfolio onAuthFail={onLogout} />
+            <Portfolio onAuthFail={noop} />
           ) : active === "optimize" ? (
-            <Optimize onAuthFail={onLogout} />
+            <Optimize onAuthFail={noop} />
           ) : active === "risk" ? (
-            <Risk onAuthFail={onLogout} />
+            <Risk onAuthFail={noop} />
           ) : active === "experiment" ? (
-            <Deney onAuthFail={onLogout} />
+            <Deney onAuthFail={noop} />
           ) : active === "manual" ? (
-            <Manuel onAuthFail={onLogout} />
+            <Manuel onAuthFail={noop} />
           ) : (
             <div className="a-placeholder">
               <span className="a-ph-ic">{tool.icon}</span>
@@ -187,21 +122,5 @@ function Panel({ user, onLogout }: { user: AdminUser; onLogout: () => void }) {
 }
 
 export function Admin() {
-  const [user, setUser] = useState<AdminUser | null>(null);
-  const [checking, setChecking] = useState(true);
-
-  useEffect(() => {
-    if (!getToken()) {
-      setChecking(false);
-      return;
-    }
-    api.adminMe()
-      .then((me) => setUser({ email: me.email, nickname: me.nickname }))
-      .catch(() => setToken(null))
-      .finally(() => setChecking(false));
-  }, []);
-
-  if (checking) return <div className="a-boot">Yükleniyor…</div>;
-  if (!user) return <LoginView onLogin={setUser} />;
-  return <Panel user={user} onLogout={() => { setToken(null); setUser(null); }} />;
+  return <Panel />;
 }

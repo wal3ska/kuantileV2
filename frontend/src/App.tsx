@@ -268,6 +268,7 @@ export default function App() {
       <header className="topbar">
         <Logo />
         <a href={lang === "en" ? "/en/guides/" : "/rehber/"} className="navlink">{t("navGuide")}</a>
+        <a href="/quantlab/" className="navlink navlink-lab">Quant Lab</a>
         <div className="spacer" />
         <LangSwitch lang={lang} setLang={(l) => {
           setLang(l);

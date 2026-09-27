@@ -296,38 +296,35 @@ export const api = {
   simulate: (positions: PositionIn[], start: string, end: string) =>
     req<SimulateResponse>("POST", "/portfolio/simulate", { positions, start, end }),
 
-  adminMe: () =>
-    req<{ email: string; nickname: string | null; admin: true }>("GET", "/admin/me", undefined, true),
-
   adminUniverseStatus: () =>
-    req<UniverseStatus>("GET", "/admin/universe/status", undefined, true),
+    req<UniverseStatus>("GET", "/quantlab/universe/status"),
 
   adminUniverse: (body: UniverseRequest) =>
-    req<UniverseResponse>("POST", "/admin/universe", body, true),
+    req<UniverseResponse>("POST", "/quantlab/universe", body),
 
   adminPortfolio: (body: PortfolioRequest) =>
-    req<PortfolioResponse>("POST", "/admin/portfolio", body, true),
+    req<PortfolioResponse>("POST", "/quantlab/portfolio", body),
 
   adminBacktest: (body: BacktestRequest) =>
-    req<BacktestResponse>("POST", "/admin/backtest", body, true),
+    req<BacktestResponse>("POST", "/quantlab/backtest", body),
 
   adminProjection: (body: ProjectionRequest) =>
-    req<ProjectionResponse>("POST", "/admin/projection", body, true),
+    req<ProjectionResponse>("POST", "/quantlab/projection", body),
 
   adminOptimize: (body: PortfolioRequest) =>
-    req<OptimizeResponse>("POST", "/admin/optimize", body, true),
+    req<OptimizeResponse>("POST", "/quantlab/optimize", body),
 
   adminRisk: (body: PortfolioRequest) =>
-    req<RiskResponse>("POST", "/admin/risk", body, true),
+    req<RiskResponse>("POST", "/quantlab/risk", body),
 
   adminExperiment: (body: ExperimentRequest) =>
-    req<ExperimentResponse>("POST", "/admin/experiment", body, true),
+    req<ExperimentResponse>("POST", "/quantlab/experiment", body),
 
   adminTickers: () =>
-    req<{ tickers: { ticker: string; name: string | null; sector: string | null }[] }>("GET", "/admin/tickers", undefined, true),
+    req<{ tickers: { ticker: string; name: string | null; sector: string | null }[] }>("GET", "/quantlab/tickers"),
 
   adminManual: (body: ManualRequest) =>
-    req<ManualResponse>("POST", "/admin/manual", body, true),
+    req<ManualResponse>("POST", "/quantlab/manual", body),
 };
 
 /* ---------- Quant Lab: Manuel Test ---------- */

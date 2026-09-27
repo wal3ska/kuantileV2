@@ -602,6 +602,9 @@ details.acc .inner { padding: 13px; display: flex; flex-direction: column; gap: 
 
 .navlink:hover { color: var(--accent-strong); background: var(--accent-soft); }
 
+.navlink-lab { color: var(--accent-strong); border: 1px solid var(--accent); }
+.navlink-lab:hover { background: var(--accent); color: #fff; }
+
 .site-footer {
   max-width: 1480px;
   margin: 0 auto;

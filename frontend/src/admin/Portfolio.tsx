@@ -212,7 +212,13 @@ export function Portfolio({ onAuthFail }: { onAuthFail: () => void }) {
     try {
       await api.savePortfolio(positions, []);
       setNote({ ok: true, text: `${positions.length} pozisyon Kuantile hesabına kaydedildi (kuantile.com'da görünür).` });
-    } catch (ex) { if (!authGuard(ex)) setNote({ ok: false, text: ex instanceof ApiError ? ex.message : "Kaydedilemedi." }); }
+    } catch (ex) {
+      if (ex instanceof ApiError && ex.status === 401) {
+        setNote({ ok: false, text: "Kaydetmek için önce kuantile.com'da hesabınıza giriş yapın." });
+      } else {
+        setNote({ ok: false, text: ex instanceof ApiError ? ex.message : "Kaydedilemedi." });
+      }
+    }
   }
 
   async function exportPDF() {

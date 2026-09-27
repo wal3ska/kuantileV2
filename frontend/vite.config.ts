@@ -7,10 +7,10 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        // Ana SPA ve ayri admin paneli (build -> dist/admin/index.html,
-        // nginx try_files $uri/ ile /admin/ olarak sunulur).
+        // Ana SPA + herkese acik Quant Lab (build -> dist/quantlab/index.html,
+        // nginx try_files $uri/ ile /quantlab/ olarak sunulur).
         main: resolve(__dirname, "index.html"),
-        admin: resolve(__dirname, "admin/index.html"),
+        quantlab: resolve(__dirname, "quantlab/index.html"),
       },
     },
   },
