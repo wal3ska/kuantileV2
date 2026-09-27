@@ -71,7 +71,8 @@ def _eligible(rows, req: UniverseRequest):
             fails.append("drawdown")
         if f.altman and m.altman_z is not None and m.altman_z < req.altman_min:
             fails.append("altman")
-        if f.liquidity and (m.adv_tl is None or m.adv_tl < req.adv_min_tl):
+        if (f.liquidity and s.sector not in ("Emtia", "TEFAS Fon")
+                and (m.adv_tl is None or m.adv_tl < req.adv_min_tl)):
             fails.append("liquidity")
         if req.vol_min is not None and (m.ann_vol is None or m.ann_vol < req.vol_min):
             fails.append("vol_band")

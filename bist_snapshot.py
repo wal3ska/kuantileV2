@@ -95,10 +95,16 @@ def build_metrics(db, window_years: int = 5) -> int:
         if pm is None:
             continue
 
-        # Emtia + TEFAS fonlari: fundamental yok, TL hacmi/taban kavrami yok ->
-        # likidite ve taban filtrelerinden muaf tut (drawdown/vol/geo yine hesaplanir)
-        if sym.sector in ("Emtia", "TEFAS Fon"):
-            pm["adv_tl"] = 1e15
+        # Emtia + TEFAS fonlari: fundamental yok, taban kavrami yok -> taban muaf.
+        # Likidite filtresi bunlara SEKTORLE muaf (admin_routes). adv_tl'yi yapay
+        # sisirmiyoruz: emtia (2 adet) yuksek kalir; fonlar (adet cok) adv=None ile
+        # siralamada SONA duser -> otomatik araclarda 1070 fon hisseleri ezmez,
+        # ama Manuel Test'te ve evren listesinde tam kullanilabilir.
+        if sym.sector == "Emtia":
+            pm["adv_tl"] = 1e12
+            pm["limit_down_streak"] = 0
+        elif sym.sector == "TEFAS Fon":
+            pm["adv_tl"] = None
             pm["limit_down_streak"] = 0
 
         flist = funds.get(tk, [])
