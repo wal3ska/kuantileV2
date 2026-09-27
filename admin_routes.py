@@ -5,7 +5,7 @@ acildi (ana arayuzde 'Quant Lab' butonu). Uclar salt-okur/hesaplama; yazma yok.
 Kotuye kullanima karsi nginx hiz limiti (apilimit) devrede.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
