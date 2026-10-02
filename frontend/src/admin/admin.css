@@ -278,8 +278,9 @@ a { color: var(--accent-strong); text-decoration: none; }
   font-size: 11.5px;
   color: var(--muted);
 }
-.u-thresholds input {
-  width: 110px;
+.u-thresholds input, .u-thresholds select {
+  box-sizing: border-box;
+  width: 132px;
   background: var(--surface-2);
   border: 1px solid var(--border-2);
   border-radius: 8px;
@@ -287,8 +288,10 @@ a { color: var(--accent-strong); text-decoration: none; }
   color: var(--ink);
   font-size: 14px;
   font-family: inherit;
+  color-scheme: dark;
 }
-.u-thresholds input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.u-thresholds select { height: 41px; cursor: pointer; }
+.u-thresholds input:focus, .u-thresholds select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .u-apply { width: auto; padding: 9px 22px; margin-left: auto; }
 
 .u-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; }
