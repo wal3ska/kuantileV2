@@ -78,6 +78,7 @@ function McChart({ mc, hi, onPick }: { mc: ManualResponse["mc"]; hi: string | nu
 export function Manuel({ onAuthFail }: { onAuthFail: () => void }) {
   const [rows, setRows] = useState<Row[]>(START);
   const [rf, setRf] = useState(0);
+  const [windowYears, setWindowYears] = useState(1);
   const [horizon, setHorizon] = useState(9);
   const [notional, setNotional] = useState(1_000_000);
   const [opts, setOpts] = useState<{ ticker: string; name: string | null }[]>([]);
@@ -98,7 +99,7 @@ export function Manuel({ onAuthFail }: { onAuthFail: () => void }) {
       .filter((r) => r.ticker.trim() && (parseFloat(r.weight) || 0) > 0)
       .map((r) => ({ ticker: r.ticker.trim().toUpperCase(), weight: parseFloat(r.weight) }));
     if (holdings.length === 0) { setErr("En az bir hisse ve ağırlık girin."); setBusy(false); return; }
-    const body: ManualRequest = { holdings, rf_annual: rf, window_years: 5, horizon_months: horizon, notional };
+    const body: ManualRequest = { holdings, rf_annual: rf, window_years: windowYears, horizon_months: horizon, notional };
     try { setData(await api.adminManual(body)); }
     catch (ex) {
       if (ex instanceof ApiError && ex.status === 401) { setToken(null); onAuthFail(); return; }
@@ -130,6 +131,9 @@ export function Manuel({ onAuthFail }: { onAuthFail: () => void }) {
         <div className="u-thresholds">
           <span className={`mn-sum ${Math.abs(sum - 100) > 0.5 ? "mn-warn" : ""}`}>toplam %{sum.toFixed(1)} {Math.abs(sum - 100) > 0.5 ? "(normalize edilir)" : ""}</span>
           <label>Risksiz faiz (%)<input type="number" step={1} value={rf * 100} onChange={(e) => setRf(+e.target.value / 100)} /></label>
+          <label>Backtest süresi (yıl)<select value={windowYears} onChange={(e) => setWindowYears(Number(e.target.value))}>
+            {[1, 2, 3, 4, 5].map((year) => <option key={year} value={year}>{year}</option>)}
+          </select></label>
           <label>MC ufku (ay)<input type="number" min={1} max={36} value={horizon} onChange={(e) => setHorizon(+e.target.value)} /></label>
           <label>Portföy (₺)<input type="number" step={100000} value={notional} onChange={(e) => setNotional(+e.target.value)} /></label>
           <button className="a-primary u-apply" onClick={run} disabled={busy}>{busy ? "Test ediliyor…" : "Test et"}</button>
